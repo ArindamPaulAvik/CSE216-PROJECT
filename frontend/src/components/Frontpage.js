@@ -1,19 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { FiMenu, FiSearch, FiHeart, FiCreditCard } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import Layout from './Layout';
 
 function FrontPage() {
-  const [userName, setUserName] = useState('');
   const [trendingShows, setTrendingShows] = useState([]);
   const [watchAgainShows, setWatchAgainShows] = useState([]);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
-
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   const navigate = useNavigate();
 
@@ -29,7 +22,6 @@ function FrontPage() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
-        setUserName(res.data.userName);
         setTrendingShows(res.data.trendingshows || []);
         setWatchAgainShows(res.data.watchagainshows || []);
       })
@@ -51,32 +43,6 @@ function FrontPage() {
     }, 6000);
     return () => clearInterval(interval);
   }, [trendingShows]);
-
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const handler = setTimeout(() => {
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => {
-          setSearchResults(res.data.results || []);
-          setIsSearching(false);
-        })
-        .catch(() => {
-          setSearchResults([]);
-          setIsSearching(false);
-        });
-    }, 300);
-
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
 
   const trending = trendingShows[currentTrendingIndex] || {};
 
@@ -102,148 +68,189 @@ function FrontPage() {
   ), [navigate]);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #2c2c2c, #0d0d0d)',
-      color: '#fff',
-      fontFamily: 'Segoe UI, sans-serif',
-      display: 'flex'
-    }}>
-      {/* Sidebar */}
-      <div
-        onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={() => setMenuOpen(false)}
-        style={{
-          width: menuOpen ? 200 : 45,
-          backgroundColor: '#111',
-          transition: 'width 0.3s ease',
-          paddingTop: 20,
-          paddingLeft: 15,
-          overflow: 'hidden'
-        }}
-      >
-        <FiMenu size={28} color="#ccc" />
-        {menuOpen && (
-          <div style={{ marginTop: 40, color: '#ccc' }}>
-            {/* Search icon */}
-            <div
-              style={{ marginBottom: 10, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => setSearchOpen(prev  => !prev)}
-            >
-              <FiSearch size={18} style={{ marginRight: 8 }} />
-              <span style={{ fontSize: 16 }}>Search</span>
-            </div>
-
-            {/* Search input shown below the button */}
-            {searchOpen && (
-              <input
-                type="text"
-                placeholder="Search shows..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+    <Layout>
+      {/* Hero Section with Featured/Trending Show */}
+      {trendingShows.length > 0 && (
+        <section style={{
+          display: 'flex',
+          backgroundColor: '#1c1c1c',
+          borderRadius: 12,
+          overflow: 'hidden',
+          marginBottom: 60,
+          height: 300,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+        }}>
+          <div style={{
+            flex: '0 0 40%',
+            padding: 30,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            color: '#ddd',
+            background: 'linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7))'
+          }}>
+            <h2 style={{ 
+              fontSize: '2.2rem', 
+              marginBottom: 15,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              {trending.TITLE}
+            </h2>
+            <p style={{
+              flexGrow: 1,
+              fontSize: '1rem',
+              lineHeight: 1.6,
+              overflowY: 'auto',
+              maxHeight: 140,
+              marginBottom: 15,
+              color: '#ccc'
+            }}>
+              {trending.DESCRIPTION}
+            </p>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '15px',
+              marginTop: 'auto'
+            }}>
+              <span style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '1rem',
+                fontWeight: 'bold'
+              }}>
+                ⭐ {trending.RATING}
+              </span>
+              <button
+                onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
                 style={{
-                  marginLeft: 20,           // pushed a bit right to avoid cutoff
-                  marginBottom: 20,
-                  padding: '6px 10px',
-                  width: 'calc(100% - 30px)', // adjust width to fit sidebar nicely
-                  borderRadius: 6,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   border: 'none',
-                  outline: 'none',
-                  backgroundColor: '#222',
-                  color: '#eee',
-                  fontSize: 14
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '25px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  transition: 'all 0.3s ease'
                 }}
-              />
-            )}
-
-            <div style={{ marginBottom: 20, fontSize: 16, display: 'flex', alignItems: 'center' }}>
-              <FiCreditCard size={18} style={{ marginRight: 8 }} /> Subscription
-            </div>
-            <div style={{ marginBottom: 20, fontSize: 16, display: 'flex', alignItems: 'center' }}>
-              <FiHeart size={18} style={{ marginRight: 8 }} /> Favourites
+                onMouseEnter={e => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 5px 15px rgba(102, 126, 234, 0.4)';
+                }}
+                onMouseLeave={e => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                Watch Now
+              </button>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: '30px 40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 40 }}>
-          <div style={{ fontSize: 18, fontWeight: 'bold', color: '#e0e0e0' }}>{userName}</div>
-        </div>
-
-        {searchTerm.trim() !== '' ? (
-          <>
-            <h2 style={{ color: '#ccc', marginBottom: 20 }}>
-              Search Results {isSearching && '(Searching...)'}
-            </h2>
-            <div className="movie-grid">
-              {searchResults.length > 0
-                ? searchResults.map(renderShowBox)
-                : !isSearching && <p style={{ color: '#aaa' }}>No results found</p>}
-            </div>
-          </>
-        ) : (
-          <>
-            {trendingShows.length > 0 && (
-              <section style={{
+          <div style={{ flex: '1 1 60%', position: 'relative' }}>
+            <img
+              src={trending.THUMBNAIL}
+              alt={trending.TITLE}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: 'brightness(0.85)'
+              }}
+              loading="lazy"
+            />
+            {/* Play button overlay on hero image */}
+            <div 
+              onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                borderRadius: '50%',
+                width: '80px',
+                height: '80px',
                 display: 'flex',
-                backgroundColor: '#1c1c1c',
-                borderRadius: 12,
-                overflow: 'hidden',
-                marginBottom: 60,
-                height: 300
-              }}>
-                <div style={{
-                  flex: '0 0 40%',
-                  padding: 30,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  color: '#ddd',
-                  background: 'rgba(0,0,0,0.7)'
-                }}>
-                  <h2 style={{ fontSize: '2.2rem', marginBottom: 15 }}>{trending.TITLE}</h2>
-                  <p style={{
-                    flexGrow: 1,
-                    fontSize: '1rem',
-                    lineHeight: 1.4,
-                    overflowY: 'auto',
-                    maxHeight: 140,
-                    marginBottom: 15
-                  }}>{trending.DESCRIPTION}</p>
-                  <p style={{ fontSize: '1.1rem' }}>⭐ {trending.RATING}</p>
-                </div>
-                <div style={{ flex: '1 1 60%' }}>
-                  <img
-                    src={trending.THUMBNAIL}
-                    alt={trending.TITLE}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      filter: 'brightness(0.85)'
-                    }}
-                    loading="lazy"
-                  />
-                </div>
-              </section>
-            )}
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                border: '3px solid rgba(255,255,255,0.8)'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
+              }}
+            >
+              <div style={{
+                width: 0,
+                height: 0,
+                borderLeft: '20px solid #fff',
+                borderTop: '12px solid transparent',
+                borderBottom: '12px solid transparent',
+                marginLeft: '6px'
+              }} />
+            </div>
+          </div>
+        </section>
+      )}
 
-            <section style={{ marginBottom: 60 }}>
-              <h2 style={{ color: '#ccc', marginBottom: 20 }}>Trending Now</h2>
-              <div className="movie-grid">{trendingShows.map(renderShowBox)}</div>
-            </section>
-
-            <section>
-              <h2 style={{ color: '#ccc', marginBottom: 20 }}>Watch Again</h2>
-              <div className="movie-grid">{watchAgainShows.map(renderShowBox)}</div>
-            </section>
-          </>
+      {/* Trending Now Section */}
+      <section style={{ marginBottom: 60 }}>
+        <h2 style={{ 
+          color: '#fff', 
+          marginBottom: 30,
+          fontSize: '1.8rem',
+          fontWeight: 'bold',
+          borderBottom: '3px solid #667eea',
+          paddingBottom: '10px',
+          display: 'inline-block'
+        }}>
+          Trending Now
+        </h2>
+        <div className="movie-grid">
+          {trendingShows.map(renderShowBox)}
+        </div>
+        {trendingShows.length === 0 && (
+          <p style={{ color: '#888', textAlign: 'center', fontSize: '1.1rem', marginTop: '40px' }}>
+            No trending shows available at the moment.
+          </p>
         )}
-      </div>
+      </section>
 
-      {/* Styles */}
+      {/* Watch Again Section */}
+      <section>
+        <h2 style={{ 
+          color: '#fff', 
+          marginBottom: 30,
+          fontSize: '1.8rem',
+          fontWeight: 'bold',
+          borderBottom: '3px solid #764ba2',
+          paddingBottom: '10px',
+          display: 'inline-block'
+        }}>
+          Watch Again
+        </h2>
+        <div className="movie-grid">
+          {watchAgainShows.map(renderShowBox)}
+        </div>
+        {watchAgainShows.length === 0 && (
+          <p style={{ color: '#888', textAlign: 'center', fontSize: '1.1rem', marginTop: '40px' }}>
+            No shows to watch again yet. Start watching some content!
+          </p>
+        )}
+      </section>
+
+      {/* Custom Styles - Same as before but enhanced */}
       <style>{`
         .movie-grid {
           display: grid;
@@ -253,13 +260,15 @@ function FrontPage() {
         .movie-box {
           position: relative;
           overflow: hidden;
-          border-radius: 10px;
+          border-radius: 12px;
           background-color: #1c1c1c;
           height: 420px;
-          transition: transform 0.3s ease;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
         .movie-box:hover {
           transform: scale(1.03);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
         .movie-thumbnail {
           width: 100%;
@@ -271,9 +280,19 @@ function FrontPage() {
           bottom: 0;
           width: 100%;
           padding: 20px 15px;
-          background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0));
+          background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
           color: #fff;
           z-index: 2;
+        }
+        .movie-bottom-overlay h3 {
+          margin: 0 0 8px 0;
+          font-size: 1.1rem;
+          font-weight: bold;
+        }
+        .movie-bottom-overlay p {
+          margin: 0;
+          font-size: 0.9rem;
+          opacity: 0.9;
         }
         .movie-hover-description {
           position: absolute;
@@ -289,6 +308,14 @@ function FrontPage() {
           transition: opacity 0.3s ease;
           z-index: 3;
           overflow-y: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+        .movie-hover-description p {
+          line-height: 1.6;
+          margin: 0;
         }
         .movie-box:hover .movie-hover-description {
           opacity: 1;
@@ -296,8 +323,19 @@ function FrontPage() {
         .movie-box:hover .movie-bottom-overlay {
           opacity: 0;
         }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+          .movie-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+          }
+          .movie-box {
+            height: 350px;
+          }
+        }
       `}</style>
-    </div>
+    </Layout>
   );
 }
 
