@@ -1,90 +1,84 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { FiMenu, FiSearch, FiHeart, FiCreditCard } from 'react-icons/fi';
+import Layout from './Layout';
 
 function ShowDetails() {
   const { id } = useParams();
   const [show, setShow] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    axios.get(`http://localhost:5000/show/${id}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('You are not logged in. Redirecting...');
+      window.location.href = '/login';
+      return;
+    }
+
+    axios.get(`http://localhost:5000/show/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
       .then(res => {
         setShow(res.data);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Error fetching show details:', err);
-        setError('Could not fetch show details.');
-        setLoading(false);
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          alert('Session expired. Please log in again.');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        } else {
+          console.error('Error fetching show details:', err);
+          setError('Could not fetch show details.');
+          setLoading(false);
+        }
       });
   }, [id]);
 
-  if (loading) return <div style={{ color: 'white', padding: '30px' }}>Loading...</div>;
-  if (error) return <div style={{ color: 'red', padding: '30px' }}>{error}</div>;
+  if (loading) {
+    return (
+      <Layout>
+        <div style={{ 
+          color: '#ccc', 
+          padding: '40px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+          fontSize: '1.2rem'
+        }}>
+          Loading...
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div style={{ 
+          color: '#ff6b6b', 
+          padding: '40px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+          fontSize: '1.2rem',
+          textAlign: 'center'
+        }}>
+          {error}
+        </div>
+      </Layout>
+    );
+  }
+
   if (!show) return null;
 
   return (
-    <div style={{
-      display: 'flex',
-      minHeight: '100vh',
-      backgroundColor: '#0d0d0d',
-      color: '#fff',
-      fontFamily: 'Segoe UI, sans-serif'
-    }}>
-      {/* Menu Bar */}
-      <div
-        onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={() => setMenuOpen(false)}
-        style={{
-          width: menuOpen ? 200 : 60,
-          backgroundColor: '#111',
-          transition: 'width 0.3s ease',
-          paddingTop: 20,
-          paddingLeft: 15,
-          overflow: 'hidden',
-          flexShrink: 0
-        }}
-      >
-        <FiMenu size={28} color="#ccc" />
-        {menuOpen && (
-          <div style={{ marginTop: 40, color: '#ccc' }}>
-            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center' }}>
-              <FiSearch size={18} style={{ marginRight: 8 }} />
-              <input
-                type="text"
-                placeholder="Search shows..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '6px 8px',
-                  borderRadius: 4,
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: 14,
-                  backgroundColor: '#222',
-                  color: '#eee',
-                  width: '100%'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: 20, fontSize: 16, display: 'flex', alignItems: 'center' }}>
-              <FiCreditCard size={18} style={{ marginRight: 8 }} /> Subscription
-            </div>
-            <div style={{ marginBottom: 20, fontSize: 16, display: 'flex', alignItems: 'center' }}>
-              <FiHeart size={18} style={{ marginRight: 8 }} /> Favourites
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main Show Content */}
-      <div style={{ flex: 1, padding: '40px' }}>
+    <Layout>
+      <div style={{ padding: '0 0 40px 0' }}>
         <div style={{
           display: 'flex',
           flexDirection: 'row',
@@ -94,34 +88,145 @@ function ShowDetails() {
         }}>
           {/* LEFT: DETAILS */}
           <div style={{ flex: '2 1 600px', minWidth: '300px' }}>
-            <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{show.TITLE}</h1>
-            <p style={{ fontSize: '1.2rem', color: '#ccc', marginBottom: '20px' }}>
-              ⭐ {show.RATING} | {show.DURATION} mins | Released: {show.RELEASE_DATE?.slice(0, 10)}
-            </p>
-            <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>{show.DESCRIPTION}</p>
-            <p><strong>Category:</strong> {show.CATEGORY_NAME || 'N/A'}</p>
-            <p><strong>Publisher:</strong> {show.PUBLISHER_NAME || 'N/A'}</p>
-            <p><strong>Age Restriction:</strong> {show.AGE_RESTRICTION_NAME || 'N/A'}</p>
-            <p><strong>Seasons:</strong> {show.SEASON_COUNT || 0}</p>
+            <h1 style={{ 
+              fontSize: '2.5rem', 
+              marginBottom: '15px',
+              color: '#fff',
+              fontWeight: 'bold'
+            }}>
+              {show.TITLE}
+            </h1>
+            
+            <div style={{ 
+              fontSize: '1.2rem', 
+              color: '#ddd', 
+              marginBottom: '25px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '15px',
+              alignItems: 'center'
+            }}>
+              <span style={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                fontSize: '1rem'
+              }}>
+                ⭐ {show.RATING}
+              </span>
+              <span>{show.DURATION} mins</span>
+              <span>Released: {show.RELEASE_DATE?.slice(0, 10)}</span>
+            </div>
+
+            <div style={{ 
+              marginBottom: '30px', 
+              lineHeight: '1.7',
+              fontSize: '1.1rem',
+              color: '#ccc',
+              maxWidth: '800px'
+            }}>
+              {show.DESCRIPTION}
+            </div>
+
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '20px',
+              marginTop: '30px'
+            }}>
+              <div style={{
+                backgroundColor: '#1c1c1c',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '1px solid #333'
+              }}>
+                <h3 style={{ color: '#fff', marginBottom: '15px', fontSize: '1.2rem' }}>
+                  Show Information
+                </h3>
+                <div style={{ color: '#ccc', lineHeight: '1.6' }}>
+                  <p><strong style={{ color: '#ddd' }}>Category:</strong> {show.CATEGORY_NAME || 'N/A'}</p>
+                  <p><strong style={{ color: '#ddd' }}>Publisher:</strong> {show.PUBLISHER_NAME || 'N/A'}</p>
+                  <p><strong style={{ color: '#ddd' }}>Age Restriction:</strong> {show.AGE_RESTRICTION_NAME || 'N/A'}</p>
+                  <p><strong style={{ color: '#ddd' }}>Seasons:</strong> {show.SEASON_COUNT || 0}</p>
+                </div>
+              </div>
+
+              {/* Additional info card if needed */}
+              <div style={{
+                backgroundColor: '#1c1c1c',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '1px solid #333'
+              }}>
+                <h3 style={{ color: '#fff', marginBottom: '15px', fontSize: '1.2rem' }}>
+                  Quick Stats
+                </h3>
+                <div style={{ color: '#ccc', lineHeight: '1.6' }}>
+                  <p><strong style={{ color: '#ddd' }}>Duration:</strong> {show.DURATION} minutes</p>
+                  <p><strong style={{ color: '#ddd' }}>Rating:</strong> {show.RATING}/10</p>
+                  <p><strong style={{ color: '#ddd' }}>Release Year:</strong> {show.RELEASE_DATE?.slice(0, 4) || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* RIGHT: IMAGE */}
-          <div style={{ flex: '1 1 300px', textAlign: 'right' }}>
-            <img
-              src={show.THUMBNAIL ? `http://localhost:5000/${show.THUMBNAIL}` : ''}
-              alt={show.TITLE || 'Show Thumbnail'}
-              style={{
-                width: '300px',
-                height: '450px',
-                objectFit: 'cover',
-                borderRadius: '12px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          <div style={{ flex: '1 1 350px', textAlign: 'center' }}>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img
+                src={`/showS/${show.THUMBNAIL}`}
+                alt={show.TITLE || 'Show Thumbnail'}
+                style={{
+                  width: '100%',
+                  maxWidth: '350px',
+                  height: '500px',
+                  objectFit: 'cover',
+                  borderRadius: '16px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
+                }}
+                loading="lazy"
+              />
+              
+              {/* Play button overlay */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                borderRadius: '50%',
+                width: '80px',
+                height: '80px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                border: '3px solid rgba(255,255,255,0.8)'
               }}
-            />
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
+              }}
+              >
+                <div style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: '20px solid #fff',
+                  borderTop: '12px solid transparent',
+                  borderBottom: '12px solid transparent',
+                  marginLeft: '6px'
+                }} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 

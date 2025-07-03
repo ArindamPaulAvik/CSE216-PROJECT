@@ -30,8 +30,8 @@ function Login() {
     try {
       const res = await axios.post('http://localhost:5000/login', { email, password });
       if (res.status === 200) {
-        localStorage.setItem('token', res.data.token); // Save JWT token here
-        navigate('/frontpage'); // Redirect on successful login
+        localStorage.setItem('token', res.data.token);
+        navigate('/frontpage');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -71,16 +71,17 @@ function Login() {
           display: 'flex',
           justifyContent: 'flex-start',
           alignItems: 'center',
-          position: 'relative'
+          position: 'relative',
+          backgroundColor: 'transparent' // optional dark overlay here
         }}>
           <div style={{
-            backgroundColor: 'rgba(0,0,0,0.75)',
-            width: '220px',
-            height: '220px',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)', // matched to login form
+            width: '200px',
+            height: '108px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            marginLeft: '70px',
+            marginLeft: '40px',
             zIndex: 2
           }}>
             <img
