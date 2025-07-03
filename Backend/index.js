@@ -106,6 +106,7 @@ app.get('/search', authenticateToken, async (req, res) => {
 
 // ======================== FRONTPAGE ========================
 app.get('/frontpage', authenticateToken, async (req, res) => {
+  console.log('🔍 Frontpage route hit by:', req.user?.email);
   try {
     const userEmail = req.user.email;
 
@@ -116,6 +117,7 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
       WHERE P.EMAIL = ?
       LIMIT 1
     `, [userEmail]);
+      console.log('🔍 User rows:', userRows);
 
     if (userRows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -126,7 +128,7 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
     const [trendingshows] = await pool.query(`
       SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, TEASER
       FROM \`SHOW\`
-      WHERE TRENDING = 1
+      ORDER BY WATCH_COUNT DESC
       LIMIT 4
     `);
     const [allshows] = await pool.query(`
@@ -136,21 +138,28 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
     `);
 
     const [watchagainshows] = await pool.query(`
-      SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING
-      FROM PERSON p
-      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
-      JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
-      JOIN SHOW_EPISODE se ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID
-      JOIN SEASON sn ON sn.SEASON_ID = se.SEASON_ID
-      JOIN \`SHOW\` s ON s.SHOW_ID = sn.SHOW_ID
-      WHERE p.EMAIL = ?
-        AND ue.WATCHED = '1'
+   SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING
+FROM PERSON p
+JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
+JOIN SHOW_EPISODE se ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID
+JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
+WHERE p.EMAIL = ?
+  AND ue.WATCHED = 1
+
     `, [userEmail]);
 
     res.json({ userName, trendingshows, watchagainshows });
   } catch (err) {
-    console.error('Error fetching frontpage:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    // console.error('Error fetching frontpage:', err);
+    // res.status(500).json({ error: 'Internal server error' });
+     console.error('Error fetching frontpage:', err.message);
+  if (err.response) {
+    console.error('Response data:', err.response.data);
+    console.error('Status:', err.response.status);
+  } else {
+    console.error('No response received:', err.request);
+  }
   }
 });
 

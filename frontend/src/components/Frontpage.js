@@ -22,8 +22,15 @@ function FrontPage() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
+        console.log('API Response:', res.data); // Debug log
         setTrendingShows(res.data.trendingshows || []);
         setWatchAgainShows(res.data.watchagainshows || []);
+        
+        // Debug: Log the thumbnail paths
+        if (res.data.trendingshows?.length > 0) {
+          console.log('First trending show thumbnail:', res.data.trendingshows[0].THUMBNAIL);
+          console.log('Constructed path:', `/shows/${res.data.trendingshows[0].THUMBNAIL}`);
+        }
       })
       .catch(err => {
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -46,6 +53,49 @@ function FrontPage() {
 
   const trending = trendingShows[currentTrendingIndex] || {};
 
+  // Helper function to construct image path
+  const getImagePath = (thumbnail) => {
+    if (!thumbnail) {
+      console.log('No thumbnail provided, using placeholder');
+      return 'http://localhost:5000/shows/placeholder.jpg'; // fallback image
+    }
+    
+    // Point to your backend server where images are stored
+    const fullPath = `/shows/${thumbnail}`;
+    console.log(`Constructing path: ${thumbnail} -> ${fullPath}`);
+    return fullPath;
+  };
+
+  // Image error handler
+  const handleImageError = (e, showTitle, thumbnail) => {
+    console.error(`Failed to load image for: ${showTitle}`);
+    console.error(`Attempted path: ${e.target.src}`);
+    console.error(`Original thumbnail: ${thumbnail}`);
+    
+    // Check if the image file exists by trying to fetch it
+    fetch(e.target.src)
+      .then(response => {
+        console.log(`HTTP status for ${e.target.src}: ${response.status}`);
+        if (!response.ok) {
+          console.error(`Image not found: ${e.target.src}`);
+        }
+      })
+      .catch(err => {
+        console.error(`Network error for ${e.target.src}:`, err);
+      });
+    
+    // Set a placeholder or show error state
+    e.target.style.backgroundColor = '#333';
+    e.target.style.display = 'flex';
+    e.target.style.alignItems = 'center';
+    e.target.style.justifyContent = 'center';
+    e.target.style.color = '#fff';
+    e.target.style.fontSize = '14px';
+    e.target.style.textAlign = 'center';
+    e.target.style.padding = '20px';
+    e.target.innerHTML = `<div>Image not found<br/>${thumbnail}</div>`;
+  };
+
   const renderShowBox = useCallback((show) => (
     <div
       className="movie-box"
@@ -56,7 +106,14 @@ function FrontPage() {
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/show/${show.SHOW_ID}`)}
       style={{ cursor: 'pointer' }}
     >
-      <img src={show.THUMBNAIL} alt={show.TITLE} className="movie-thumbnail" loading="lazy" />
+      <img 
+        src={getImagePath(show.THUMBNAIL)} 
+        alt={show.TITLE} 
+        className="movie-thumbnail" 
+        loading="lazy"
+        onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
+        onLoad={() => console.log(`✓ Successfully loaded: ${show.TITLE} - ${getImagePath(show.THUMBNAIL)}`)}
+      />
       <div className="movie-bottom-overlay">
         <h3>{show.TITLE}</h3>
         <p>⭐ {show.RATING}</p>
@@ -153,7 +210,7 @@ function FrontPage() {
           </div>
           <div style={{ flex: '1 1 60%', position: 'relative' }}>
             <img
-              src={trending.THUMBNAIL}
+              src={getImagePath(trending.THUMBNAIL)}
               alt={trending.TITLE}
               style={{
                 width: '100%',
@@ -162,6 +219,7 @@ function FrontPage() {
                 filter: 'brightness(0.85)'
               }}
               loading="lazy"
+              onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
             />
             {/* Play button overlay on hero image */}
             <div 
@@ -250,7 +308,7 @@ function FrontPage() {
         )}
       </section>
 
-      {/* Custom Styles - Same as before but enhanced */}
+      {/* Custom Styles */}
       <style>{`
         .movie-grid {
           display: grid;
@@ -274,6 +332,7 @@ function FrontPage() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          background-color: #333;
         }
         .movie-bottom-overlay {
           position: absolute;
