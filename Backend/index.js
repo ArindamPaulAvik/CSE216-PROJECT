@@ -51,8 +51,8 @@ app.post('/login', async (req, res) => {
 const saltRounds = 10;
 
 app.post('/register', async (req, res) => {
-  const { email, password, userFirstname, userLastname, countryId } = req.body;
-  if (!email || !password || !userFirstname || !userLastname || !countryId) {
+  const { email, password, userFirstname, userLastname, countryId, birthdate } = req.body;
+  if (!email || !password || !userFirstname || !userLastname || !countryId || !birthdate) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
@@ -70,9 +70,9 @@ app.post('/register', async (req, res) => {
     const personId = personResult.insertId;
 
     await pool.query(
-      `INSERT INTO USER (PERSON_ID, COUNTRY_ID, USER_FIRSTNAME, USER_LASTNAME)
-       VALUES (?, ?, ?, ?)`,
-      [personId, countryId, userFirstname, userLastname]
+      `INSERT INTO USER (PERSON_ID, COUNTRY_ID, USER_FIRSTNAME, USER_LASTNAME, BIRTH_DATE)
+       VALUES (?, ?, ?, ?, ?)`,
+      [personId, countryId, userFirstname, userLastname, birthdate]
     );
 
     res.status(201).json({ message: 'User registered successfully' });
@@ -90,11 +90,16 @@ app.get('/search', authenticateToken, async (req, res) => {
 
   try {
     const [rows] = await pool.query(`
-      SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING
-      FROM \`SHOW\`
-      WHERE TITLE LIKE ?
-      LIMIT 20
-    `, [`%${query}%`]);
+  SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING,
+         GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+  FROM \`SHOW\` s
+  LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+  LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+  WHERE s.TITLE LIKE ?
+  GROUP BY s.SHOW_ID
+  LIMIT 20
+`, [`%${query}%`]);
+
 
     res.json({ results: rows });
   } catch (err) {
@@ -126,11 +131,15 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
     const userName = userRows[0].USER_FIRSTNAME;
 
     const [trendingshows] = await pool.query(`
-      SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, TEASER
-      FROM \`SHOW\`
-      ORDER BY WATCH_COUNT DESC
-      LIMIT 4
-    `);
+    SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, 
+          GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+    FROM \`SHOW\` s
+    LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+    LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+    GROUP BY s.SHOW_ID
+    ORDER BY s.WATCH_COUNT DESC
+    LIMIT 4
+  `);
     const [allshows] = await pool.query(`
       SELECT SHOW_ID, TITLE, THUMBNAIL, RATING
       FROM \`SHOW\`

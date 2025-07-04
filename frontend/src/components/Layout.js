@@ -112,8 +112,16 @@ export default function Layout({ children }) {
           <h3>{title}</h3>
           <p>⭐ {rating}</p>
         </div>
-        <div className="movie-hover-description">
-          <p>{description}</p>
+        <div className="movie-hover-description" style={{ textAlign: 'left', wordWrap: 'break-word', whiteSpace: 'normal', maxWidth: '90%' }}>
+          <p>
+            <strong>Title:</strong> {title}
+          </p>
+          <p>
+            <strong>Synopsis:</strong> {description}
+          </p>
+          <p style={{ marginBottom: '6px' }}>
+            <strong>Genres:</strong> {show.GENRES || 'N/A'}
+          </p>
         </div>
       </div>
     );
@@ -534,17 +542,16 @@ export default function Layout({ children }) {
           position: relative;
           overflow: hidden;
           border-radius: 12px;
-          background-color: rgba(10, 10, 24, 0.9);
+          background-color: #1c1c1c;
           height: 420px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          width: 310px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
 
         .movie-box:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-          border-color: rgba(255, 255, 255, 0.1);
+          transform: scale(1.03);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
         .movie-thumbnail {

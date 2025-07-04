@@ -118,8 +118,16 @@ function FrontPage() {
         <h3>{show.TITLE}</h3>
         <p>⭐ {show.RATING}</p>
       </div>
-      <div className="movie-hover-description">
-        <p>{show.DESCRIPTION}</p>
+      <div className="movie-hover-description" style={{ textAlign: 'left', wordWrap: 'break-word', whiteSpace: 'normal'}}>
+        <p style={{ marginBottom: '6px' }}>
+          <strong>Title:</strong> {show.TITLE}
+        </p>
+        <p style={{ marginBottom: '6px' }}>
+          <strong>Synopsis:</strong> {show.DESCRIPTION}
+        </p>
+        <p style={{ marginBottom: '6px' }}>
+          <strong>Genres:</strong> {show.GENRES || 'N/A'}
+        </p>
       </div>
     </div>
   ), [navigate]);
@@ -321,6 +329,7 @@ function FrontPage() {
           border-radius: 12px;
           background-color: #1c1c1c;
           height: 420px;
+          width: 310px;
           transition: all 0.3s ease;
           box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
@@ -357,20 +366,14 @@ function FrontPage() {
           position: absolute;
           top: 0;
           left: 0;
-          height: 100%;
-          width: 100%;
+          right: 0;
           padding: 20px;
-          background-color: rgba(0, 0, 0, 0.95);
-          color: #ddd;
-          font-size: 14px;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          z-index: 3;
-          overflow-y: auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
+          background-color: rgba(0,0,0,0.7);
+          color: white;
+          box-sizing: border-box;
+          white-space: normal;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
         .movie-hover-description p {
           line-height: 1.6;

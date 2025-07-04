@@ -148,6 +148,7 @@ function ShowDetails() {
                   <p><strong style={{ color: '#ddd' }}>Publisher:</strong> {show.PUBLISHER_NAME || 'N/A'}</p>
                   <p><strong style={{ color: '#ddd' }}>Age Restriction:</strong> {show.AGE_RESTRICTION_NAME || 'N/A'}</p>
                   <p><strong style={{ color: '#ddd' }}>Seasons:</strong> {show.SEASON_COUNT || 0}</p>
+                  <p><strong style={{ color: '#ddd' }}>Genre:</strong> {show.GENRES || 'N/A'}</p>
                 </div>
               </div>
 

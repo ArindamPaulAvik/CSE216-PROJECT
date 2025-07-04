@@ -19,11 +19,20 @@ function Register() {
     password: '',
     userFirstname: '',
     userLastname: '',
-    countryId: 'BD',
+    countryId: '',
+    birthdate: '',
   });
 
   const [error, setError] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -71,61 +80,98 @@ function Register() {
         padding: '40px',
         borderRadius: '8px',
         color: 'white',
-        width: '400px',
+        width: '600px',
         boxSizing: 'border-box',
         boxShadow: '0 0 15px rgba(0,0,0,0.7)'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Register</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>Register</h2>
 
-        <label>Email:</label>
-        <input name="email" type="email" required value={formData.email} onChange={handleChange}
-          style={{ width: '100%', marginBottom: '15px', padding: '8px' }} />
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '30px',
+          marginBottom: '25px'
+        }}>
+          {/* Left column */}
+          <div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', minWidth: '100px' }}>Email:</label>
+              <input name="email" type="email" required value={formData.email} onChange={handleChange}
+                style={{ width: '100%', padding: '10px' }} />
+            </div>
 
-        <label>Password:</label>
-        <input name="password" type="password" required value={formData.password} onChange={handleChange}
-          style={{ width: '100%', marginBottom: '15px', padding: '8px' }} />
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', minWidth: '100px' }}>First Name:</label>
+              <input name="userFirstname" type="text" required value={formData.userFirstname} onChange={handleChange}
+                style={{ width: '100%', padding: '10px' }} />
+            </div>
 
-        <label>First Name:</label>
-        <input name="userFirstname" type="text" required value={formData.userFirstname} onChange={handleChange}
-          style={{ width: '100%', marginBottom: '15px', padding: '8px' }} />
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', minWidth: '100px' }}>Country:</label>
+              <select name="countryId" value={formData.countryId} onChange={handleChange}
+                style={{ width: '110%', padding: '11px' }}>
+                <option value="" disabled hidden>Choose Country</option>
+                <option value="BD">Bangladesh</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="IN">India</option>
+                <option value="CA">Canada</option>
+              </select>
+            </div>
+          </div>
 
-        <label>Last Name:</label>
-        <input name="userLastname" type="text" required value={formData.userLastname} onChange={handleChange}
-          style={{ width: '100%', marginBottom: '15px', padding: '8px' }} />
+          {/* Right column */}
+          <div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', minWidth: '100px' }}>Password:</label>
+              <input name="password" type="password" required value={formData.password} onChange={handleChange}
+                style={{ width: '100%', padding: '10px' }} />
+            </div>
 
-        <label>Country:</label>
-        <select name="countryId" value={formData.countryId} onChange={handleChange}
-          style={{ width: '100%', marginBottom: '25px', padding: '8px' }}>
-          <option value="BD">Bangladesh</option>
-          <option value="US">United States</option>
-          <option value="GB">United Kingdom</option>
-          <option value="IN">India</option>
-          <option value="CA">Canada</option>
-        </select>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', minWidth: '100px' }}>Last Name:</label>
+              <input name="userLastname" type="text" required value={formData.userLastname} onChange={handleChange}
+                style={{ width: '100%', padding: '10px' }} />
+            </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', minWidth: '100px' }}>Birthdate:</label>
+              <input
+                name="birthdate"
+                type="date"
+                required
+                value={formData.birthdate}
+                onChange={handleChange}
+                max={getTodayDate()}
+                style={{ width: '100%', padding: '10px' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {error && <p style={{ color: 'red', marginBottom: '20px', textAlign: 'center' }}>{error}</p>}
 
         <button type="submit" style={{
-          width: '100%', padding: '10px', backgroundColor: '#e50914',
-          border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer'
+          width: '100%', padding: '12px', backgroundColor: '#e50914',
+          border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer', marginBottom: '12px'
         }}>Register</button>
-                    <button
-            type="button"
-            onClick={() => navigate('/login')}
-            style={{
-              marginTop: '12px',
-              width: '100%',
-              padding: '10px',
-              backgroundColor: 'transparent',
-              border: '1px solid #e50914',
-              color: '#e50914',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            Return to Login
-          </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/login')}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: 'transparent',
+            border: '1px solid #e50914',
+            color: '#e50914',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            borderRadius: '4px'
+          }}
+        >
+          Return to Login
+        </button>
       </form>
 
       {showSuccessModal && (
