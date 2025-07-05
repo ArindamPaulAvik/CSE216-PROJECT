@@ -508,6 +508,7 @@ app.post('/favorite/:showId', authenticateToken, async (req, res) => {
   }
 });
 
+
 app.get('/favorites', authenticateToken, async (req, res) => {
   const userEmail = req.user.email;
 
