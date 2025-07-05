@@ -14,28 +14,30 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
 
   // Get user data on mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetch('http://localhost:5000/frontpage', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('Failed to fetch user data');
-        }
-        return res.json();
-      })
-      .then(data => {
-        // Handle different possible response structures
-        setUserName(data.userName || data.name || data.user?.name || 'User');
-      })
-      .catch(err => {
-        console.error('Error fetching user data:', err);
-        setUserName('User'); // Fallback
-      });
-    }
-  }, []);
+  const [userImage, setUserImage] = useState(null);
+
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    fetch('http://localhost:5000/frontpage', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to fetch user data');
+      return res.json();
+    })
+    .then(data => {
+      setUserName(data.userName || 'User');
+      setUserImage(data.profilePicture || null);
+    })
+    .catch(err => {
+      console.error('Error fetching user data:', err);
+      setUserName('User');
+      setUserImage(null);
+    });
+  }
+}, []);
+
 
   // Search functionality
   useEffect(() => {
@@ -95,9 +97,20 @@ export default function Layout({ children }) {
         key={showId}
         role="button"
         tabIndex={0}
-        onClick={() => navigate(`/show/${showId}`)}
-        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/show/${showId}`)}
-        style={{ cursor: 'pointer' }}
+       onClick={() => {
+  navigate(`/show/${showId}`);
+  setSearchOpen(false);     // <-- close search on navigation
+  setSearchTerm('');        // <-- clear search input to remove results
+  setSearchResults([]);     // <-- clear results too
+}}
+       onKeyDown={e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    navigate(`/show/${showId}`);
+    setSearchOpen(false);
+    setSearchTerm('');
+    setSearchResults([]);
+  }
+}}
       >
         <img 
           src={`/shows/${thumbnail}`} 
@@ -140,7 +153,7 @@ export default function Layout({ children }) {
     // Clear authentication token
     localStorage.removeItem('token');
     // Navigate to login page
-    navigate('/login');
+    navigate('/auth');
   };
 
   const handleMenuItemClick = (path) => {
@@ -169,7 +182,21 @@ export default function Layout({ children }) {
       >
         <div className="sidebar-header">
           <FiMenu size={24} className="menu-icon" />
-          {menuOpen && <span className="logo-text">RnbDom</span>}
+         {menuOpen && (
+  <span
+    className="logo-text logo-clickable"
+    onClick={() => {
+      navigate('/frontpage');
+      setMenuOpen(false);
+    }}
+    title="Go to frontpage"
+  >
+    RnbDom
+  </span>
+)}
+
+
+
         </div>
 
         {menuOpen && (
@@ -215,10 +242,7 @@ export default function Layout({ children }) {
 
             {/* Navigation Items */}
             <div className="nav-section">
-              <div className="menu-item" onClick={() => handleMenuItemClick('/frontpage')}>
-                <FiMenu size={18} />
-                <span>Frontpage</span>
-              </div>
+              
 
               <div className="menu-item" onClick={() => handleMenuItemClick('/actors')}>
                 <FiUsers size={18} />
@@ -247,36 +271,49 @@ export default function Layout({ children }) {
         )}
       </div>
 
-      {/* Main Content */}
-      <div className="main-content">
-        {/* Header with user info */}
-        <div className="header">
-          <div className="user-info">
-            <div className="user-avatar">
-              {userName ? userName.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <span className="user-name">{userName || 'User'}</span>
-          </div>
-        </div>
+{/* Main Content */}
+<div className="main-content">
+  {/* Header with user info */}
+  <div className="header">
+    <div
+      className="user-info"
+      onClick={() => navigate('/profile')}
+      style={{ cursor: 'pointer' }}
+    >
+      {userImage ? (
+  <img
+    src={`http://localhost:5000/images/user/${userImage}`}
+    alt="Profile"
+    className="user-avatar-img"
+    onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
+  />
+) : (
+  <div className="user-avatar">
+    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+  </div>
+)}
+      <span className="user-name">{userName || 'User'}</span>
+    </div>
+  </div>
 
-        {/* Content Area */}
-        <div className="content-area">
-          {searchTerm.trim() !== '' ? (
-            <>
-              <h2 className="search-results-title">
-                Search Results {isSearching && '(Searching...)'}
-              </h2>
-              <div className="movie-grid">
-                {searchResults.length > 0
-                  ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
-                  : !isSearching && <p className="no-results">No results found</p>}
-              </div>
-            </>
-          ) : (
-            children
-          )}
+  {/* Content Area */}
+  <div className="content-area">
+    {searchTerm.trim() !== '' ? (
+      <>
+        <h2 className="search-results-title">
+          Search Results {isSearching && '(Searching...)'}
+        </h2>
+        <div className="movie-grid">
+          {searchResults.length > 0
+            ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
+            : !isSearching && <p className="no-results">No results found</p>}
         </div>
-      </div>
+      </>
+    ) : (
+      children
+    )}
+  </div>
+</div>
 
       {/* Enhanced Styles - Darker Theme */}
       <style>{`
@@ -299,6 +336,22 @@ export default function Layout({ children }) {
           z-index: 999;
           display: none;
         }
+
+           .logo-text {
+  font-weight: 700;
+  font-size: 24px; /* Larger */
+  color: #e0e0e0;
+  margin-left: 40px; /* Shift right */
+  transition: all 0.3s ease;
+}
+
+.logo-clickable:hover {
+  color: #ff4c4c; /* Red shine */
+  transform: scale(1.20);
+  text-shadow: 0 0 8px rgba(255, 76, 76, 0.8);
+  cursor: pointer;
+}
+
 
         @media (max-width: 768px) {
           .sidebar-backdrop {
@@ -478,21 +531,25 @@ export default function Layout({ children }) {
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 25px;
-          transition: all 0.2s ease;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
+      .user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(187, 104, 104, 0.03);
+  border-radius: 25px;
+  transition: all 0.3s ease; /* smooth transition */
+  border: 1px solid rgba(158, 97, 97, 0.05);
+  cursor: pointer; /* indicate clickable */
+}
 
         .user-info:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.1);
-        }
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.3); /* enlarge to 110% */
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25); /* optional subtle glow */
+  z-index: 10; /* keep on top */
+}
 
         .user-avatar {
           width: 32px;
@@ -505,6 +562,13 @@ export default function Layout({ children }) {
           font-weight: 600;
           font-size: 14px;
           color: #e0e0e0;
+        }
+        .user-avatar-img {
+           width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .user-name {
@@ -625,6 +689,9 @@ export default function Layout({ children }) {
           .content-area {
             padding: 20px;
           }
+          
+    
+
           
           .header {
             padding: 15px 20px;

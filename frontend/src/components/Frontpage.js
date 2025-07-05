@@ -94,45 +94,7 @@ function FrontPage() {
 
   return (
     <Layout>
-      {/* Top-right user button */}
-      <div style={{
-        position: 'absolute',
-        top: 20,
-        right: 30,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        zIndex: 10,
-        cursor: 'pointer'
-      }} onClick={() => navigate('/profile')}>
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          overflow: 'hidden',
-          backgroundColor: '#444',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1rem',
-          color: '#fff',
-          fontWeight: 'bold'
-        }}>
-          {profilePicture ? (
-            <img
-              src={`/user/${profilePicture}`}
-              alt="Profile"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              onError={(e) => {
-                e.target.src = '/images/user/default-avatar.png';
-              }}
-            />
-          ) : (
-            userName?.charAt(0).toUpperCase()
-          )}
-        </div>
-        <span style={{ color: '#ddd', fontWeight: 'bold' }}>{userName}</span>
-      </div>
+      
 
       {/* Hero Section */}
       {trendingShows.length > 0 && (

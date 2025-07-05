@@ -147,7 +147,8 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
     const userEmail = req.user.email;
 
     const [userRows] = await pool.query(`
-      SELECT U.USER_FIRSTNAME
+      SELECT U.USER_FIRSTNAME,U.PROFILE_PICTURE
+
       FROM PERSON P
       JOIN USER U ON P.PERSON_ID = U.PERSON_ID
       WHERE P.EMAIL = ?
@@ -188,7 +189,7 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
         AND ue.WATCHED = 1
     `, [userEmail]);
 
-    res.json({ userName, trendingshows, watchagainshows, allshows });
+    res.json({ userName,profilePicture: userRows[0].PROFILE_PICTURE || null, trendingshows, watchagainshows, allshows });
   } catch (err) {
     console.error('Error fetching frontpage:', err.message);
     if (err.response) {
@@ -207,27 +208,29 @@ app.get('/user/profile', authenticateToken, async (req, res) => {
     const userEmail = req.user.email;
     
     const [userRows] = await pool.query(`
-      SELECT u.USER_FIRSTNAME, u.USER_LASTNAME, u.PHONE_NO, u.BIRTH_DATE, 
-             p.EMAIL, c.COUNTRY_NAME
-      FROM PERSON p
-      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
-      LEFT JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
-      WHERE p.EMAIL = ?
-    `, [userEmail]);
+  SELECT u.USER_FIRSTNAME, u.USER_LASTNAME, u.PHONE_NO, u.BIRTH_DATE, 
+         u.PROFILE_PICTURE,
+         p.EMAIL, c.COUNTRY_NAME
+  FROM PERSON p
+  JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+  LEFT JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
+  WHERE p.EMAIL = ?
+`, [userEmail]);
 
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+if (userRows.length === 0) {
+  return res.status(404).json({ error: 'User not found' });
+}
 
-    const user = userRows[0];
-    res.json({
-      firstName: user.USER_FIRSTNAME,
-      lastName: user.USER_LASTNAME,
-      email: user.EMAIL,
-      phone: user.PHONE_NO,
-      birthDate: user.BIRTH_DATE,
-      country: user.COUNTRY_NAME
-    });
+const user = userRows[0];
+res.json({
+  firstName: user.USER_FIRSTNAME,
+  lastName: user.USER_LASTNAME,
+  email: user.EMAIL,
+  phone: user.PHONE_NO,
+  birthdate: user.BIRTH_DATE,
+  country: user.COUNTRY_NAME,
+  profilePicture: user.PROFILE_PICTURE || '' // ✅ send picture filename
+});
   } catch (err) {
     console.error('Error fetching user profile:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -375,48 +378,88 @@ app.post('/users', async (req, res) => {
 app.put('/user/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
     const userEmail = req.user.email;
-    const { USER_FIRSTNAME, USER_LASTNAME, EMAIL, BIRTH_DATE } = req.body;
+    const {
+      USER_FIRSTNAME,
+      USER_LASTNAME,
+      EMAIL,
+      BIRTH_DATE,
+      PHONE_NO,
+      COUNTRY_NAME
+    } = req.body;
+
     const profilePicture = req.file ? req.file.filename : null;
 
-    const [[userRow]] = await pool.query(
-      'SELECT p.PERSON_ID, u.USER_ID FROM PERSON p JOIN USER u ON p.PERSON_ID = u.PERSON_ID WHERE p.EMAIL = ?',
-      [userEmail]
-    );
+    // Get USER_ID and PERSON_ID based on email
+    const [[userRow]] = await pool.query(`
+      SELECT p.PERSON_ID, u.USER_ID 
+      FROM PERSON p 
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID 
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
 
-    if (!userRow) return res.status(404).json({ error: 'User not found' });
+    if (!userRow) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     const { PERSON_ID, USER_ID } = userRow;
 
-    await pool.query('UPDATE PERSON SET EMAIL = ? WHERE PERSON_ID = ?', [EMAIL, PERSON_ID]);
+    // Update email in PERSON
+    await pool.query(
+      'UPDATE PERSON SET EMAIL = ? WHERE PERSON_ID = ?',
+      [EMAIL, PERSON_ID]
+    );
+
+    // Build update USER query
+    const updateFields = [
+      'USER_FIRSTNAME = ?',
+      'USER_LASTNAME = ?',
+      'BIRTH_DATE = ?',
+      'PHONE_NO = ?',
+      'COUNTRY_ID = (SELECT COUNTRY_ID FROM COUNTRY WHERE COUNTRY_NAME = ?)'
+    ];
+
+    const updateParams = [
+      USER_FIRSTNAME,
+      USER_LASTNAME,
+      BIRTH_DATE,
+      PHONE_NO,
+      COUNTRY_NAME
+    ];
+
+    if (profilePicture) {
+      updateFields.push('PROFILE_PICTURE = ?');
+      updateParams.push(profilePicture);
+    }
+
+    updateParams.push(USER_ID);
 
     const updateQuery = `
       UPDATE USER 
-      SET USER_FIRSTNAME = ?, USER_LASTNAME = ?, BIRTH_DATE = ?
-      ${profilePicture ? ', PROFILE_PICTURE = ?' : ''}
+      SET ${updateFields.join(', ')}
       WHERE USER_ID = ?
     `;
-    const params = profilePicture
-      ? [USER_FIRSTNAME, USER_LASTNAME, BIRTH_DATE, profilePicture, USER_ID]
-      : [USER_FIRSTNAME, USER_LASTNAME, BIRTH_DATE, USER_ID];
 
-    await pool.query(updateQuery, params);
+    await pool.query(updateQuery, updateParams);
 
+    // Respond with updated user info
     res.json({
       user: {
-        USER_FIRSTNAME,
-        USER_LASTNAME,
-        EMAIL,
-        BIRTH_DATE,
-        PROFILE_PICTURE: profilePicture
+        firstName: USER_FIRSTNAME,
+        lastName: USER_LASTNAME,
+        email: EMAIL,
+        birthdate: BIRTH_DATE,
+        phone: PHONE_NO,
+        country: COUNTRY_NAME,
+        profilePicture: profilePicture || null
       }
     });
+
   } catch (err) {
     console.error('Error updating profile:', err);
-
-    // Ensure a JSON error response
     res.status(500).json({ error: err.message || 'Failed to update profile' });
   }
 });
+
 
 
 
