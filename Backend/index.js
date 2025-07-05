@@ -547,7 +547,42 @@ app.get('/favorites', authenticateToken, async (req, res) => {
   }
 });
 
+// Add this endpoint to your index.js file, preferably near your other favorite-related endpoints
 
+// Check if a specific show is favorited by the user
+app.get('/favorite/:showId', authenticateToken, async (req, res) => {
+  const userEmail = req.user.email;
+  const showId = req.params.showId;
+
+  try {
+    // Get USER_ID from email
+    const [userRows] = await pool.query(`
+      SELECT U.USER_ID
+      FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+      LIMIT 1
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Check if show is in user's favorites
+    const [rows] = await pool.query(
+      'SELECT * FROM FAV_LIST_SHOW WHERE USER_ID = ? AND SHOW_ID = ?',
+      [userId, showId]
+    );
+
+    // Return whether the show is favorited or not
+    res.json({ favorite: rows.length > 0 });
+  } catch (err) {
+    console.error('Error checking favorite status:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
 
 // ======================== START SERVER ========================
 app.listen(port, () => {
