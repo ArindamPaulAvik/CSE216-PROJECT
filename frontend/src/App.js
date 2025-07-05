@@ -7,6 +7,8 @@ import FrontPage from './components/Frontpage';    // Correct casing (FrontPage)
 import ShowDetails from './components/ShowDetails'; // Import ShowDetails
 import ActorDetailPage from './components/ActorDetailPage';
 import ActorsPage from './components/ActorsPage';
+import UserProfile from './components/UserProfile';
+
 
 
 function App() {
@@ -21,6 +23,7 @@ function App() {
           <Route path="/show/:id" element={<ShowDetails />} /> {/* New ShowDetails Route */}
           <Route path="/actors" element={<ActorsPage />} />
           <Route path="/actor/:id" element={<ActorDetailPage />} />
+          <Route path="/profile" element={<UserProfile />} />
 
         </Routes>
       </div>

@@ -7,6 +7,8 @@ function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
   const [watchAgainShows, setWatchAgainShows] = useState([]);
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
+  const [userName, setUserName] = useState('User');
+  const [profilePicture, setProfilePicture] = useState('');
 
   const navigate = useNavigate();
 
@@ -22,14 +24,12 @@ function FrontPage() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
-        console.log('API Response:', res.data); // Debug log
-        setTrendingShows(res.data.trendingshows || []);
-        setWatchAgainShows(res.data.watchagainshows || []);
-        
-        // Debug: Log the thumbnail paths
-        if (res.data.trendingshows?.length > 0) {
-          console.log('First trending show thumbnail:', res.data.trendingshows[0].THUMBNAIL);
-          console.log('Constructed path:', `/shows/${res.data.trendingshows[0].THUMBNAIL}`);
+        const data = res.data;
+        setTrendingShows(data.trendingshows || []);
+        setWatchAgainShows(data.watchagainshows || []);
+        setUserName(data.userName || 'User');
+        if (data.profilePicture) {
+          setProfilePicture(`http://localhost:5000/images/user/${data.profilePicture}`);
         }
       })
       .catch(err => {
@@ -53,47 +53,14 @@ function FrontPage() {
 
   const trending = trendingShows[currentTrendingIndex] || {};
 
-  // Helper function to construct image path
   const getImagePath = (thumbnail) => {
-    if (!thumbnail) {
-      console.log('No thumbnail provided, using placeholder');
-      return 'http://localhost:5000/shows/placeholder.jpg'; // fallback image
-    }
-    
-    // Point to your backend server where images are stored
-    const fullPath = `/shows/${thumbnail}`;
-    console.log(`Constructing path: ${thumbnail} -> ${fullPath}`);
-    return fullPath;
+    if (!thumbnail) return 'http://localhost:5000/shows/placeholder.jpg';
+    return `/shows/${thumbnail}`;
   };
 
-  // Image error handler
   const handleImageError = (e, showTitle, thumbnail) => {
-    console.error(`Failed to load image for: ${showTitle}`);
-    console.error(`Attempted path: ${e.target.src}`);
-    console.error(`Original thumbnail: ${thumbnail}`);
-    
-    // Check if the image file exists by trying to fetch it
-    fetch(e.target.src)
-      .then(response => {
-        console.log(`HTTP status for ${e.target.src}: ${response.status}`);
-        if (!response.ok) {
-          console.error(`Image not found: ${e.target.src}`);
-        }
-      })
-      .catch(err => {
-        console.error(`Network error for ${e.target.src}:`, err);
-      });
-    
-    // Set a placeholder or show error state
-    e.target.style.backgroundColor = '#333';
-    e.target.style.display = 'flex';
-    e.target.style.alignItems = 'center';
-    e.target.style.justifyContent = 'center';
-    e.target.style.color = '#fff';
-    e.target.style.fontSize = '14px';
-    e.target.style.textAlign = 'center';
-    e.target.style.padding = '20px';
-    e.target.innerHTML = `<div>Image not found<br/>${thumbnail}</div>`;
+    console.error(`Image error for ${showTitle}`, thumbnail);
+    e.target.src = '/placeholder.jpg';
   };
 
   const renderShowBox = useCallback((show) => (
@@ -112,29 +79,62 @@ function FrontPage() {
         className="movie-thumbnail" 
         loading="lazy"
         onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
-        onLoad={() => console.log(`✓ Successfully loaded: ${show.TITLE} - ${getImagePath(show.THUMBNAIL)}`)}
       />
       <div className="movie-bottom-overlay">
         <h3>{show.TITLE}</h3>
         <p>⭐ {show.RATING}</p>
       </div>
-      <div className="movie-hover-description" style={{ textAlign: 'left', wordWrap: 'break-word', whiteSpace: 'normal'}}>
-        <p style={{ marginBottom: '6px' }}>
-          <strong>Title:</strong> {show.TITLE}
-        </p>
-        <p style={{ marginBottom: '6px' }}>
-          <strong>Synopsis:</strong> {show.DESCRIPTION}
-        </p>
-        <p style={{ marginBottom: '6px' }}>
-          <strong>Genres:</strong> {show.GENRES || 'N/A'}
-        </p>
+      <div className="movie-hover-description">
+        <p><strong>Title:</strong> {show.TITLE}</p>
+        <p><strong>Synopsis:</strong> {show.DESCRIPTION}</p>
+        <p><strong>Genres:</strong> {show.GENRES || 'N/A'}</p>
       </div>
     </div>
   ), [navigate]);
 
   return (
     <Layout>
-      {/* Hero Section with Featured/Trending Show */}
+      {/* Top-right user button */}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        right: 30,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        zIndex: 10,
+        cursor: 'pointer'
+      }} onClick={() => navigate('/profile')}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          backgroundColor: '#444',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1rem',
+          color: '#fff',
+          fontWeight: 'bold'
+        }}>
+          {profilePicture ? (
+            <img
+              src={`/user/${profilePicture}`}
+              alt="Profile"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.src = '/images/user/default-avatar.png';
+              }}
+            />
+          ) : (
+            userName?.charAt(0).toUpperCase()
+          )}
+        </div>
+        <span style={{ color: '#ddd', fontWeight: 'bold' }}>{userName}</span>
+      </div>
+
+      {/* Hero Section */}
       {trendingShows.length > 0 && (
         <section style={{
           display: 'flex',
@@ -175,12 +175,7 @@ function FrontPage() {
             }}>
               {trending.DESCRIPTION}
             </p>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '15px',
-              marginTop: 'auto'
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <span style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 padding: '8px 16px',
@@ -200,23 +195,14 @@ function FrontPage() {
                   borderRadius: '25px',
                   cursor: 'pointer',
                   fontSize: '1rem',
-                  fontWeight: 'bold',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={e => {
-                  e.target.style.transform = 'scale(1.05)';
-                  e.target.style.boxShadow = '0 5px 15px rgba(102, 126, 234, 0.4)';
-                }}
-                onMouseLeave={e => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = 'none';
+                  fontWeight: 'bold'
                 }}
               >
                 Watch Now
               </button>
             </div>
           </div>
-          <div style={{ flex: '1 1 60%', position: 'relative' }}>
+          <div style={{ flex: '1 1 60%' }}>
             <img
               src={getImagePath(trending.THUMBNAIL)}
               alt={trending.TITLE}
@@ -229,51 +215,14 @@ function FrontPage() {
               loading="lazy"
               onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
             />
-            {/* Play button overlay on hero image */}
-            <div 
-              onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                borderRadius: '50%',
-                width: '80px',
-                height: '80px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                border: '3px solid rgba(255,255,255,0.8)'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.9)';
-                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
-              }}
-            >
-              <div style={{
-                width: 0,
-                height: 0,
-                borderLeft: '20px solid #fff',
-                borderTop: '12px solid transparent',
-                borderBottom: '12px solid transparent',
-                marginLeft: '6px'
-              }} />
-            </div>
           </div>
         </section>
       )}
 
       {/* Trending Now Section */}
       <section style={{ marginBottom: 60 }}>
-        <h2 style={{ 
-          color: '#fff', 
+        <h2 style={{
+          color: '#fff',
           marginBottom: 30,
           fontSize: '1.8rem',
           fontWeight: 'bold',
@@ -295,8 +244,8 @@ function FrontPage() {
 
       {/* Watch Again Section */}
       <section>
-        <h2 style={{ 
-          color: '#fff', 
+        <h2 style={{
+          color: '#fff',
           marginBottom: 30,
           fontSize: '1.8rem',
           fontWeight: 'bold',
@@ -316,7 +265,6 @@ function FrontPage() {
         )}
       </section>
 
-      {/* Custom Styles */}
       <style>{`
         .movie-grid {
           display: grid;
@@ -352,49 +300,24 @@ function FrontPage() {
           color: #fff;
           z-index: 2;
         }
-        .movie-bottom-overlay h3 {
-          margin: 0 0 8px 0;
-          font-size: 1.1rem;
-          font-weight: bold;
-        }
-        .movie-bottom-overlay p {
-          margin: 0;
-          font-size: 0.9rem;
-          opacity: 0.9;
-        }
         .movie-hover-description {
           position: absolute;
           top: 0;
           left: 0;
-          right: 0;
           padding: 20px;
           background-color: rgba(0,0,0,0.7);
           color: white;
-          box-sizing: border-box;
-          white-space: normal;
-          word-break: break-word;
-          overflow-wrap: break-word;
-        }
-        .movie-hover-description p {
-          line-height: 1.6;
-          margin: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          overflow-y: auto;
         }
         .movie-box:hover .movie-hover-description {
           opacity: 1;
         }
         .movie-box:hover .movie-bottom-overlay {
           opacity: 0;
-        }
-        
-        /* Responsive design */
-        @media (max-width: 768px) {
-          .movie-grid {
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-          }
-          .movie-box {
-            height: 350px;
-          }
         }
       `}</style>
     </Layout>

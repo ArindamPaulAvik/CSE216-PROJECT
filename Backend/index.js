@@ -7,11 +7,43 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'your_super_secret_key'; // move to .env in production
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const uploadPath = path.join(__dirname, 'public/images/user');
+
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/images/user');
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const baseName = path.basename(file.originalname, ext);
+    const uniqueName = `${baseName}-${Date.now()}${ext}`;
+    cb(null, uniqueName);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files allowed'));
+    }
+    cb(null, true);
+  }
+});
+
+
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-
 
 // JWT authentication middleware
 function authenticateToken(req, res, next) {
@@ -82,6 +114,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// ======================== SEARCH ========================
 app.get('/search', authenticateToken, async (req, res) => {
   const query = req.query.query || '';
   if (query.trim() === '') {
@@ -90,16 +123,15 @@ app.get('/search', authenticateToken, async (req, res) => {
 
   try {
     const [rows] = await pool.query(`
-  SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING,
-         GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
-  FROM \`SHOW\` s
-  LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
-  LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-  WHERE s.TITLE LIKE ?
-  GROUP BY s.SHOW_ID
-  LIMIT 20
-`, [`%${query}%`]);
-
+      SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING,
+             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+      FROM \`SHOW\` s
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      WHERE s.TITLE LIKE ?
+      GROUP BY s.SHOW_ID
+      LIMIT 20
+    `, [`%${query}%`]);
 
     res.json({ results: rows });
   } catch (err) {
@@ -107,7 +139,6 @@ app.get('/search', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 });
-
 
 // ======================== FRONTPAGE ========================
 app.get('/frontpage', authenticateToken, async (req, res) => {
@@ -122,7 +153,7 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
       WHERE P.EMAIL = ?
       LIMIT 1
     `, [userEmail]);
-      console.log('🔍 User rows:', userRows);
+    console.log('🔍 User rows:', userRows);
 
     if (userRows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -131,44 +162,75 @@ app.get('/frontpage', authenticateToken, async (req, res) => {
     const userName = userRows[0].USER_FIRSTNAME;
 
     const [trendingshows] = await pool.query(`
-    SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, 
-          GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
-    FROM \`SHOW\` s
-    LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
-    LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-    GROUP BY s.SHOW_ID
-    ORDER BY s.WATCH_COUNT DESC
-    LIMIT 4
-  `);
+      SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, 
+            GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+      FROM \`SHOW\` s
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      GROUP BY s.SHOW_ID
+      ORDER BY s.WATCH_COUNT DESC
+      LIMIT 4
+    `);
+
     const [allshows] = await pool.query(`
       SELECT SHOW_ID, TITLE, THUMBNAIL, RATING
       FROM \`SHOW\`
-      
     `);
 
     const [watchagainshows] = await pool.query(`
-   SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING
-FROM PERSON p
-JOIN USER u ON p.PERSON_ID = u.PERSON_ID
-JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
-JOIN SHOW_EPISODE se ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID
-JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
-WHERE p.EMAIL = ?
-  AND ue.WATCHED = 1
-
+      SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
+      JOIN SHOW_EPISODE se ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID
+      JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
+      WHERE p.EMAIL = ?
+        AND ue.WATCHED = 1
     `, [userEmail]);
 
-    res.json({ userName, trendingshows, watchagainshows });
+    res.json({ userName, trendingshows, watchagainshows, allshows });
   } catch (err) {
-    // console.error('Error fetching frontpage:', err);
-    // res.status(500).json({ error: 'Internal server error' });
-     console.error('Error fetching frontpage:', err.message);
-  if (err.response) {
-    console.error('Response data:', err.response.data);
-    console.error('Status:', err.response.status);
-  } else {
-    console.error('No response received:', err.request);
+    console.error('Error fetching frontpage:', err.message);
+    if (err.response) {
+      console.error('Response data:', err.response.data);
+      console.error('Status:', err.response.status);
+    } else {
+      console.error('No response received:', err.request);
+    }
+    res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// ======================== USER PROFILE ========================
+app.get('/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    
+    const [userRows] = await pool.query(`
+      SELECT u.USER_FIRSTNAME, u.USER_LASTNAME, u.PHONE_NO, u.BIRTH_DATE, 
+             p.EMAIL, c.COUNTRY_NAME
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      LEFT JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userRows[0];
+    res.json({
+      firstName: user.USER_FIRSTNAME,
+      lastName: user.USER_LASTNAME,
+      email: user.EMAIL,
+      phone: user.PHONE_NO,
+      birthDate: user.BIRTH_DATE,
+      country: user.COUNTRY_NAME
+    });
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -197,6 +259,58 @@ app.get('/show/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('Error fetching show:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ======================== ACTORS ========================
+app.get('/actors', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT ACTOR_ID, ACTOR_FIRSTNAME, ACTOR_LASTNAME, PICTURE FROM ACTOR
+    `);
+    
+    const actors = rows.map(a => ({
+      ACTOR_ID: a.ACTOR_ID,
+      NAME: a.ACTOR_FIRSTNAME + ' ' + a.ACTOR_LASTNAME,
+      PICTURE: a.PICTURE,
+    }));
+    
+    res.json(actors);
+  } catch (err) {
+    console.error('Error fetching actors:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.get('/actor/:id', authenticateToken, async (req, res) => {
+  const actorId = req.params.id;
+
+  try {
+    const [[actor]] = await pool.query(`
+      SELECT ACTOR_FIRSTNAME, ACTOR_LASTNAME, BIOGRAPHY, PICTURE
+      FROM ACTOR
+      WHERE ACTOR_ID = ?
+    `, [actorId]);
+
+    if (!actor) return res.status(404).json({ error: 'Actor not found' });
+
+    const [shows] = await pool.query(
+      `SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL
+       FROM \`SHOW\` s
+       JOIN SHOW_CAST sa ON s.SHOW_ID = sa.SHOW_ID
+       WHERE sa.ACTOR_ID = ?`,
+      [actorId]
+    );
+
+    res.json({
+      NAME: actor.ACTOR_FIRSTNAME + ' ' + actor.ACTOR_LASTNAME,
+      BIOGRAPHY: actor.BIOGRAPHY,
+      PICTURE: actor.PICTURE,
+      SHOWS: shows
+    });
+  } catch (err) {
+    console.error('Error fetching actor:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -258,52 +372,52 @@ app.post('/users', async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 });
-app.get('/actors', authenticateToken, async (req, res) => {
-  const [rows] = await pool.query(`
-    SELECT ACTOR_ID, ACTOR_FIRSTNAME, ACTOR_LASTNAME, PICTURE FROM ACTOR
-  `);
-  
-  // Optional: combine first + last name in JS to simplify frontend
-  const actors = rows.map(a => ({
-    ACTOR_ID: a.ACTOR_ID,
-    NAME: a.ACTOR_FIRSTNAME + ' ' + a.ACTOR_LASTNAME,
-    PICTURE: a.PICTURE,
-  }));
-  
-  res.json(actors);
+app.put('/user/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const { USER_FIRSTNAME, USER_LASTNAME, EMAIL, BIRTH_DATE } = req.body;
+    const profilePicture = req.file ? req.file.filename : null;
+
+    const [[userRow]] = await pool.query(
+      'SELECT p.PERSON_ID, u.USER_ID FROM PERSON p JOIN USER u ON p.PERSON_ID = u.PERSON_ID WHERE p.EMAIL = ?',
+      [userEmail]
+    );
+
+    if (!userRow) return res.status(404).json({ error: 'User not found' });
+
+    const { PERSON_ID, USER_ID } = userRow;
+
+    await pool.query('UPDATE PERSON SET EMAIL = ? WHERE PERSON_ID = ?', [EMAIL, PERSON_ID]);
+
+    const updateQuery = `
+      UPDATE USER 
+      SET USER_FIRSTNAME = ?, USER_LASTNAME = ?, BIRTH_DATE = ?
+      ${profilePicture ? ', PROFILE_PICTURE = ?' : ''}
+      WHERE USER_ID = ?
+    `;
+    const params = profilePicture
+      ? [USER_FIRSTNAME, USER_LASTNAME, BIRTH_DATE, profilePicture, USER_ID]
+      : [USER_FIRSTNAME, USER_LASTNAME, BIRTH_DATE, USER_ID];
+
+    await pool.query(updateQuery, params);
+
+    res.json({
+      user: {
+        USER_FIRSTNAME,
+        USER_LASTNAME,
+        EMAIL,
+        BIRTH_DATE,
+        PROFILE_PICTURE: profilePicture
+      }
+    });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+
+    // Ensure a JSON error response
+    res.status(500).json({ error: err.message || 'Failed to update profile' });
+  }
 });
 
-
-
-app.get('/actor/:id', authenticateToken, async (req, res) => {
-  const actorId = req.params.id;
-
-  const [[actor]] = await pool.query(`
-    SELECT ACTOR_FIRSTNAME, ACTOR_LASTNAME, BIOGRAPHY, PICTURE
-    FROM ACTOR
-    WHERE ACTOR_ID = ?
-  `, [actorId]);
-
-  if (!actor) return res.status(404).json({ error: 'Actor not found' });
-
-const [shows] = await pool.query(
-  `SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL
-   FROM \`SHOW\` s
-   JOIN SHOW_CAST sa ON s.SHOW_ID = sa.SHOW_ID
-   WHERE sa.ACTOR_ID = ?`,
-  [actorId]
-);
-
-
-
-  // Combine first + last name for frontend convenience
-  res.json({
-    NAME: actor.ACTOR_FIRSTNAME + ' ' + actor.ACTOR_LASTNAME,
-    BIOGRAPHY: actor.BIOGRAPHY,
-    PICTURE: actor.PICTURE,
-    SHOWS: shows
-  });
-});
 
 
 // ======================== START SERVER ========================
