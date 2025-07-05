@@ -460,6 +460,92 @@ app.put('/user/profile', authenticateToken, upload.single('profilePicture'), asy
   }
 });
 
+// Toggle favorite status
+app.post('/favorite/:showId', authenticateToken, async (req, res) => {
+  const userEmail = req.user.email;
+  const showId = req.params.showId;
+
+  try {
+    // Get USER_ID from email
+    const [userRows] = await pool.query(`
+      SELECT U.USER_ID
+      FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+      LIMIT 1
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Check if already favorite
+    const [rows] = await pool.query(
+      'SELECT * FROM FAV_LIST_SHOW WHERE USER_ID = ? AND SHOW_ID = ?',
+      [userId, showId]
+    );
+
+    if (rows.length > 0) {
+      // Remove from favorites
+      await pool.query(
+        'DELETE FROM FAV_LIST_SHOW WHERE USER_ID = ? AND SHOW_ID = ?',
+        [userId, showId]
+      );
+      return res.json({ favorite: false });
+    } else {
+      // Add to favorites
+      await pool.query(
+        'INSERT INTO FAV_LIST_SHOW (USER_ID, SHOW_ID, ADD_DATE, WATCHED) VALUES (?, ?, CURDATE(), 0)',
+        [userId, showId]
+      );
+      return res.json({ favorite: true });
+    }
+  } catch (err) {
+    console.error('Favorite toggle error:', err);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.get('/favorites', authenticateToken, async (req, res) => {
+  const userEmail = req.user.email;
+
+  try {
+    // Get USER_ID from email
+    const [userRows] = await pool.query(`
+      SELECT U.USER_ID
+      FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+      LIMIT 1
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Get favorite shows for user
+    const [favorites] = await pool.query(`
+      SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING,
+             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+      FROM FAV_LIST_SHOW f
+      JOIN \`SHOW\` s ON f.SHOW_ID = s.SHOW_ID
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      WHERE f.USER_ID = ?
+      GROUP BY s.SHOW_ID
+      ORDER BY f.ADD_DATE DESC
+    `, [userId]);
+
+    res.json({ favorites });
+  } catch (err) {
+    console.error('Error fetching favorites:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
 
 
 
