@@ -189,7 +189,6 @@ function ShowDetails() {
 
     const data = await res.json(); // { user_liked, like_count }
 
-    // ✅ Update both like and dislike states
     setComments(prev =>
       prev.map(c =>
         c.COMMENT_ID === commentId
@@ -197,8 +196,8 @@ function ShowDetails() {
               ...c,
               USER_LIKED: data.user_liked,
               LIKE_COUNT: data.like_count,
-              USER_DISLIKED: data.user_liked ? false : c.USER_DISLIKED,
-              DISLIKE_COUNT: data.user_liked ? c.DISLIKE_COUNT - 1 : c.DISLIKE_COUNT
+              USER_DISLIKED: data.user_liked && c.USER_DISLIKED ? false : c.USER_DISLIKED,
+              DISLIKE_COUNT: data.user_liked && c.USER_DISLIKED ? c.DISLIKE_COUNT - 1 : c.DISLIKE_COUNT
             }
           : c
       )
@@ -214,7 +213,7 @@ function ShowDetails() {
   }
 };
 
-  const toggleCommentDislike = async (commentId) => {
+const toggleCommentDislike = async (commentId) => {
   const token = localStorage.getItem('token');
   if (!token) return;
 
@@ -230,7 +229,6 @@ function ShowDetails() {
 
     const data = await res.json(); // { user_disliked, dislike_count }
 
-    // ✅ Update both dislike and like states
     setComments(prev =>
       prev.map(c =>
         c.COMMENT_ID === commentId
@@ -238,8 +236,8 @@ function ShowDetails() {
               ...c,
               USER_DISLIKED: data.user_disliked,
               DISLIKE_COUNT: data.dislike_count,
-              USER_LIKED: data.user_disliked ? false : c.USER_LIKED,
-              LIKE_COUNT: data.user_disliked ? c.LIKE_COUNT - 1 : c.LIKE_COUNT
+              USER_LIKED: data.user_disliked && c.USER_LIKED ? false : c.USER_LIKED,
+              LIKE_COUNT: data.user_disliked && c.USER_LIKED ? c.LIKE_COUNT - 1 : c.LIKE_COUNT
             }
           : c
       )
@@ -254,6 +252,7 @@ function ShowDetails() {
     });
   }
 };
+
 
 
   // Format duration properly
