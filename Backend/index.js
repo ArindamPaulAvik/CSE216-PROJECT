@@ -681,57 +681,45 @@ app.get('/favorite/:showId', authenticateToken, async (req, res) => {
 // Get comments for a specific episode
 app.get('/episode/:episodeId/comments', authenticateToken, async (req, res) => {
   const episodeId = req.params.episodeId;
-  const { page = 1, limit = 10 } = req.query;
-  const offset = (page - 1) * limit;
+  const userEmail = req.user.email;
 
   try {
-    // Get top-level comments (no parent)
+    // Get current user ID
+    const [[userRow]] = await pool.query(`
+      SELECT U.USER_ID FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+    `, [userEmail]);
+
+    if (!userRow) return res.status(404).json({ error: 'User not found' });
+
+    const userId = userRow.USER_ID;
+
+    // Fetch comments with user liked and disliked flags
     const [comments] = await pool.query(`
-      SELECT 
-        c.COMMENT_ID,
-        c.TEXT,
-        c.TIME,
-        c.LIKE_COUNT,
-        c.DISLIKE_COUNT,
-        c.EDITED,
-        c.PINNED,
-        c.IMG_LINK,
-        u.USER_FIRSTNAME,
-        u.USER_LASTNAME,
-        u.PROFILE_PICTURE,
-        COUNT(replies.COMMENT_ID) as REPLY_COUNT
+      SELECT c.COMMENT_ID,
+             c.TEXT,
+             c.TIME,
+             c.LIKE_COUNT,
+             c.DISLIKE_COUNT,
+             c.EDITED,
+             c.PINNED,
+             c.PARENT_ID,
+             u.USER_FIRSTNAME,
+             u.USER_LASTNAME,
+             u.PROFILE_PICTURE,
+             CASE WHEN cl.USER_ID IS NOT NULL THEN 1 ELSE 0 END AS USER_LIKED,
+             CASE WHEN cd.USER_ID IS NOT NULL THEN 1 ELSE 0 END AS USER_DISLIKED
       FROM COMMENT c
       JOIN USER u ON c.USER_ID = u.USER_ID
-      LEFT JOIN COMMENT replies ON c.COMMENT_ID = replies.PARENT_ID AND replies.DELETED = 0
-      WHERE c.SHOW_EPISODE_ID = ? 
-        AND c.PARENT_ID IS NULL 
+      LEFT JOIN COMMENT_LIKE cl ON cl.COMMENT_ID = c.COMMENT_ID AND cl.USER_ID = ?
+      LEFT JOIN COMMENT_DISLIKE cd ON cd.COMMENT_ID = c.COMMENT_ID AND cd.USER_ID = ?
+      WHERE c.SHOW_EPISODE_ID = ?
         AND c.DELETED = 0
-      GROUP BY c.COMMENT_ID
-      ORDER BY c.PINNED DESC, c.TIME DESC
-      LIMIT ? OFFSET ?
-    `, [episodeId, parseInt(limit), offset]);
+      ORDER BY c.TIME DESC
+    `, [userId, userId, episodeId]);
 
-    // Get total count for pagination
-    const [countResult] = await pool.query(`
-      SELECT COUNT(*) as total
-      FROM COMMENT c
-      WHERE c.SHOW_EPISODE_ID = ? 
-        AND c.PARENT_ID IS NULL 
-        AND c.DELETED = 0
-    `, [episodeId]);
-
-    const total = countResult[0].total;
-    const totalPages = Math.ceil(total / limit);
-
-    res.json({
-      comments,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalComments: total,
-        hasMore: page < totalPages
-      }
-    });
+    res.json({ comments });
   } catch (err) {
     console.error('Error fetching comments:', err);
     res.status(500).json({ error: 'Database error' });
@@ -795,15 +783,9 @@ app.get('/comment/:commentId/replies', authenticateToken, async (req, res) => {
 // Post a new comment - SIMPLIFIED VERSION (no image upload)
 app.post('/episode/:episodeId/comment', authenticateToken, async (req, res) => {
   const episodeId = req.params.episodeId;
-  // Handle both parentId and parent_id for flexibility
   const { text, parentId, parent_id } = req.body;
   const finalParentId = parentId || parent_id || null;
   const userEmail = req.user.email;
-
-  // Debug logging
-  console.log('Request body:', req.body);
-  console.log('Parent ID:', finalParentId);
-  console.log('Episode ID:', episodeId);
 
   if (!text || text.trim().length === 0) {
     return res.status(400).json({ error: 'Comment text is required' });
@@ -814,7 +796,6 @@ app.post('/episode/:episodeId/comment', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Get user ID
     const [userRows] = await pool.query(`
       SELECT U.USER_ID
       FROM PERSON P
@@ -827,9 +808,7 @@ app.post('/episode/:episodeId/comment', authenticateToken, async (req, res) => {
     }
 
     const userId = userRows[0].USER_ID;
-    console.log('User ID:', userId);
 
-    // Verify episode exists
     const [episodeRows] = await pool.query(
       'SELECT SHOW_EPISODE_ID FROM SHOW_EPISODE WHERE SHOW_EPISODE_ID = ?',
       [episodeId]
@@ -839,7 +818,6 @@ app.post('/episode/:episodeId/comment', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Episode not found' });
     }
 
-    // If replying to a comment, verify parent comment exists
     if (finalParentId) {
       const [parentRows] = await pool.query(
         'SELECT COMMENT_ID FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0',
@@ -851,27 +829,23 @@ app.post('/episode/:episodeId/comment', authenticateToken, async (req, res) => {
       }
     }
 
-    // Insert comment (removed IMG_LINK field)
     const [result] = await pool.query(`
       INSERT INTO COMMENT (
-        USER_ID, 
-        SHOW_EPISODE_ID, 
-        PARENT_ID, 
-        TIME, 
-        TEXT, 
-        LIKE_COUNT, 
-        DISLIKE_COUNT, 
-        DELETED, 
-        EDITED, 
+        USER_ID,
+        SHOW_EPISODE_ID,
+        PARENT_ID,
+        TIME,
+        TEXT,
+        LIKE_COUNT,
+        DISLIKE_COUNT,
+        DELETED,
+        EDITED,
         PINNED
       ) VALUES (?, ?, ?, NOW(), ?, 0, 0, 0, 0, 0)
     `, [userId, episodeId, finalParentId, text.trim()]);
 
-    console.log('Insert result:', result);
-
-    // Get the created comment with user info
     const [newComment] = await pool.query(`
-      SELECT 
+      SELECT
         c.COMMENT_ID,
         c.TEXT,
         c.TIME,
@@ -894,13 +868,13 @@ app.post('/episode/:episodeId/comment', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Error posting comment:', err);
-    console.error('Error details:', err.message);
-    res.status(500).json({ 
-      error: 'Database error', 
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+    res.status(500).json({
+      error: 'Database error',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
+
 
 // Like/Unlike a comment
 app.post('/comment/:commentId/like', authenticateToken, async (req, res) => {
@@ -908,58 +882,71 @@ app.post('/comment/:commentId/like', authenticateToken, async (req, res) => {
   const userEmail = req.user.email;
 
   try {
-    // Get user ID
-    const [userRows] = await pool.query(`
+    const [[userRow]] = await pool.query(`
       SELECT U.USER_ID
       FROM PERSON P
       JOIN USER U ON P.PERSON_ID = U.PERSON_ID
       WHERE P.EMAIL = ?
     `, [userEmail]);
 
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!userRow) return res.status(404).json({ error: 'User not found' });
+
+    const userId = userRow.USER_ID;
+
+    // Check if already liked
+    const [[likeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
+
+    if (likeRow) {
+      // UNLIKE
+      await pool.query(`DELETE FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
+      await pool.query(`UPDATE COMMENT SET LIKE_COUNT = LIKE_COUNT - 1 WHERE COMMENT_ID = ?`, [commentId]);
+
+      const [[updated]] = await pool.query(`SELECT LIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
+      return res.json({ user_liked: false, like_count: updated.LIKE_COUNT });
+    } else {
+      // LIKE
+      await pool.query(`INSERT INTO COMMENT_LIKE (USER_ID, COMMENT_ID) VALUES (?, ?)`, [userId, commentId]);
+      await pool.query(`UPDATE COMMENT SET LIKE_COUNT = LIKE_COUNT + 1 WHERE COMMENT_ID = ?`, [commentId]);
+
+      const [[updated]] = await pool.query(`SELECT LIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
+      return res.json({ user_liked: true, like_count: updated.LIKE_COUNT });
     }
-
-    const userId = userRows[0].USER_ID;
-
-    // Check if comment exists
-    const [commentRows] = await pool.query(
-      'SELECT COMMENT_ID, LIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0',
-      [commentId]
-    );
-
-    if (commentRows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    // Check if user already liked this comment (we'll use a simple approach)
-    // In a real app, you'd want a separate COMMENT_LIKES table
-    // For now, we'll just increment/decrement the like count
-    
-    // Simple toggle approach - in production, you'd want to track individual likes
-    const [result] = await pool.query(`
-      UPDATE COMMENT 
-      SET LIKE_COUNT = LIKE_COUNT + 1 
-      WHERE COMMENT_ID = ?
-    `, [commentId]);
-
-    // Get updated like count
-    const [updatedComment] = await pool.query(
-      'SELECT LIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?',
-      [commentId]
-    );
-
-    res.json({
-      message: 'Comment liked successfully',
-      likeCount: updatedComment[0].LIKE_COUNT
-    });
   } catch (err) {
-    console.error('Error liking comment:', err);
+    console.error('Error toggling like:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// Dislike a comment
+app.get('/comment/:commentId/like', authenticateToken, async (req, res) => {
+  const commentId = req.params.commentId;
+  const userEmail = req.user.email;
+
+  try {
+    const [[userRow]] = await pool.query(`
+      SELECT U.USER_ID
+      FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+    `, [userEmail]);
+
+    if (!userRow) return res.status(404).json({ error: 'User not found' });
+
+    const userId = userRow.USER_ID;
+
+    const [[likeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
+
+    res.json({ user_liked: !!likeRow });
+  } catch (err) {
+    console.error('Error checking like:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+
 app.post('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
   const commentId = req.params.commentId;
   const userEmail = req.user.email;
@@ -979,9 +966,9 @@ app.post('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
 
     const userId = userRows[0].USER_ID;
 
-    // Check if comment exists
+    // Check if comment exists and is not deleted
     const [commentRows] = await pool.query(
-      'SELECT COMMENT_ID, DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0',
+      'SELECT COMMENT_ID FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0',
       [commentId]
     );
 
@@ -989,28 +976,62 @@ app.post('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Comment not found' });
     }
 
-    // Simple toggle approach
-    const [result] = await pool.query(`
-      UPDATE COMMENT 
-      SET DISLIKE_COUNT = DISLIKE_COUNT + 1 
-      WHERE COMMENT_ID = ?
-    `, [commentId]);
+    // Check if user already disliked this comment
+    const [[dislikeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
 
-    // Get updated dislike count
-    const [updatedComment] = await pool.query(
-      'SELECT DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?',
-      [commentId]
-    );
+    if (dislikeRow) {
+      // If disliked before, remove dislike
+      await pool.query(`DELETE FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
+      await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = DISLIKE_COUNT - 1 WHERE COMMENT_ID = ?`, [commentId]);
 
-    res.json({
-      message: 'Comment disliked successfully',
-      dislikeCount: updatedComment[0].DISLIKE_COUNT
-    });
+      const [[updated]] = await pool.query(`SELECT DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
+      return res.json({ user_disliked: false, dislike_count: updated.DISLIKE_COUNT });
+    } else {
+      // If not disliked before, add dislike
+      await pool.query(`INSERT INTO COMMENT_DISLIKE (USER_ID, COMMENT_ID) VALUES (?, ?)`, [userId, commentId]);
+      await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = DISLIKE_COUNT + 1 WHERE COMMENT_ID = ?`, [commentId]);
+
+      const [[updated]] = await pool.query(`SELECT DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
+      return res.json({ user_disliked: true, dislike_count: updated.DISLIKE_COUNT });
+    }
+
   } catch (err) {
-    console.error('Error disliking comment:', err);
+    console.error('Error toggling dislike:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
+
+app.get('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
+  const commentId = req.params.commentId;
+  const userEmail = req.user.email;
+
+  try {
+    // Get user ID
+    const [[userRow]] = await pool.query(`
+      SELECT U.USER_ID
+      FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+    `, [userEmail]);
+
+    if (!userRow) return res.status(404).json({ error: 'User not found' });
+
+    const userId = userRow.USER_ID;
+
+    // Check if disliked
+    const [[dislikeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
+
+    res.json({ user_disliked: !!dislikeRow });
+  } catch (err) {
+    console.error('Error checking dislike:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 
 // Edit a comment
 app.put('/comment/:commentId', authenticateToken, async (req, res) => {

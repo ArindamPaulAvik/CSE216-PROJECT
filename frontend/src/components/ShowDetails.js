@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Layout from './Layout';
+import { FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown } from 'react-icons/fa';
 
 function ShowDetails() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ function ShowDetails() {
   const [commentError, setCommentError] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [likingComments, setLikingComments] = useState(new Set());
+  const [dislikingComments, setDislikingComments] = useState(new Set());
   const [isPlaying, setIsPlaying] = useState(false);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const videoRef = useRef(null);
@@ -172,43 +174,87 @@ function ShowDetails() {
 
   // Toggle comment like
   const toggleCommentLike = async (commentId) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  const token = localStorage.getItem('token');
+  if (!token) return;
 
-    if (likingComments.has(commentId)) return;
+  setLikingComments(prev => new Set(prev).add(commentId));
 
-    setLikingComments(prev => new Set(prev).add(commentId));
+  try {
+    const res = await fetch(`http://localhost:5000/comment/${commentId}/like`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/comment/${commentId}/like`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+    const data = await res.json(); // { user_liked, like_count }
 
-      setComments(prevComments => 
-        prevComments.map(comment => 
-          comment.COMMENT_ID === commentId 
-            ? {
-                ...comment,
-                LIKE_COUNT: response.data.like_count,
-                USER_LIKED: response.data.user_liked
-              }
-            : comment
-        )
-      );
-    } catch (err) {
-      console.error('Failed to toggle comment like:', err);
-    } finally {
-      setLikingComments(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(commentId);
-        return newSet;
-      });
-    }
-  };
+    // ✅ Update both like and dislike states
+    setComments(prev =>
+      prev.map(c =>
+        c.COMMENT_ID === commentId
+          ? {
+              ...c,
+              USER_LIKED: data.user_liked,
+              LIKE_COUNT: data.like_count,
+              USER_DISLIKED: data.user_liked ? false : c.USER_DISLIKED,
+              DISLIKE_COUNT: data.user_liked ? c.DISLIKE_COUNT - 1 : c.DISLIKE_COUNT
+            }
+          : c
+      )
+    );
+  } catch (err) {
+    console.error('Error toggling like:', err);
+  } finally {
+    setLikingComments(prev => {
+      const updated = new Set(prev);
+      updated.delete(commentId);
+      return updated;
+    });
+  }
+};
+
+  const toggleCommentDislike = async (commentId) => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  setDislikingComments(prev => new Set(prev).add(commentId));
+
+  try {
+    const res = await fetch(`http://localhost:5000/comment/${commentId}/dislike`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json(); // { user_disliked, dislike_count }
+
+    // ✅ Update both dislike and like states
+    setComments(prev =>
+      prev.map(c =>
+        c.COMMENT_ID === commentId
+          ? {
+              ...c,
+              USER_DISLIKED: data.user_disliked,
+              DISLIKE_COUNT: data.dislike_count,
+              USER_LIKED: data.user_disliked ? false : c.USER_LIKED,
+              LIKE_COUNT: data.user_disliked ? c.LIKE_COUNT - 1 : c.LIKE_COUNT
+            }
+          : c
+      )
+    );
+  } catch (err) {
+    console.error('Error toggling dislike:', err);
+  } finally {
+    setDislikingComments(prev => {
+      const updated = new Set(prev);
+      updated.delete(commentId);
+      return updated;
+    });
+  }
+};
+
 
   // Format duration properly
   const formatDuration = (minutes) => {
@@ -736,42 +782,6 @@ function ShowDetails() {
                           {formatDuration(episode.SHOW_EPISODE_DURATION)}
                         </p>
                       </div>
-                      
-                      {/* Play Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playEpisode(episode);
-                        }}
-                        style={{
-                          position: 'absolute',
-                          top: '50%',
-                          right: '15px',
-                          transform: 'translateY(-50%)',
-                          background: 'rgba(229, 9, 20, 0.9)',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: '50px',
-                          height: '50px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          fontSize: '1.2rem',
-                          color: '#fff',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = '#e50914';
-                          e.target.style.transform = 'translateY(-50%) scale(1.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = 'rgba(229, 9, 20, 0.9)';
-                          e.target.style.transform = 'translateY(-50%) scale(1)';
-                        }}
-                      >
-                        ▶️
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -853,8 +863,9 @@ function ShowDetails() {
                       </p>
                       <p style={{ color: '#ccc', marginBottom: '10px' }}>{comment.TEXT}</p>
                       
-                      {/* Like Button */}
-                      <div style={{ display: 'flex', alignItems:'center', gap: '10px' }}>
+                      {/* Like + Dislike Buttons (side by side) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        {/* Like Button */}
                         <button
                           onClick={() => toggleCommentLike(comment.COMMENT_ID)}
                           disabled={likingComments.has(comment.COMMENT_ID)}
@@ -880,9 +891,46 @@ function ShowDetails() {
                             e.target.style.backgroundColor = 'transparent';
                           }}
                         >
-                          <span>{comment.USER_LIKED ? '❤️' : '🤍'}</span>
+                          <span style={{ fontSize: '1.1rem' }}>
+                            {comment.USER_LIKED ? <FaThumbsUp /> : <FaRegThumbsUp />}
+                          </span>
                           <span>{comment.LIKE_COUNT || 0}</span>
                           {likingComments.has(comment.COMMENT_ID) && (
+                            <span style={{ fontSize: '0.8rem' }}>...</span>
+                          )}
+                        </button>
+
+                        {/* Dislike Button */}
+                        <button
+                          onClick={() => toggleCommentDislike(comment.COMMENT_ID)}
+                          disabled={dislikingComments.has(comment.COMMENT_ID)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: dislikingComments.has(comment.COMMENT_ID) ? 'not-allowed' : 'pointer',
+                            color: comment.USER_DISLIKED ? '#007bff' : '#999',
+                            fontSize: '0.9rem',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!dislikingComments.has(comment.COMMENT_ID)) {
+                              e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <span style={{ fontSize: '1.1rem' }}>
+                            {comment.USER_DISLIKED ? <FaThumbsDown /> : <FaRegThumbsDown />}
+                          </span>
+                          <span>{comment.DISLIKE_COUNT || 0}</span>
+                          {dislikingComments.has(comment.COMMENT_ID) && (
                             <span style={{ fontSize: '0.8rem' }}>...</span>
                           )}
                         </button>
