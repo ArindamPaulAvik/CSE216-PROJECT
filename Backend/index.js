@@ -935,17 +935,25 @@ app.get('/comment/:commentId/like', authenticateToken, async (req, res) => {
 
     const userId = userRow.USER_ID;
 
+    // Check like status
     const [[likeRow]] = await pool.query(`
-      SELECT * FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+      SELECT 1 FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?
     `, [userId, commentId]);
 
-    res.json({ user_liked: !!likeRow });
+    // Check dislike status
+    const [[dislikeRow]] = await pool.query(`
+      SELECT 1 FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
+
+    res.json({
+      user_liked: !!likeRow,
+      user_disliked: !!dislikeRow
+    });
   } catch (err) {
-    console.error('Error checking like:', err);
+    console.error('Error checking like/dislike:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
-
 
 app.post('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
   const commentId = req.params.commentId;
