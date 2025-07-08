@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Layout from './Layout';
-import { FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown } from 'react-icons/fa';
+import { FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown, FaReply, FaFlag } from 'react-icons/fa';
+
 
 function ShowDetails() {
   const { id } = useParams();
@@ -135,6 +136,16 @@ function ShowDetails() {
       setIsPlaying(!isPlaying);
     }
   };
+  const handleReply = (commentId) => {
+    console.log('Reply clicked for comment', commentId);
+    // Add reply UI logic here
+  };
+
+  const handleReport = (commentId) => {
+    console.log('Report clicked for comment', commentId);
+    // Add report modal or backend API logic here
+  };
+
 
   // Video event handlers
   const handleVideoPlay = () => setIsPlaying(true);
@@ -928,6 +939,59 @@ const toggleCommentDislike = async (commentId) => {
                           {dislikingComments.has(comment.COMMENT_ID) && (
                             <span style={{ fontSize: '0.8rem' }}>...</span>
                           )}
+                        </button>
+                        {/* Reply Button */}
+                        <button
+                          onClick={() => handleReply(comment.COMMENT_ID)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer',
+                            color: '#999',
+                            fontSize: '0.9rem',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <span style={{ fontSize: '1.1rem' }}><FaReply /></span>
+                          <span>Reply</span>
+                        </button>
+
+                        {/* Report Button */}
+                        <button
+                          onClick={() => handleReport(comment.COMMENT_ID)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer',
+                            color: '#999',
+                            fontSize: '0.9rem',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <span style={{ fontSize: '1.1rem' }}><FaFlag /></span>
+                          <span>Report</span>
                         </button>
                       </div>
                     </div>
