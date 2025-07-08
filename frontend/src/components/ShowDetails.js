@@ -455,6 +455,8 @@ const toggleCommentDislike = async (commentId) => {
                     cursor: 'pointer',
                     padding: '5px 10px'
                   }}
+
+                  
                 >
                   ✕
                 </button>
@@ -509,7 +511,7 @@ const toggleCommentDislike = async (commentId) => {
                   {isPlaying ? '⏸️' : '▶️'}
                 </button>
                 <span style={{ fontSize: '0.9rem' }}>
-                  {formatDuration(selectedEpisode.SHOW_EPISODE_DURATION)}
+                  {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
                 </span>
               </div>
             </div>
@@ -520,7 +522,7 @@ const toggleCommentDislike = async (commentId) => {
         <div style={{
           position: 'relative',
           height: '70vh',
-          background: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url(/showS/${show.THUMBNAIL}) center/cover`,
+          background: `linear-gradient(rgba(0,0,0,0.4), rgba(33, 28, 28, 0.8)), url(/showS/${show.THUMBNAIL}) center/cover`,
           display: 'flex',
           alignItems: 'flex-end',
           padding: '0 60px 60px'
@@ -536,7 +538,8 @@ const toggleCommentDislike = async (commentId) => {
               textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
               letterSpacing: '-1px'
             }}>
-              {show.TITLE}
+              {show.TITLE} {show.CATEGORY_ID === 2 && `S${show.SEASON}`}
+
             </h1>
             
             <div style={{
@@ -568,7 +571,7 @@ const toggleCommentDislike = async (commentId) => {
                 fontWeight: '500',
                 backdropFilter: 'blur(10px)'
               }}>
-                {formatDuration(show.DURATION)}
+                {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
               </span>
               
               <span style={{
@@ -613,8 +616,8 @@ const toggleCommentDislike = async (commentId) => {
               flexWrap: 'wrap'
             }}>
               <button 
-                onClick={() => episodes.length > 0 && playEpisode(episodes[0])}
-                style={{
+              onClick={() => selectedEpisode && playEpisode(selectedEpisode)}
+              style={{
                   background: 'linear-gradient(45deg, #fff 0%, #f0f0f0 100%)',
                   color: '#000',
                   border: 'none',
@@ -691,14 +694,7 @@ const toggleCommentDislike = async (commentId) => {
             marginBottom: '40px',
             lineHeight: '1.8'
           }}>
-            <h2 style={{
-              fontSize: '2rem',
-              fontWeight: 'bold',
-              marginBottom: '30px',
-              color: '#fff'
-            }}>
-              Show Information
-            </h2>
+           
 
             <div style={{
               fontSize: '1.1rem',
@@ -709,11 +705,12 @@ const toggleCommentDislike = async (commentId) => {
               </p>
               
               <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Genre:</strong> {show.GENRES || 'N/A'}
+               <strong style={{ color: '#fff' }}>Genre:</strong> {show.GENRES || 'N/A' }
+                
               </p>
               
               <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Duration:</strong> {formatDuration(show.DURATION)}
+                <strong style={{ color: '#fff' }}>Duration:</strong> {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
               </p>
               
               <p style={{ marginBottom: '15px' }}>
@@ -770,15 +767,14 @@ const toggleCommentDislike = async (commentId) => {
                         e.target.style.backgroundColor = selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '#333' : '#1a1a1a';
                       }}
                     >
-                      <div onClick={() => setSelectedEpisode(episode)}>
-                        <h3 style={{ color: '#fff', marginBottom: '5px' }}>
+                        <div onClick={() => setSelectedEpisode(episode)} style={{cursor: 'pointer'}}>                        <h3 style={{ color: '#fff', marginBottom: '5px' }}>
                           Episode {episode.EPISODE_NUMBER}: {episode.SHOW_EPISODE_TITLE}
                         </h3>
                         <p style={{ color: '#ccc', fontSize: '0.9rem' }}>
                           {episode.SHOW_EPISODE_DESCRIPTION}
                         </p>
                         <p style={{ color: '#999', fontSize: '0.8rem', marginTop: '5px' }}>
-                          {formatDuration(episode.SHOW_EPISODE_DURATION)}
+                          {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
                         </p>
                       </div>
                     </div>
