@@ -695,7 +695,7 @@ app.get('/episode/:episodeId/comments', authenticateToken, async (req, res) => {
 
     const userId = userRow.USER_ID;
 
-    // Fetch comments with user liked and disliked flags
+    // Fetch only top-level comments (PARENT_ID IS NULL)
     const [comments] = await pool.query(`
       SELECT c.COMMENT_ID,
              c.TEXT,
@@ -716,6 +716,7 @@ app.get('/episode/:episodeId/comments', authenticateToken, async (req, res) => {
       LEFT JOIN COMMENT_DISLIKE cd ON cd.COMMENT_ID = c.COMMENT_ID AND cd.USER_ID = ?
       WHERE c.SHOW_EPISODE_ID = ?
         AND c.DELETED = 0
+        AND c.PARENT_ID IS NULL
       ORDER BY c.TIME DESC
     `, [userId, userId, episodeId]);
 
@@ -726,13 +727,40 @@ app.get('/episode/:episodeId/comments', authenticateToken, async (req, res) => {
   }
 });
 
+
 // Get replies for a specific comment
 app.get('/comment/:commentId/replies', authenticateToken, async (req, res) => {
-  const commentId = req.params.commentId;
+  const commentId = parseInt(req.params.commentId);
   const { page = 1, limit = 5 } = req.query;
   const offset = (page - 1) * limit;
+  const userEmail = req.user.email;
 
   try {
+    // Get current user ID
+    const [[userRow]] = await pool.query(`
+      SELECT U.USER_ID FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+    `, [userEmail]);
+
+    if (!userRow) return res.status(404).json({ error: 'User not found' });
+
+    const userId = userRow.USER_ID;
+
+    // First, check if the parent comment exists and is a top-level comment
+    const [[parentCheck]] = await pool.query(`
+      SELECT COMMENT_ID
+      FROM COMMENT
+      WHERE COMMENT_ID = ?
+        AND DELETED = 0
+        AND PARENT_ID IS NULL
+    `, [commentId]);
+
+    if (!parentCheck) {
+      return res.status(400).json({ error: 'Invalid parent comment or not a top-level comment.' });
+    }
+
+    // Fetch child replies WITH like/dislike status
     const [replies] = await pool.query(`
       SELECT 
         c.COMMENT_ID,
@@ -744,24 +772,27 @@ app.get('/comment/:commentId/replies', authenticateToken, async (req, res) => {
         c.IMG_LINK,
         u.USER_FIRSTNAME,
         u.USER_LASTNAME,
-        u.PROFILE_PICTURE
+        u.PROFILE_PICTURE,
+        CASE WHEN cl.USER_ID IS NOT NULL THEN 1 ELSE 0 END AS USER_LIKED,
+        CASE WHEN cd.USER_ID IS NOT NULL THEN 1 ELSE 0 END AS USER_DISLIKED
       FROM COMMENT c
       JOIN USER u ON c.USER_ID = u.USER_ID
+      LEFT JOIN COMMENT_LIKE cl ON cl.COMMENT_ID = c.COMMENT_ID AND cl.USER_ID = ?
+      LEFT JOIN COMMENT_DISLIKE cd ON cd.COMMENT_ID = c.COMMENT_ID AND cd.USER_ID = ?
       WHERE c.PARENT_ID = ? 
         AND c.DELETED = 0
       ORDER BY c.TIME ASC
       LIMIT ? OFFSET ?
-    `, [commentId, parseInt(limit), offset]);
+    `, [userId, userId, commentId, parseInt(limit), offset]);
 
     // Get total count for pagination
-    const [countResult] = await pool.query(`
-      SELECT COUNT(*) as total
-      FROM COMMENT c
-      WHERE c.PARENT_ID = ? 
-        AND c.DELETED = 0
+    const [[{ total }]] = await pool.query(`
+      SELECT COUNT(*) AS total
+      FROM COMMENT
+      WHERE PARENT_ID = ? 
+        AND DELETED = 0
     `, [commentId]);
 
-    const total = countResult[0].total;
     const totalPages = Math.ceil(total / limit);
 
     res.json({
@@ -893,28 +924,138 @@ app.post('/comment/:commentId/like', authenticateToken, async (req, res) => {
 
     const userId = userRow.USER_ID;
 
-    // Check if already liked
+    // Check current like/dislike status
     const [[likeRow]] = await pool.query(`
       SELECT * FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?
     `, [userId, commentId]);
 
-    if (likeRow) {
-      // UNLIKE
-      await pool.query(`DELETE FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
-      await pool.query(`UPDATE COMMENT SET LIKE_COUNT = LIKE_COUNT - 1 WHERE COMMENT_ID = ?`, [commentId]);
+    const [[dislikeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
 
-      const [[updated]] = await pool.query(`SELECT LIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
-      return res.json({ user_liked: false, like_count: updated.LIKE_COUNT });
-    } else {
-      // LIKE
-      await pool.query(`INSERT INTO COMMENT_LIKE (USER_ID, COMMENT_ID) VALUES (?, ?)`, [userId, commentId]);
-      await pool.query(`UPDATE COMMENT SET LIKE_COUNT = LIKE_COUNT + 1 WHERE COMMENT_ID = ?`, [commentId]);
+    // Start transaction
+    await pool.query('START TRANSACTION');
 
-      const [[updated]] = await pool.query(`SELECT LIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
-      return res.json({ user_liked: true, like_count: updated.LIKE_COUNT });
+    try {
+      if (likeRow) {
+        // UNLIKE: Remove like
+        await pool.query(`DELETE FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
+        await pool.query(`UPDATE COMMENT SET LIKE_COUNT = GREATEST(0, LIKE_COUNT - 1) WHERE COMMENT_ID = ?`, [commentId]);
+      } else {
+        // LIKE: Add like
+        await pool.query(`INSERT INTO COMMENT_LIKE (USER_ID, COMMENT_ID) VALUES (?, ?)`, [userId, commentId]);
+        await pool.query(`UPDATE COMMENT SET LIKE_COUNT = LIKE_COUNT + 1 WHERE COMMENT_ID = ?`, [commentId]);
+        
+        // If user had disliked before, remove dislike
+        if (dislikeRow) {
+          await pool.query(`DELETE FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
+          await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = GREATEST(0, DISLIKE_COUNT - 1) WHERE COMMENT_ID = ?`, [commentId]);
+        }
+      }
+
+      // Get updated counts
+      const [[updated]] = await pool.query(`
+        SELECT LIKE_COUNT, DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?
+      `, [commentId]);
+
+      await pool.query('COMMIT');
+
+      res.json({
+        user_liked: !likeRow,
+        user_disliked: false, // Always false after liking
+        like_count: updated.LIKE_COUNT,
+        dislike_count: updated.DISLIKE_COUNT
+      });
+
+    } catch (err) {
+      await pool.query('ROLLBACK');
+      throw err;
     }
+
   } catch (err) {
     console.error('Error toggling like:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.post('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
+  const commentId = req.params.commentId;
+  const userEmail = req.user.email;
+
+  try {
+    // Get user ID
+    const [[userRow]] = await pool.query(`
+      SELECT U.USER_ID
+      FROM PERSON P
+      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
+      WHERE P.EMAIL = ?
+    `, [userEmail]);
+
+    if (!userRow) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRow.USER_ID;
+
+    // Check if comment exists and is not deleted
+    const [[commentRow]] = await pool.query(`
+      SELECT COMMENT_ID FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0
+    `, [commentId]);
+
+    if (!commentRow) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    // Check current like/dislike status for THIS USER
+    const [[likeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
+
+    const [[dislikeRow]] = await pool.query(`
+      SELECT * FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?
+    `, [userId, commentId]);
+
+    // Start transaction
+    await pool.query('START TRANSACTION');
+
+    try {
+      if (dislikeRow) {
+        // REMOVE DISLIKE
+        await pool.query(`DELETE FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
+        await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = GREATEST(0, DISLIKE_COUNT - 1) WHERE COMMENT_ID = ?`, [commentId]);
+      } else {
+        // ADD DISLIKE
+        await pool.query(`INSERT INTO COMMENT_DISLIKE (USER_ID, COMMENT_ID) VALUES (?, ?)`, [userId, commentId]);
+        await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = DISLIKE_COUNT + 1 WHERE COMMENT_ID = ?`, [commentId]);
+        
+        // If THIS USER had liked before, remove their like
+        if (likeRow) {
+          await pool.query(`DELETE FROM COMMENT_LIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
+          await pool.query(`UPDATE COMMENT SET LIKE_COUNT = GREATEST(0, LIKE_COUNT - 1) WHERE COMMENT_ID = ?`, [commentId]);
+        }
+      }
+
+      // Get updated counts
+      const [[updated]] = await pool.query(`
+        SELECT LIKE_COUNT, DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?
+      `, [commentId]);
+
+      await pool.query('COMMIT');
+
+      res.json({
+        user_liked: false, // Always false after disliking
+        user_disliked: !dislikeRow,
+        like_count: updated.LIKE_COUNT,
+        dislike_count: updated.DISLIKE_COUNT
+      });
+
+    } catch (err) {
+      await pool.query('ROLLBACK');
+      throw err;
+    }
+
+  } catch (err) {
+    console.error('Error toggling dislike:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -955,61 +1096,7 @@ app.get('/comment/:commentId/like', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
-  const commentId = req.params.commentId;
-  const userEmail = req.user.email;
 
-  try {
-    // Get user ID
-    const [userRows] = await pool.query(`
-      SELECT U.USER_ID
-      FROM PERSON P
-      JOIN USER U ON P.PERSON_ID = U.PERSON_ID
-      WHERE P.EMAIL = ?
-    `, [userEmail]);
-
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userId = userRows[0].USER_ID;
-
-    // Check if comment exists and is not deleted
-    const [commentRows] = await pool.query(
-      'SELECT COMMENT_ID FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0',
-      [commentId]
-    );
-
-    if (commentRows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    // Check if user already disliked this comment
-    const [[dislikeRow]] = await pool.query(`
-      SELECT * FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?
-    `, [userId, commentId]);
-
-    if (dislikeRow) {
-      // If disliked before, remove dislike
-      await pool.query(`DELETE FROM COMMENT_DISLIKE WHERE USER_ID = ? AND COMMENT_ID = ?`, [userId, commentId]);
-      await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = DISLIKE_COUNT - 1 WHERE COMMENT_ID = ?`, [commentId]);
-
-      const [[updated]] = await pool.query(`SELECT DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
-      return res.json({ user_disliked: false, dislike_count: updated.DISLIKE_COUNT });
-    } else {
-      // If not disliked before, add dislike
-      await pool.query(`INSERT INTO COMMENT_DISLIKE (USER_ID, COMMENT_ID) VALUES (?, ?)`, [userId, commentId]);
-      await pool.query(`UPDATE COMMENT SET DISLIKE_COUNT = DISLIKE_COUNT + 1 WHERE COMMENT_ID = ?`, [commentId]);
-
-      const [[updated]] = await pool.query(`SELECT DISLIKE_COUNT FROM COMMENT WHERE COMMENT_ID = ?`, [commentId]);
-      return res.json({ user_disliked: true, dislike_count: updated.DISLIKE_COUNT });
-    }
-
-  } catch (err) {
-    console.error('Error toggling dislike:', err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
 
 app.get('/comment/:commentId/dislike', authenticateToken, async (req, res) => {
   const commentId = req.params.commentId;

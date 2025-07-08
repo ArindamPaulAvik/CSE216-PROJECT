@@ -9,6 +9,11 @@ function CommentsSection({ selectedEpisode }) {
   const [loadingComments, setLoadingComments] = useState(false);
   const [likingComments, setLikingComments] = useState(new Set());
   const [dislikingComments, setDislikingComments] = useState(new Set());
+  const [visibleReplies, setVisibleReplies] = useState(new Set());
+  const [repliesMap, setRepliesMap] = useState({}); // commentId => [replies]
+  const [repliesPagination, setRepliesPagination] = useState({}); // commentId => { page, hasMore }
+
+
 
   // Fetch comments when episode is selected
   useEffect(() => {
@@ -32,87 +37,180 @@ function CommentsSection({ selectedEpisode }) {
         setLoadingComments(false);
       });
   }, [selectedEpisode]);
+  
+  const toggleRepliesVisibility = async (commentId) => {
+    const isVisible = visibleReplies.has(commentId);
+    const updated = new Set(visibleReplies);
+
+    if (isVisible) {
+      updated.delete(commentId);
+      setVisibleReplies(updated);
+    } else {
+      // First time: fetch page 1 of replies
+      if (!repliesMap[commentId]) {
+        await fetchReplies(commentId, 1);
+      }
+      updated.add(commentId);
+      setVisibleReplies(updated);
+    }
+  };
 
   // Toggle comment like
   const toggleCommentLike = async (commentId) => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  setLikingComments(prev => new Set(prev).add(commentId));
+
+  try {
+    const res = await fetch(`http://localhost:5000/comment/${commentId}/like`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json(); // { user_liked, user_disliked, like_count, dislike_count }
+
+    // Update top-level comments
+    setComments(prev =>
+      prev.map(c =>
+        c.COMMENT_ID === commentId
+          ? {
+              ...c,
+              USER_LIKED: data.user_liked,
+              USER_DISLIKED: data.user_disliked,
+              LIKE_COUNT: data.like_count,
+              DISLIKE_COUNT: data.dislike_count
+            }
+          : c
+      )
+    );
+
+    // Update replies in repliesMap
+    setRepliesMap(prev => {
+      const updatedMap = { ...prev };
+      for (const parentId in updatedMap) {
+        updatedMap[parentId] = updatedMap[parentId].map(reply => {
+          if (reply.COMMENT_ID === commentId) {
+            return {
+              ...reply,
+              USER_LIKED: data.user_liked,
+              USER_DISLIKED: data.user_disliked,
+              LIKE_COUNT: data.like_count,
+              DISLIKE_COUNT: data.dislike_count
+            };
+          }
+          return reply;
+        });
+      }
+      return updatedMap;
+    });
+
+  } catch (err) {
+    console.error('Error toggling like:', err);
+  } finally {
+    setLikingComments(prev => {
+      const updated = new Set(prev);
+      updated.delete(commentId);
+      return updated;
+    });
+  }
+};
+
+
+
+  const fetchReplies = async (parentId, page = 1) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    setLikingComments(prev => new Set(prev).add(commentId));
-
     try {
-      const res = await fetch(`http://localhost:5000/comment/${commentId}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const res = await axios.get(`http://localhost:5000/comment/${parentId}/replies?page=${page}&limit=5`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const { replies, pagination } = res.data;
+
+      setRepliesMap((prev) => ({
+        ...prev,
+        [parentId]: page === 1 ? replies : [...(prev[parentId] || []), ...replies],
+      }));
+
+      setRepliesPagination((prev) => ({
+        ...prev,
+        [parentId]: {
+          page: pagination.currentPage,
+          hasMore: pagination.hasMore
         }
-      });
-
-      const data = await res.json(); // { user_liked, like_count }
-
-      setComments(prev =>
-        prev.map(c =>
-          c.COMMENT_ID === commentId
-            ? {
-                ...c,
-                USER_LIKED: data.user_liked,
-                LIKE_COUNT: data.like_count,
-                USER_DISLIKED: data.user_liked && c.USER_DISLIKED ? false : c.USER_DISLIKED,
-                DISLIKE_COUNT: data.user_liked && c.USER_DISLIKED ? c.DISLIKE_COUNT - 1 : c.DISLIKE_COUNT
-              }
-            : c
-        )
-      );
+      }));
     } catch (err) {
-      console.error('Error toggling like:', err);
-    } finally {
-      setLikingComments(prev => {
-        const updated = new Set(prev);
-        updated.delete(commentId);
-        return updated;
-      });
+      console.error('Error fetching replies:', err);
     }
   };
 
   const toggleCommentDislike = async (commentId) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  const token = localStorage.getItem('token');
+  if (!token) return;
 
-    setDislikingComments(prev => new Set(prev).add(commentId));
+  setDislikingComments(prev => new Set(prev).add(commentId));
 
-    try {
-      const res = await fetch(`http://localhost:5000/comment/${commentId}/dislike`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  try {
+    const res = await fetch(`http://localhost:5000/comment/${commentId}/dislike`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await res.json(); // { user_liked, user_disliked, like_count, dislike_count }
 
-      const data = await res.json(); // { user_disliked, dislike_count }
+    // Update top-level comments
+    setComments(prev =>
+      prev.map(c =>
+        c.COMMENT_ID === commentId
+          ? {
+              ...c,
+              USER_LIKED: data.user_liked,
+              USER_DISLIKED: data.user_disliked,
+              LIKE_COUNT: data.like_count,
+              DISLIKE_COUNT: data.dislike_count
+            }
+          : c
+      )
+    );
 
-      setComments(prev =>
-        prev.map(c =>
-          c.COMMENT_ID === commentId
-            ? {
-                ...c,
-                USER_DISLIKED: data.user_disliked,
-                DISLIKE_COUNT: data.dislike_count,
-                USER_LIKED: data.user_disliked && c.USER_LIKED ? false : c.USER_LIKED,
-                LIKE_COUNT: data.user_disliked && c.USER_LIKED ? c.LIKE_COUNT - 1 : c.LIKE_COUNT
-              }
-            : c
-        )
-      );
-    } catch (err) {
-      console.error('Error toggling dislike:', err);
-    } finally {
-      setDislikingComments(prev => {
-        const updated = new Set(prev);
-        updated.delete(commentId);
-        return updated;
-      });
-    }
-  };
+    // Update replies in repliesMap
+    setRepliesMap(prev => {
+      const updatedMap = { ...prev };
+      for (const parentId in updatedMap) {
+        updatedMap[parentId] = updatedMap[parentId].map(reply => {
+          if (reply.COMMENT_ID === commentId) {
+            return {
+              ...reply,
+              USER_LIKED: data.user_liked,
+              USER_DISLIKED: data.user_disliked,
+              LIKE_COUNT: data.like_count,
+              DISLIKE_COUNT: data.dislike_count
+            };
+          }
+          return reply;
+        });
+      }
+      return updatedMap;
+    });
+
+  } catch (err) {
+    console.error('Error toggling dislike:', err);
+  } finally {
+    setDislikingComments(prev => {
+      const updated = new Set(prev);
+      updated.delete(commentId);
+      return updated;
+    });
+  }
+};
+
+
 
   const handleReply = (commentId) => {
     console.log('Reply clicked for comment', commentId);
@@ -234,50 +332,227 @@ function CommentsSection({ selectedEpisode }) {
         <p style={{ color: '#aaa' }}>No comments yet. Be the first to comment!</p>
       ) : (
         comments.map((comment, index) => (
+  <div
+    key={comment.COMMENT_ID || `comment-${index}`}
+    style={{
+      backgroundColor: '#111',
+      padding: '15px 20px',
+      borderRadius: '8px',
+      marginBottom: '15px',
+      border: '1px solid #333',
+    }}
+  >
+    {/* Comment header */}
+    <p style={{ marginBottom: '8px', color: '#eee' }}>
+      <strong>{comment.USER_FIRSTNAME} {comment.USER_LASTNAME}</strong>{' '}
+      <span style={{ color: '#777', fontSize: '0.9rem' }}>
+        • {formatCommentDate(comment.TIME)}
+      </span>
+      {comment.EDITED === 1 && (
+        <span style={{ color: '#999', fontSize: '0.8rem', marginLeft: '10px' }}>
+          (edited)
+        </span>
+      )}
+    </p>
+
+    {/* Comment text */}
+    <p style={{ color: '#ccc', marginBottom: '10px' }}>{comment.TEXT}</p>
+
+    {/* Comment action buttons: Like, Dislike, Reply, Report */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+      {/* Like Button */}
+      <button
+        onClick={() => toggleCommentLike(comment.COMMENT_ID)}
+        disabled={likingComments.has(comment.COMMENT_ID)}
+        style={{
+          background: 'none',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          cursor: likingComments.has(comment.COMMENT_ID) ? 'not-allowed' : 'pointer',
+          color: comment.USER_LIKED ? '#e50914' : '#999',
+          fontSize: '0.9rem',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          if (!likingComments.has(comment.COMMENT_ID)) {
+            e.target.style.backgroundColor = 'rgba(30, 27, 27, 0.1)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}>
+          {comment.USER_LIKED ? <FaThumbsUp /> : <FaRegThumbsUp />}
+        </span>
+        <span>{comment.LIKE_COUNT || 0}</span>
+        {likingComments.has(comment.COMMENT_ID) && <span style={{ fontSize: '0.8rem' }}>...</span>}
+      </button>
+
+      {/* Dislike Button */}
+      <button
+        onClick={() => toggleCommentDislike(comment.COMMENT_ID)}
+        disabled={dislikingComments.has(comment.COMMENT_ID)}
+        style={{
+          background: 'none',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          cursor: dislikingComments.has(comment.COMMENT_ID) ? 'not-allowed' : 'pointer',
+          color: comment.USER_DISLIKED ? '#007bff' : '#999',
+          fontSize: '0.9rem',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          if (!dislikingComments.has(comment.COMMENT_ID)) {
+            e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}>
+          {comment.USER_DISLIKED ? <FaThumbsDown /> : <FaRegThumbsDown />}
+        </span>
+        <span>{comment.DISLIKE_COUNT || 0}</span>
+        {dislikingComments.has(comment.COMMENT_ID) && <span style={{ fontSize: '0.8rem' }}>...</span>}
+      </button>
+
+      {/* Reply Button */}
+      <button
+        onClick={() => handleReply(comment.COMMENT_ID)}
+        style={{
+          background: 'none',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          cursor: 'pointer',
+          color: '#999',
+          fontSize: '0.9rem',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}><FaReply /></span>
+        <span>Reply</span>
+      </button>
+
+      {/* Report Button */}
+      <button
+        onClick={() => handleReport(comment.COMMENT_ID)}
+        style={{
+          background: 'none',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          cursor: 'pointer',
+          color: '#999',
+          fontSize: '0.9rem',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}><FaFlag /></span>
+        <span>Report</span>
+      </button>
+    </div>
+
+    {/* View/Hide Replies Toggle */}
+    <div style={{ marginTop: '12px' }}>
+      <button
+        onClick={() => toggleRepliesVisibility(comment.COMMENT_ID)}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: '#e50914',
+          fontSize: '1.1rem',       // bigger font size
+          padding: '8px 16px',      // bigger padding
+          borderRadius: '6px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.textShadow = '0 0 8px #e50914, 0 0 12px #e50914';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.textShadow = 'none';
+        }}
+      >
+        {visibleReplies.has(comment.COMMENT_ID) ? 'Hide replies' : 'View replies'}
+      </button>
+    </div>
+
+    {/* Render Replies (if any) */}
+    {visibleReplies.has(comment.COMMENT_ID) && (
+      <div style={{ marginTop: '12px', paddingLeft: '20px', borderLeft: '2px solid #444' }}>
+        {(repliesMap[comment.COMMENT_ID] || []).map((reply) => (
           <div
-            key={comment.COMMENT_ID || `comment-${index}`}
+            key={reply.COMMENT_ID}
             style={{
-              backgroundColor: '#111',
-              padding: '15px 20px',
-              borderRadius: '8px',
-              marginBottom: '15px',
-              border: '1px solid #333'
+              backgroundColor: '#1c1c1c',
+              padding: '10px 15px',
+              marginBottom: '10px',
+              borderRadius: '6px',
+              border: '1px solid #333',
             }}
           >
-            <p style={{ marginBottom: '8px', color: '#eee' }}>
-              <strong>{comment.USER_FIRSTNAME} {comment.USER_LASTNAME}</strong>{' '}
-              <span style={{ color: '#777', fontSize: '0.9rem' }}>
-                • {formatCommentDate(comment.TIME)}
+            <p style={{ marginBottom: '5px', color: '#eee' }}>
+              <strong>{reply.USER_FIRSTNAME} {reply.USER_LASTNAME}</strong>{' '}
+              <span style={{ color: '#777', fontSize: '0.85rem' }}>
+                • {formatCommentDate(reply.TIME)}
               </span>
-              {comment.EDITED === 1 && (
-                <span style={{ color: '#999', fontSize: '0.8rem', marginLeft: '10px' }}>
-                  (edited)
-                </span>
+              {reply.EDITED === 1 && (
+                <span style={{ color: '#999', fontSize: '0.75rem', marginLeft: '8px' }}>(edited)</span>
               )}
             </p>
-            <p style={{ color: '#ccc', marginBottom: '10px' }}>{comment.TEXT}</p>
-            
-            {/* Like + Dislike Buttons (side by side) */}
+
+            <p style={{ color: '#ccc', marginBottom: '10px' }}>{reply.TEXT}</p>
+
+            {/* Reply buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              {/* Like Button */}
+              {/* Like */}
               <button
-                onClick={() => toggleCommentLike(comment.COMMENT_ID)}
-                disabled={likingComments.has(comment.COMMENT_ID)}
+                onClick={() => toggleCommentLike(reply.COMMENT_ID)}
+                disabled={likingComments.has(reply.COMMENT_ID)}
                 style={{
                   background: 'none',
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
-                  cursor: likingComments.has(comment.COMMENT_ID) ? 'not-allowed' : 'pointer',
-                  color: comment.USER_LIKED ? '#e50914' : '#999',
+                  cursor: likingComments.has(reply.COMMENT_ID) ? 'not-allowed' : 'pointer',
+                  color: reply.USER_LIKED ? '#e50914' : '#999',
                   fontSize: '0.9rem',
                   padding: '4px 8px',
                   borderRadius: '4px',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  if (!likingComments.has(comment.COMMENT_ID)) {
+                  if (!likingComments.has(reply.COMMENT_ID)) {
                     e.target.style.backgroundColor = 'rgba(30, 27, 27, 0.1)';
                   }
                 }}
@@ -286,33 +561,31 @@ function CommentsSection({ selectedEpisode }) {
                 }}
               >
                 <span style={{ fontSize: '1.1rem' }}>
-                  {comment.USER_LIKED ? <FaThumbsUp /> : <FaRegThumbsUp />}
+                  {reply.USER_LIKED ? <FaThumbsUp /> : <FaRegThumbsUp />}
                 </span>
-                <span>{comment.LIKE_COUNT || 0}</span>
-                {likingComments.has(comment.COMMENT_ID) && (
-                  <span style={{ fontSize: '0.8rem' }}>...</span>
-                )}
+                <span>{reply.LIKE_COUNT || 0}</span>
+                {likingComments.has(reply.COMMENT_ID) && <span style={{ fontSize: '0.8rem' }}>...</span>}
               </button>
 
-              {/* Dislike Button */}
+              {/* Dislike */}
               <button
-                onClick={() => toggleCommentDislike(comment.COMMENT_ID)}
-                disabled={dislikingComments.has(comment.COMMENT_ID)}
+                onClick={() => toggleCommentDislike(reply.COMMENT_ID)}
+                disabled={likingComments.has(reply.COMMENT_ID)}
                 style={{
                   background: 'none',
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
-                  cursor: dislikingComments.has(comment.COMMENT_ID) ? 'not-allowed' : 'pointer',
-                  color: comment.USER_DISLIKED ? '#007bff' : '#999',
+                  cursor: dislikingComments.has(reply.COMMENT_ID) ? 'not-allowed' : 'pointer',
+                  color: reply.USER_DISLIKED ? '#007bff' : '#999',
                   fontSize: '0.9rem',
                   padding: '4px 8px',
                   borderRadius: '4px',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  if (!dislikingComments.has(comment.COMMENT_ID)) {
+                  if (!dislikingComments.has(reply.COMMENT_ID)) {
                     e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
                   }
                 }}
@@ -321,17 +594,15 @@ function CommentsSection({ selectedEpisode }) {
                 }}
               >
                 <span style={{ fontSize: '1.1rem' }}>
-                  {comment.USER_DISLIKED ? <FaThumbsDown /> : <FaRegThumbsDown />}
+                  {reply.USER_DISLIKED ? <FaThumbsDown /> : <FaRegThumbsDown />}
                 </span>
-                <span>{comment.DISLIKE_COUNT || 0}</span>
-                {dislikingComments.has(comment.COMMENT_ID) && (
-                  <span style={{ fontSize: '0.8rem' }}>...</span>
-                )}
+                <span>{reply.DISLIKE_COUNT || 0}</span>
+                {dislikingComments.has(reply.COMMENT_ID) && <span style={{ fontSize: '0.8rem' }}>...</span>}
               </button>
 
-              {/* Reply Button */}
+              {/* Reply */}
               <button
-                onClick={() => handleReply(comment.COMMENT_ID)}
+                onClick={() => handleReply(reply.COMMENT_ID)}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -356,9 +627,9 @@ function CommentsSection({ selectedEpisode }) {
                 <span>Reply</span>
               </button>
 
-              {/* Report Button */}
+              {/* Report */}
               <button
-                onClick={() => handleReport(comment.COMMENT_ID)}
+                onClick={() => handleReport(reply.COMMENT_ID)}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -384,7 +655,11 @@ function CommentsSection({ selectedEpisode }) {
               </button>
             </div>
           </div>
-        ))
+        ))}
+      </div>
+    )}
+  </div>
+))
       )}
     </div>
   );
