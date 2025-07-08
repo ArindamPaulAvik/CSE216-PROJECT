@@ -12,6 +12,8 @@ function CommentsSection({ selectedEpisode }) {
   const [visibleReplies, setVisibleReplies] = useState(new Set());
   const [repliesMap, setRepliesMap] = useState({}); // commentId => [replies]
   const [repliesPagination, setRepliesPagination] = useState({}); // commentId => { page, hasMore }
+  const [activeReplyBoxes, setActiveReplyBoxes] = useState(new Set());
+  const [replyTexts, setReplyTexts] = useState({});
 
 
 
@@ -121,32 +123,51 @@ function CommentsSection({ selectedEpisode }) {
 
 
   const fetchReplies = async (parentId, page = 1) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  const token = localStorage.getItem('token');
+  if (!token) return;
 
-    try {
-      const res = await axios.get(`http://localhost:5000/comment/${parentId}/replies?page=${page}&limit=5`, {
-        headers: { Authorization: `Bearer ${token}` }
+  try {
+    const res = await axios.get(`http://localhost:5000/comment/${parentId}/replies?page=${page}&limit=5`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const { replies, pagination } = res.data;
+
+    // Sort replies by time (oldest first)
+    const sortedReplies = replies.sort((a, b) => {
+      const timeA = new Date(a.TIME || 0).getTime();
+      const timeB = new Date(b.TIME || 0).getTime();
+      return timeA - timeB; // oldest first
+    });
+
+    setRepliesMap((prev) => {
+      const existingReplies = prev[parentId] || [];
+      const newReplies = page === 1 ? sortedReplies : [...existingReplies, ...sortedReplies];
+      
+      // Sort the combined array to maintain chronological order
+      const finalSortedReplies = newReplies.sort((a, b) => {
+        const timeA = new Date(a.TIME || 0).getTime();
+        const timeB = new Date(b.TIME || 0).getTime();
+        return timeA - timeB; // oldest first
       });
 
-      const { replies, pagination } = res.data;
-
-      setRepliesMap((prev) => ({
+      return {
         ...prev,
-        [parentId]: page === 1 ? replies : [...(prev[parentId] || []), ...replies],
-      }));
+        [parentId]: finalSortedReplies,
+      };
+    });
 
-      setRepliesPagination((prev) => ({
-        ...prev,
-        [parentId]: {
-          page: pagination.currentPage,
-          hasMore: pagination.hasMore
-        }
-      }));
-    } catch (err) {
-      console.error('Error fetching replies:', err);
-    }
-  };
+    setRepliesPagination((prev) => ({
+      ...prev,
+      [parentId]: {
+        page: pagination.currentPage,
+        hasMore: pagination.hasMore
+      }
+    }));
+  } catch (err) {
+    console.error('Error fetching replies:', err);
+  }
+};
 
   const toggleCommentDislike = async (commentId) => {
   const token = localStorage.getItem('token');
@@ -213,9 +234,76 @@ function CommentsSection({ selectedEpisode }) {
 
 
   const handleReply = (commentId) => {
-    console.log('Reply clicked for comment', commentId);
-    // Add reply UI logic here
+    setActiveReplyBoxes(prev => {
+      const updated = new Set(prev);
+      if (updated.has(commentId)) {
+        updated.delete(commentId);
+      } else {
+        updated.add(commentId);
+      }
+      return updated;
+    });
   };
+
+  const handleReplyTextChange = (commentId, text) => {
+    setReplyTexts(prev => ({
+      ...prev,
+      [commentId]: text
+    }));
+  };
+
+  const handleReplySubmit = async (parentId) => {
+  const token = localStorage.getItem('token');
+  const text = replyTexts[parentId];
+  if (!token || !text?.trim()) return;
+
+  try {
+    const res = await axios.post(
+      `http://localhost:5000/episode/${selectedEpisode.SHOW_EPISODE_ID}/comment`,
+      {
+        text,
+        parent_id: parentId
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    const newReply = res.data.comment;
+
+    // Update replies map - insert in chronological order
+    setRepliesMap(prev => {
+      const existingReplies = prev[parentId] || [];
+      const updatedReplies = [...existingReplies, newReply];
+      
+      // Sort to maintain chronological order (oldest first)
+      const sortedReplies = updatedReplies.sort((a, b) => {
+        const timeA = new Date(a.TIME || 0).getTime();
+        const timeB = new Date(b.TIME || 0).getTime();
+        return timeA - timeB; // oldest first
+      });
+
+      return {
+        ...prev,
+        [parentId]: sortedReplies
+      };
+    });
+
+    // Clear reply input
+    setReplyTexts(prev => ({ ...prev, [parentId]: '' }));
+    setActiveReplyBoxes(prev => {
+      const updated = new Set(prev);
+      updated.delete(parentId);
+      return updated;
+    });
+
+    // Ensure replies are shown
+    setVisibleReplies(prev => new Set(prev).add(parentId));
+  } catch (err) {
+    console.error('Error posting reply:', err);
+  }
+};
+
 
   const handleReport = (commentId) => {
     console.log('Report clicked for comment', commentId);
@@ -481,6 +569,44 @@ function CommentsSection({ selectedEpisode }) {
       </button>
     </div>
 
+    {activeReplyBoxes.has(comment.COMMENT_ID) && (
+  <div style={{ marginTop: '10px' }}>
+    <textarea
+      value={replyTexts[comment.COMMENT_ID] || ''}
+      onChange={(e) => handleReplyTextChange(comment.COMMENT_ID, e.target.value)}
+      placeholder="Write your reply..."
+      style={{
+        width: '100%',
+        minHeight: '60px',
+        padding: '10px',
+        fontSize: '0.95rem',
+        borderRadius: '6px',
+        border: '1px solid #555',
+        backgroundColor: '#1a1a1a',
+        color: '#fff',
+        resize: 'vertical',
+        marginBottom: '10px'
+      }}
+    ></textarea>
+    <button
+      onClick={() => handleReplySubmit(comment.COMMENT_ID)}
+      style={{
+        backgroundColor: '#e50914',
+        color: '#fff',
+        border: 'none',
+        padding: '8px 16px',
+        borderRadius: '6px',
+        fontSize: '0.9rem',
+        fontWeight: 'bold',
+        cursor: 'pointer'
+      }}
+    >
+      Send Reply
+    </button>
+  </div>
+)}
+
+
     {/* View/Hide Replies Toggle */}
     <div style={{ marginTop: '12px' }}>
       <button
@@ -602,7 +728,7 @@ function CommentsSection({ selectedEpisode }) {
 
               {/* Reply */}
               <button
-                onClick={() => handleReply(reply.COMMENT_ID)}
+                onClick={() => handleReply(comment.COMMENT_ID)}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -653,6 +779,7 @@ function CommentsSection({ selectedEpisode }) {
                 <span style={{ fontSize: '1.1rem' }}><FaFlag /></span>
                 <span>Report</span>
               </button>
+              
             </div>
           </div>
         ))}
