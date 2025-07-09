@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import { AiFillLike, AiFillDislike, AiFillDelete } from 'react-icons/ai';
+import { AiFillLike, AiFillDislike, AiFillDelete, AiOutlineComment } from 'react-icons/ai';
 import { motion } from 'framer-motion';
 
 // Modal styles
@@ -529,30 +528,15 @@ function CommentSection({ episodeId }) {
                   {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
                 </strong>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => setReplyingTo(comment.COMMENT_ID)}
-                    style={{ ...iconButtonStyle, color: '#7f5af0', border: '1px solid #7f5af0', borderRadius: '6px', background: 'rgba(127,90,240,0.08)' }}
-                  >
-                    Reply
-                  </button>
-                  {(() => { console.log('Parent USER_ID:', comment.USER_ID, 'Current user:', currentUserId); return String(comment.USER_ID) === String(currentUserId) && !comment.isTemp; })() && (
+                  {/* Delete for comment (same as for replies) */}
+                  {(() => { return String(comment.USER_ID) === String(currentUserId) && !comment.isTemp; })() && (
                     <button
                       type="button"
                       onClick={() => handleDelete(comment.COMMENT_ID, false, null)}
                       disabled={actionLoading.has(comment.COMMENT_ID)}
-                      style={{
-                        ...iconButtonStyle,
-                        color: actionLoading.has(comment.COMMENT_ID) ? '#555' : '#e50914',
-                        background: 'rgba(229, 9, 20, 0.08)',
-                        border: '1px solid #e50914',
-                        borderRadius: '6px',
-                      }}
+                      style={{ ...iconButtonStyle, color: actionLoading.has(comment.COMMENT_ID) ? '#555' : '#e50914', background: 'rgba(229, 9, 20, 0.08)', border: '1px solid #e50914', borderRadius: '6px' }}
                     >
-                      <motion.span
-                        whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 4px #e50914)' }}
-                        whileTap={{ scale: 0.9 }}
-                      >
+                      <motion.span whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 4px #e50914)' }} whileTap={{ scale: 0.9 }}>
                         <AiFillDelete size={16} />
                       </motion.span>
                       Delete
@@ -569,7 +553,7 @@ function CommentSection({ episodeId }) {
               }}>
                 {comment.COMMENT_TEXT}
               </p>
-              {/* Like/Dislike Buttons */}
+              {/* Like/Dislike Buttons + Reply Button */}
               {!comment.isTemp && (
                 <div style={{
                   display: 'flex',
@@ -639,6 +623,13 @@ function CommentSection({ episodeId }) {
                       {comment.DISLIKE_COUNT || 0}
                     </span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(comment.COMMENT_ID)}
+                    style={{ ...iconButtonStyle, color: '#7f5af0', border: '1px solid #7f5af0', borderRadius: '6px', background: 'rgba(127,90,240,0.08)' }}
+                  >
+                    <AiOutlineComment size={18} style={{ marginRight: 4 }} /> Reply
+                  </button>
                 </div>
               )}
               {/* Reply Box */}
@@ -704,7 +695,7 @@ function CommentSection({ episodeId }) {
                 </div>
               )}
               {/* Replies (single nested level) */}
-              {comment.replies && comment.replies.length > 0 && (
+              {Array.isArray(comment.replies) && comment.replies.length > 0 && (
                 <div style={{ marginTop: '18px', marginLeft: '30px', borderLeft: '2px solid #7f5af0', paddingLeft: '18px' }}>
                   {comment.replies.map(reply => (
                     <motion.div
@@ -726,61 +717,6 @@ function CommentSection({ episodeId }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                         <span style={{ color: '#7f5af0', fontWeight: 600 }}>{reply.USERNAME || 'Anonymous'}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}</span>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          {/* Like/Dislike for reply */}
-                          {!reply.isTemp && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleLike(reply.COMMENT_ID)}
-                                disabled={actionLoading.has(reply.COMMENT_ID)}
-                                style={{
-                                  ...iconButtonStyle,
-                                  color: userLikes.has(reply.COMMENT_ID) ? '#7f5af0' : '#ccc',
-                                  background: userLikes.has(reply.COMMENT_ID) ? 'rgba(127, 90, 240, 0.12)' : 'transparent',
-                                  border: userLikes.has(reply.COMMENT_ID) ? '1.5px solid #7f5af0' : '1.5px solid transparent',
-                                  borderRadius: '6px',
-                                }}
-                              >
-                                <motion.span
-                                  whileHover={{ scale: 1.3, color: '#7f5af0', filter: 'drop-shadow(0 0 4px #7f5af0)' }}
-                                  whileTap={{ scale: 0.9 }}
-                                  style={{
-                                    color: userLikes.has(reply.COMMENT_ID) ? '#7f5af0' : '#ccc',
-                                    filter: userLikes.has(reply.COMMENT_ID) ? 'drop-shadow(0 0 8px #7f5af0)' : 'none',
-                                    transition: 'all 0.3s ease'
-                                  }}
-                                >
-                                  <AiFillLike size={16} />
-                                </motion.span>
-                                <span style={{ minWidth: '16px' }}>{reply.LIKE_COUNT || 0}</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDislike(reply.COMMENT_ID)}
-                                disabled={actionLoading.has(reply.COMMENT_ID)}
-                                style={{
-                                  ...iconButtonStyle,
-                                  color: userDislikes.has(reply.COMMENT_ID) ? '#e50914' : '#ccc',
-                                  background: userDislikes.has(reply.COMMENT_ID) ? 'rgba(229, 9, 20, 0.12)' : 'transparent',
-                                  border: userDislikes.has(reply.COMMENT_ID) ? '1.5px solid #e50914' : '1.5px solid transparent',
-                                  borderRadius: '6px',
-                                }}
-                              >
-                                <motion.span
-                                  whileHover={{ scale: 1.3, color: '#e50914', filter: 'drop-shadow(0 0 4px #e50914)' }}
-                                  whileTap={{ scale: 0.9 }}
-                                  style={{
-                                    color: userDislikes.has(reply.COMMENT_ID) ? '#e50914' : '#ccc',
-                                    filter: userDislikes.has(reply.COMMENT_ID) ? 'drop-shadow(0 0 8px #e50914)' : 'none',
-                                    transition: 'all 0.3s ease'
-                                  }}
-                                >
-                                  <AiFillDislike size={16} />
-                                </motion.span>
-                                <span style={{ minWidth: '16px' }}>{reply.DISLIKE_COUNT || 0}</span>
-                              </button>
-                            </>
-                          )}
                           {/* Delete for reply */}
                           {(() => { console.log('Reply USER_ID:', reply.USER_ID, 'Current user:', currentUserId); return String(reply.USER_ID) === String(currentUserId) && !reply.isTemp; })() && (
                             <button
@@ -798,6 +734,66 @@ function CommentSection({ episodeId }) {
                         </div>
                       </div>
                       <div style={{ color: '#fff', marginBottom: '6px' }}>{reply.COMMENT_TEXT}</div>
+                      {/* Like/Dislike/Reply for reply - all in one row below the reply content */}
+                      {!reply.isTemp && (
+                        <div style={{
+                          display: 'flex',
+                          gap: '15px',
+                          alignItems: 'center',
+                          marginTop: '10px'
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => handleLike(reply.COMMENT_ID)}
+                            disabled={actionLoading.has(reply.COMMENT_ID)}
+                            style={{
+                              ...iconButtonStyle,
+                              color: userLikes.has(reply.COMMENT_ID) ? '#7f5af0' : '#ccc',
+                              background: userLikes.has(reply.COMMENT_ID) ? 'rgba(127, 90, 240, 0.12)' : 'transparent',
+                              border: userLikes.has(reply.COMMENT_ID) ? '1.5px solid #7f5af0' : '1.5px solid transparent',
+                              borderRadius: '6px',
+                            }}
+                          >
+                            <motion.span
+                              whileHover={{ scale: 1.3, color: '#7f5af0', filter: 'drop-shadow(0 0 4px #7f5af0)' }}
+                              whileTap={{ scale: 0.9 }}
+                              style={{
+                                color: userLikes.has(reply.COMMENT_ID) ? '#7f5af0' : '#ccc',
+                                filter: userLikes.has(reply.COMMENT_ID) ? 'drop-shadow(0 0 8px #7f5af0)' : 'none',
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              <AiFillLike size={16} />
+                            </motion.span>
+                            <span style={{ minWidth: '16px' }}>{reply.LIKE_COUNT || 0}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDislike(reply.COMMENT_ID)}
+                            disabled={actionLoading.has(reply.COMMENT_ID)}
+                            style={{
+                              ...iconButtonStyle,
+                              color: userDislikes.has(reply.COMMENT_ID) ? '#e50914' : '#ccc',
+                              background: userDislikes.has(reply.COMMENT_ID) ? 'rgba(229, 9, 20, 0.12)' : 'transparent',
+                              border: userDislikes.has(reply.COMMENT_ID) ? '1.5px solid #e50914' : '1.5px solid transparent',
+                              borderRadius: '6px',
+                            }}
+                          >
+                            <motion.span
+                              whileHover={{ scale: 1.3, color: '#e50914', filter: 'drop-shadow(0 0 4px #e50914)' }}
+                              whileTap={{ scale: 0.9 }}
+                              style={{
+                                color: userDislikes.has(reply.COMMENT_ID) ? '#e50914' : '#ccc',
+                                filter: userDislikes.has(reply.COMMENT_ID) ? 'drop-shadow(0 0 8px #e50914)' : 'none',
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              <AiFillDislike size={16} />
+                            </motion.span>
+                            <span style={{ minWidth: '16px' }}>{reply.DISLIKE_COUNT || 0}</span>
+                          </button>
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </div>

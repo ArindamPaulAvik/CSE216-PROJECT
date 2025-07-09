@@ -111,6 +111,31 @@ function FrontPage() {
     }
   }, [watchAgainShows]); // Only re-observe when watchAgainShows changes
 
+  // Re-observe recommended section when data changes
+  useEffect(() => {
+    if (recommendedRef.current) {
+      // Reset animation class and re-trigger if needed
+      recommendedRef.current.classList.remove('animate-in');
+      
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(recommendedRef.current);
+      
+      return () => observer.disconnect();
+    }
+  }, [recommendedShows]); // Only re-observe when recommendedShows changes
+
   // Scroll to section from URL params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -218,7 +243,7 @@ function FrontPage() {
   return (
     <Layout activeSection={activeSection}>
       {/* Hero Section */}
-      <div className="hero-wrapper" ref={heroRef}>
+      <div className="hero-wrapper" ref={heroRef} style={{ marginTop: '10px' }}>
         {trendingShows.length > 0 && (
           <section className="hero-section">
             <div className="hero-content">
