@@ -251,6 +251,11 @@ export default function Layout({ children, activeSection }) {
                 <span>Actors</span>
               </div>
 
+              <div className="menu-item" onClick={() => handleMenuItemClick('/directors')}>
+                <FiUsers size={18} style={{ transform: 'scaleX(-1)' }} />
+                <span>Directors</span>
+              </div>
+
               <div className="menu-item" onClick={() => handleMenuItemClick('/subscription')}>
                 <FiCreditCard size={18} />
                 <span>Subscription</span>

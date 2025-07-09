@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from './Layout';
 
-function ActorDetailPage() {
+function DirectorDetailPage() {
   const { id } = useParams();
-  const [actor, setActor] = useState(null);
+  const [director, setDirector] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,22 +16,22 @@ function ActorDetailPage() {
       return;
     }
 
-    axios.get(`http://localhost:5000/actor/${id}`, {
+    axios.get(`http://localhost:5000/directors/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => setActor(res.data))
+      .then(res => setDirector(res.data))
       .catch(err => {
         if (err.response?.status === 401 || err.response?.status === 403) {
           alert('Session expired. Please log in again.');
           localStorage.removeItem('token');
           window.location.href = '/login';
         } else {
-          console.error('Error fetching actor:', err);
+          console.error('Error fetching director:', err);
         }
       });
   }, [id]);
 
-  if (!actor) {
+  if (!director) {
     return (
       <Layout>
         <div style={{ 
@@ -49,12 +49,12 @@ function ActorDetailPage() {
   }
 
   // IMDb-style info fields (use N/A if missing)
-  const born = actor.BORN || 'N/A';
-  const birthplace = actor.BIRTHPLACE || 'N/A';
-  const awards = actor.AWARDS || 'N/A';
-  const knownFor = actor.KNOWN_FOR || (actor.SHOWS && actor.SHOWS.length > 0 ? actor.SHOWS[0].TITLE : 'N/A');
-  const gender = actor.GENDER || 'N/A';
-  const height = actor.HEIGHT || 'N/A';
+  const born = director.BORN || 'N/A';
+  const birthplace = director.BIRTHPLACE || 'N/A';
+  const awards = director.AWARDS || 'N/A';
+  const knownFor = director.KNOWN_FOR || (director.SHOWS && director.SHOWS.length > 0 ? director.SHOWS[0].TITLE : 'N/A');
+  const gender = director.GENDER || 'N/A';
+  const notableWorks = director.NOTABLE_WORKS || 'N/A';
 
   return (
     <Layout>
@@ -68,8 +68,8 @@ function ActorDetailPage() {
           alignItems: 'flex-start',
         }}>
           <img
-            src={`/actors/${actor.PICTURE}`}
-            alt={actor.NAME}
+            src={`/directors/${director.PICTURE}`}
+            alt={director.DIRECTOR_NAME}
             style={{
               width: 250,
               borderRadius: 12,
@@ -78,7 +78,7 @@ function ActorDetailPage() {
             }}
           />
           <div style={{ flex: 1, minWidth: 300 }}>
-            <h2 style={{ color: '#fff', marginBottom: 10, fontSize: '2.2rem' }}>{actor.NAME}</h2>
+            <h2 style={{ color: '#fff', marginBottom: 10, fontSize: '2.2rem' }}>{director.DIRECTOR_NAME}</h2>
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -102,16 +102,16 @@ function ActorDetailPage() {
                 <div style={{ color: '#fff', fontWeight: 500 }}>{gender}</div>
               </div>
               <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Height</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{height}</div>
-              </div>
-              <div>
                 <span style={{ color: '#aaa', fontSize: 13 }}>Awards</span>
                 <div style={{ color: '#fff', fontWeight: 500 }}>{awards}</div>
               </div>
               <div>
                 <span style={{ color: '#aaa', fontSize: 13 }}>Known For</span>
                 <div style={{ color: '#fff', fontWeight: 500 }}>{knownFor}</div>
+              </div>
+              <div>
+                <span style={{ color: '#aaa', fontSize: 13 }}>Notable Works</span>
+                <div style={{ color: '#fff', fontWeight: 500 }}>{notableWorks}</div>
               </div>
             </div>
             <h3 style={{ color: '#ddd', marginBottom: 15, fontSize: '1.3rem' }}>Biography</h3>
@@ -121,11 +121,10 @@ function ActorDetailPage() {
               fontSize: '1rem',
               maxWidth: '800px'
             }}>
-              {actor.BIOGRAPHY || 'N/A'}
+              {director.BIO || 'N/A'}
             </p>
           </div>
         </div>
-
         <h3 style={{
           color: '#ddd',
           marginBottom: 30,
@@ -140,7 +139,7 @@ function ActorDetailPage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           gap: 25
         }}>
-          {actor.SHOWS && actor.SHOWS.map(show => (
+          {director.SHOWS && director.SHOWS.map(show => (
             <div
               key={show.SHOW_ID}
               onClick={() => navigate(`/show/${show.SHOW_ID}`)}
@@ -197,7 +196,7 @@ function ActorDetailPage() {
             </div>
           ))}
         </div>
-        {(!actor.SHOWS || actor.SHOWS.length === 0) && (
+        {(!director.SHOWS || director.SHOWS.length === 0) && (
           <p style={{
             color: '#888',
             textAlign: 'center',
@@ -205,7 +204,7 @@ function ActorDetailPage() {
             fontSize: '1.1rem',
             marginTop: 40
           }}>
-            No shows found for this actor.
+            No shows found for this director.
           </p>
         )}
       </div>
@@ -213,4 +212,4 @@ function ActorDetailPage() {
   );
 }
 
-export default ActorDetailPage;
+export default DirectorDetailPage;
