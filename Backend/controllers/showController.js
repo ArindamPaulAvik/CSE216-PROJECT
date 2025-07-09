@@ -3,14 +3,15 @@ const pool = require('../db');
 
 exports.getShowDetails = async (req, res) => {
   const showId = req.params.id;
-
+  
   try {
-    const [rows] = await pool.query(`
-      SELECT s.*, 
+    // Get basic show information with category, publisher, age restriction, and genres
+    const [showRows] = await pool.query(`
+      SELECT s.*,
              c.CATEGORY_NAME,
              p.PUBLISHER_NAME,
              a.AGE_RESTRICTION_NAME,
-             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') as GENRES
+             GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') as GENRES
       FROM \`SHOW\` s
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
@@ -22,11 +23,32 @@ exports.getShowDetails = async (req, res) => {
       LIMIT 1
     `, [showId]);
 
-    if (rows.length === 0) {
+    if (showRows.length === 0) {
       return res.status(404).json({ error: 'Show not found' });
     }
 
-    res.json(rows[0]);
+    // Get cast information for the show
+    const [castRows] = await pool.query(`
+      SELECT a.ACTOR_ID,
+             a.ACTOR_FIRSTNAME,
+             a.ACTOR_LASTNAME,
+             a.BIOGRAPHY,
+             a.PICTURE,
+             sc.ROLE_NAME,
+             sc.DESCRIPTION as ROLE_DESCRIPTION
+      FROM SHOW_CAST sc
+      JOIN ACTOR a ON sc.ACTOR_ID = a.ACTOR_ID
+      WHERE sc.SHOW_ID = ?
+      ORDER BY sc.ROLE_NAME
+    `, [showId]);
+
+    // Combine the results
+    const showDetails = {
+      ...showRows[0],
+      CAST: castRows
+    };
+
+    res.json(showDetails);
   } catch (err) {
     console.error('Error fetching show:', err);
     res.status(500).json({ error: 'Database error' });

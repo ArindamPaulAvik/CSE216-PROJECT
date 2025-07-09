@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Layout({ children }) {
+export default function Layout({ children, activeSection }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -279,9 +279,18 @@ export default function Layout({ children }) {
         <div className="header">
           {location.pathname === '/frontpage' && (
             <div className="button-group">
-              <button onClick={() => scrollToSection('trending')} className="header-button">Trending</button>
-              <button onClick={() => scrollToSection('recommended')} className="header-button">Recommended</button>
-              <button onClick={() => scrollToSection('watchagain')} className="header-button">Watch Again</button>
+              <button 
+                onClick={() => scrollToSection('trending')} 
+                className={`header-button${activeSection === 'trending' ? ' active-glow' : ''}`}
+              >Trending</button>
+              <button 
+                onClick={() => scrollToSection('recommended')} 
+                className={`header-button${activeSection === 'recommended' ? ' active-glow' : ''}`}
+              >Recommended</button>
+              <button 
+                onClick={() => scrollToSection('watchagain')} 
+                className={`header-button${activeSection === 'watchagain' ? ' active-glow' : ''}`}
+              >Watch Again</button>
             </div>
           )}
 
@@ -325,13 +334,13 @@ export default function Layout({ children }) {
       <style>{`
         .layout-container {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+          background: linear-gradient(135deg, #1a1a2e 0%,rgb(31, 42, 74) 50%, #0f0f23 100%);
           color: #e0e0e0;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           display: flex;
           position: relative;
         }
-
+rgb(42, 19, 213)
         .sidebar-backdrop {
           position: fixed;
           top: 0;
@@ -363,31 +372,24 @@ export default function Layout({ children }) {
           transition: color 0.3s ease, text-shadow 0.3s ease;
         }
 
+        .header-button.active-glow {
+          text-shadow: 0 0 4px #8b5cf6, 0 0 8px #3b82f6;
+          color: transparent;
+          background: linear-gradient(90deg, #8b5cf6, #3b82f6);
+          -webkit-background-clip: text;
+          background-clip: text;
+          filter: brightness(1.03) drop-shadow(0 0 2px #8b5cf6);
+          animation: glowPulse 1.2s infinite alternate;
+        }
+        @keyframes glowPulse {
+          from { filter: brightness(1.03) drop-shadow(0 0 2px #8b5cf6); }
+          to { filter: brightness(1.08) drop-shadow(0 0 4px #8b5cf6); }
+        }
         .header-button::after {
-          content: "";
-          position: absolute;
-          left: 15%;
-          right: 15%;
-          bottom: 4px;
-          height: 2px;
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-          transform-origin: center;
-          transform: scaleX(1);
-          transition: transform 0.3s ease, opacity 0.3s ease;
-          border-radius: 1px;
-          pointer-events: none;
-          opacity: 0.6;
+          content: none;
         }
-
-        .header-button:hover {
-          /* Make text glow in purple */
-          text-shadow: 0 0 10px #8b5cf6, 0 0 15px #3b82f6;
-          color: transparent; /* keep gradient */
-        }
-
-        .header-button:hover::after {
-          transform: scaleX(1.4);
-          opacity: 1;
+        .header-button.active-glow::after {
+          content: none;
         }
 
         .button-group {
@@ -792,6 +794,20 @@ export default function Layout({ children }) {
           color: #ff6b6b !important;
         }
 
+        .header-button.active-glow {
+          text-shadow: 0 0 4px #8b5cf6, 0 0 8px #3b82f6;
+          color: transparent;
+          background: linear-gradient(90deg, #8b5cf6, #3b82f6);
+          -webkit-background-clip: text;
+          background-clip: text;
+          filter: brightness(1.03) drop-shadow(0 0 2px #8b5cf6);
+          animation: glowPulse 1.2s infinite alternate;
+        }
+        @keyframes glowPulse {
+          from { filter: brightness(1.03) drop-shadow(0 0 2px #8b5cf6); }
+          to { filter: brightness(1.08) drop-shadow(0 0 4px #8b5cf6); }
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; transform: translateX(-10px); }
           to { opacity: 1; transform: translateX(0); }
@@ -818,6 +834,18 @@ export default function Layout({ children }) {
           .content-area {
             padding: 80px 20px 20px;
           }
+        }
+
+        .header-button:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+          filter: grayscale(0.7) brightness(0.7);
+          text-shadow: none;
+          background: none;
+          -webkit-text-fill-color: #b0b0b0;
+          color: #b0b0b0;
+          border: none;
+          box-shadow: none;
         }
       `}</style>
     </div>

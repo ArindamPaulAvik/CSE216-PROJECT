@@ -291,8 +291,8 @@ function CommentSection({ episodeId }) {
   };
 
   return (
-    <div style={{ padding: '20px', color: '#fff' }}>
-      <h2>Comments</h2>
+    <div style={{ padding: '20px', color: '#fff', background: 'rgba(22, 33, 62, 0.85)', borderRadius: '15px', border: '1px solid #533483', boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)', maxWidth: '1000px', margin: '0 auto' }}>
+      <h2 style={{ color: '#fff', textAlign: 'center', textShadow: '1px 1px 2px #533483', fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '30px' }}>Comments</h2>
       
       {/* Add Comment Section */}
       <div style={{ marginBottom: '20px' }}>
@@ -303,12 +303,13 @@ function CommentSection({ episodeId }) {
           style={{
             width: '100%',
             padding: '10px',
-            backgroundColor: '#222',
+            backgroundColor: '#16213e',
             color: '#fff',
-            border: '1px solid #555',
+            border: '1.5px solid #533483',
             borderRadius: '8px',
             resize: 'none',
             minHeight: '80px',
+            fontFamily: 'inherit',
           }}
         />
         <motion.button
@@ -316,17 +317,21 @@ function CommentSection({ episodeId }) {
           disabled={!newComment.trim()}
           whileHover={{
             scale: 1.05,
-            boxShadow: '0px 0px 10px rgba(0,255,100,0.5)',
+            boxShadow: '0px 0px 10px #7f5af0',
           }}
           whileTap={{ scale: 0.95 }}
           style={{
             marginTop: '10px',
-            padding: '8px 16px',
-            backgroundColor: !newComment.trim() ? '#555' : '#4CAF50',
+            padding: '10px 22px',
+            background: !newComment.trim() ? '#533483' : 'linear-gradient(45deg, #533483 0%, #16213e 100%)',
             color: '#fff',
             border: 'none',
-            borderRadius: '5px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: '1rem',
             cursor: !newComment.trim() ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s',
+            boxShadow: '0 4px 15px rgba(22,33,62,0.2)'
           }}
         >
           Post Comment
@@ -351,12 +356,13 @@ function CommentSection({ episodeId }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               style={{
-                backgroundColor: comment.isTemp ? '#2a2a2a' : '#1a1a1a',
-                border: comment.isTemp ? '1px solid #4CAF50' : '1px solid #333',
-                borderRadius: '8px',
+                backgroundColor: comment.isTemp ? '#1a1a40' : '#16213e',
+                border: comment.isTemp ? '2px solid #7f5af0' : '1.5px solid #533483',
+                borderRadius: '12px',
                 padding: '15px',
                 marginBottom: '15px',
                 opacity: comment.isTemp ? 0.8 : 1,
+                boxShadow: comment.isTemp ? '0 0 8px 2px #7f5af0' : '0 4px 15px rgba(22, 33, 62, 0.2)'
               }}
             >
               {/* Comment Header */}
@@ -366,7 +372,7 @@ function CommentSection({ episodeId }) {
                 alignItems: 'center',
                 marginBottom: '10px'
               }}>
-                <strong style={{ color: '#4CAF50' }}>
+                <strong style={{ color: '#7f5af0' }}>
                   {comment.USERNAME || 'Anonymous'}
                   {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
                 </strong>
@@ -377,11 +383,14 @@ function CommentSection({ episodeId }) {
                     disabled={actionLoading.has(comment.COMMENT_ID)}
                     style={{
                       ...iconButtonStyle,
-                      color: actionLoading.has(comment.COMMENT_ID) ? '#555' : '#ff9800',
+                      color: actionLoading.has(comment.COMMENT_ID) ? '#555' : '#e50914',
+                      background: 'rgba(229, 9, 20, 0.08)',
+                      border: '1px solid #e50914',
+                      borderRadius: '6px',
                     }}
                   >
                     <motion.span
-                      whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 4px #ff9800)' }}
+                      whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 4px #e50914)' }}
                       whileTap={{ scale: 0.9 }}
                     >
                       <AiFillDelete size={16} />
@@ -395,7 +404,8 @@ function CommentSection({ episodeId }) {
               <p style={{ 
                 margin: '10px 0', 
                 lineHeight: '1.5',
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
+                color: '#fff'
               }}>
                 {comment.COMMENT_TEXT}
               </p>
@@ -414,21 +424,22 @@ function CommentSection({ episodeId }) {
                     disabled={actionLoading.has(comment.COMMENT_ID)}
                     style={{
                       ...iconButtonStyle,
-                      color: userLikes.has(comment.COMMENT_ID) ? '#4CAF50' : '#ccc',
-                      backgroundColor: userLikes.has(comment.COMMENT_ID) ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
-                      border: userLikes.has(comment.COMMENT_ID) ? '1px solid rgba(76, 175, 80, 0.3)' : '1px solid transparent',
+                      color: userLikes.has(comment.COMMENT_ID) ? '#7f5af0' : '#ccc',
+                      background: userLikes.has(comment.COMMENT_ID) ? 'rgba(127, 90, 240, 0.12)' : 'transparent',
+                      border: userLikes.has(comment.COMMENT_ID) ? '1.5px solid #7f5af0' : '1.5px solid transparent',
+                      borderRadius: '6px',
                     }}
                   >
                     <motion.span
                       whileHover={{ 
                         scale: 1.3, 
-                        color: '#4CAF50', 
-                        filter: 'drop-shadow(0 0 4px #4CAF50)' 
+                        color: '#7f5af0', 
+                        filter: 'drop-shadow(0 0 4px #7f5af0)' 
                       }}
                       whileTap={{ scale: 0.9 }}
                       style={{
-                        color: userLikes.has(comment.COMMENT_ID) ? '#4CAF50' : '#ccc',
-                        filter: userLikes.has(comment.COMMENT_ID) ? 'drop-shadow(0 0 8px #4CAF50)' : 'none',
+                        color: userLikes.has(comment.COMMENT_ID) ? '#7f5af0' : '#ccc',
+                        filter: userLikes.has(comment.COMMENT_ID) ? 'drop-shadow(0 0 8px #7f5af0)' : 'none',
                         transition: 'all 0.3s ease'
                       }}
                     >
@@ -445,21 +456,22 @@ function CommentSection({ episodeId }) {
                     disabled={actionLoading.has(comment.COMMENT_ID)}
                     style={{
                       ...iconButtonStyle,
-                      color: userDislikes.has(comment.COMMENT_ID) ? '#f44336' : '#ccc',
-                      backgroundColor: userDislikes.has(comment.COMMENT_ID) ? 'rgba(244, 67, 54, 0.1)' : 'transparent',
-                      border: userDislikes.has(comment.COMMENT_ID) ? '1px solid rgba(244, 67, 54, 0.3)' : '1px solid transparent',
+                      color: userDislikes.has(comment.COMMENT_ID) ? '#e50914' : '#ccc',
+                      background: userDislikes.has(comment.COMMENT_ID) ? 'rgba(229, 9, 20, 0.12)' : 'transparent',
+                      border: userDislikes.has(comment.COMMENT_ID) ? '1.5px solid #e50914' : '1.5px solid transparent',
+                      borderRadius: '6px',
                     }}
                   >
                     <motion.span
                       whileHover={{ 
                         scale: 1.3, 
-                        color: '#f44336', 
-                        filter: 'drop-shadow(0 0 4px #f44336)' 
+                        color: '#e50914', 
+                        filter: 'drop-shadow(0 0 4px #e50914)' 
                       }}
                       whileTap={{ scale: 0.9 }}
                       style={{
-                        color: userDislikes.has(comment.COMMENT_ID) ? '#f44336' : '#ccc',
-                        filter: userDislikes.has(comment.COMMENT_ID) ? 'drop-shadow(0 0 8px #f44336)' : 'none',
+                        color: userDislikes.has(comment.COMMENT_ID) ? '#e50914' : '#ccc',
+                        filter: userDislikes.has(comment.COMMENT_ID) ? 'drop-shadow(0 0 8px #e50914)' : 'none',
                         transition: 'all 0.3s ease'
                       }}
                     >

@@ -81,10 +81,17 @@ exports.addComment = async (req, res) => {
       [userId, episode_id, comment_text]
     );
     
-    res.json({ 
-      message: 'Comment added successfully',
-      commentId: result.insertId
-    });
+    const [commentRows] = await pool.query(
+  `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
+          u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT
+   FROM COMMENT c
+   JOIN USER u ON c.USER_ID = u.USER_ID
+   WHERE c.COMMENT_ID = ?`,
+  [result.insertId]
+);
+
+res.json(commentRows[0]);
+
   } catch (err) {
     console.error('❌ Add comment error:', err);
     res.status(500).json({ error: 'Failed to add comment' });

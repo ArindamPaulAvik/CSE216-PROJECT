@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
-import { useLocation } from 'react-router-dom';
 
 function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
@@ -11,6 +10,7 @@ function FrontPage() {
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
   const [userName, setUserName] = useState('User');
   const [profilePicture, setProfilePicture] = useState('');
+  const [activeSection, setActiveSection] = useState('trending');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -52,7 +52,7 @@ function FrontPage() {
       });
   }, []);
 
-  // Scroll animations setup
+  // Scroll animations setup - Fixed dependency array
   useEffect(() => {
     const observerOptions = {
       threshold: 0.1,
@@ -67,16 +67,49 @@ function FrontPage() {
       });
     }, observerOptions);
 
-    // Observe all sections
-    const sections = [heroRef, trendingRef, recommendedRef, watchAgainRef];
-    sections.forEach(ref => {
-      if (ref.current) {
-        observer.observe(ref.current);
-      }
-    });
+    // Observe all sections - use a small delay to ensure DOM is ready
+    const observeSections = () => {
+      const sections = [heroRef, trendingRef, recommendedRef, watchAgainRef];
+      sections.forEach(ref => {
+        if (ref.current) {
+          observer.observe(ref.current);
+        }
+      });
+    };
 
-    return () => observer.disconnect();
-  }, [trendingShows, recommendedShows, watchAgainShows]);
+    // Small delay to ensure all sections are rendered
+    const timeoutId = setTimeout(observeSections, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, []); // Empty dependency array - only run once
+
+  // Re-observe sections when data changes
+  useEffect(() => {
+    if (watchAgainRef.current) {
+      // Reset animation class and re-trigger if needed
+      watchAgainRef.current.classList.remove('animate-in');
+      
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(watchAgainRef.current);
+      
+      return () => observer.disconnect();
+    }
+  }, [watchAgainShows]); // Only re-observe when watchAgainShows changes
 
   // Scroll to section from URL params
   useEffect(() => {
@@ -100,6 +133,28 @@ function FrontPage() {
     }, 6000);
     return () => clearInterval(interval);
   }, [trendingShows]);
+
+  // Track which section is active on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const trendingTop = trendingRef.current?.getBoundingClientRect().top ?? Infinity;
+      const recommendedTop = recommendedRef.current?.getBoundingClientRect().top ?? Infinity;
+      const watchAgainTop = watchAgainRef.current?.getBoundingClientRect().top ?? Infinity;
+      const offset = 120; // header + some margin
+
+      // Find the section closest to the top (but not above)
+      let section = 'trending';
+      if (recommendedTop - offset < 0 && watchAgainTop - offset > 0) {
+        section = 'recommended';
+      } else if (watchAgainTop - offset < 0) {
+        section = 'watchagain';
+      }
+      setActiveSection(section);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const trending = trendingShows[currentTrendingIndex] || {};
 
@@ -161,7 +216,7 @@ function FrontPage() {
   ), [navigate]);
 
   return (
-    <Layout>
+    <Layout activeSection={activeSection}>
       {/* Hero Section */}
       <div className="hero-wrapper" ref={heroRef}>
         {trendingShows.length > 0 && (
