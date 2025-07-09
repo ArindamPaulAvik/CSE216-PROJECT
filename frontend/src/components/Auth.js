@@ -3,33 +3,6 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const imagePaths = [
-  '/images/image1.jpg',
-  '/images/image2.jpg',
-  '/images/image3.jpg',
-  '/images/image4.jpg',
-  '/images/image5.jpg',
-];
-
-const keywords = [
-  'Oscars', 'Tom Cruise', 'Stranger Things', 'Romance', 'Action',
-  'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Emmy', 'Netflix',
-  'Cinematography', 'Directors', 'Stunts', 'Series', 'Blockbuster',
-  'Marvel', 'Disney', 'Comedy', 'Animation', 'Documentary', 'Fantasy',
-  'Adventure', 'Mystery', 'Leonardo DiCaprio', 'Meryl Streep', 'Brad Pitt',
-  'Jennifer Lawrence', 'Denzel Washington', 'Scarlett Johansson', 'Will Smith',
-  'Margot Robbie', 'Robert Downey Jr', 'Emma Stone', 'Ryan Gosling',
-  'Natalie Portman', 'Christian Bale', 'Cate Blanchett', 'Matt Damon',
-  'Sandra Bullock', 'Christopher Nolan', 'Quentin Tarantino', 'Martin Scorsese',
-  'Steven Spielberg', 'Denis Villeneuve', 'Jordan Peele', 'Greta Gerwig',
-  'Ridley Scott', 'David Fincher', 'Rian Johnson', 'Chloe Zhao',
-  'Bong Joon-ho', 'Damien Chazelle', 'Guillermo del Toro', 'Wes Anderson',
-  'Sofia Coppola', 'Spike Lee', 'Paul Thomas Anderson', 'Ari Aster',
-  'HBO', 'Amazon Prime', 'Apple TV', 'Hulu', 'Paramount', 'Warner Bros',
-  'Universal', 'Sony Pictures', 'A24', 'Sundance', 'Cannes', 'Golden Globes',
-  'SAG Awards', 'Critics Choice', 'BAFTA', 'Venice Film Festival'
-];
-
 // Animation Variants
 const formVariants = {
   enter: (direction) => ({
@@ -112,83 +85,9 @@ const switchTextVariants = {
   },
 };
 
-const renderFloatingKeywords = () => {
-  const lanes = 8;
-  const wordsPerLane = 8;
-  const keywordGroups = [];
-
-  // Configuration for each lane - larger=faster, smaller=slower
-  const laneConfigs = [
-    { speed: 70, fontSize: 16, opacity: 0.25 },  // small=slow
-    { speed: 30, fontSize: 28, opacity: 0.4 },   // large=fast
-    { speed: 85, fontSize: 14, opacity: 0.2 },   // small=slow
-    { speed: 50, fontSize: 20, opacity: 0.3 },   // medium=normal
-    { speed: 75, fontSize: 15, opacity: 0.22 },  // small=slow
-    { speed: 25, fontSize: 32, opacity: 0.45 },  // large=fast
-    { speed: 55, fontSize: 18, opacity: 0.28 },  // medium=normal
-    { speed: 35, fontSize: 26, opacity: 0.38 }   // large=fast
-  ];
-
-  for (let i = 0; i < lanes; i++) {
-    // Create 8 words for this lane, cycling through the keywords array
-    const laneWords = [];
-    for (let j = 0; j < wordsPerLane; j++) {
-      laneWords.push(keywords[(i * wordsPerLane + j) % keywords.length]);
-    }
-
-    const config = laneConfigs[i];
-
-    keywordGroups.push(
-      <div
-        key={i}
-        style={{
-          position: 'absolute',
-          top: `${(i + 1) * (100 / (lanes + 1))}%`,
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          gap: '60px',
-          fontSize: `${config.fontSize}px`,
-          fontWeight: 600,
-          color: 'white',
-          opacity: config.opacity,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-          width: '100%',
-        }}
-      >
-        <motion.div
-          style={{ display: 'flex', gap: '60px' }}
-          animate={{ x: ['0%', '-50%'] }}
-          transition={{
-            duration: config.speed,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-        >
-          {laneWords.map((word, index) => (
-            <span key={index}>{word}</span>
-          ))}
-          {laneWords.map((word, index) => (
-            <span key={`${index}-dup1`}>{word}</span>
-          ))}
-          {laneWords.map((word, index) => (
-            <span key={`${index}-dup2`}>{word}</span>
-          ))}
-          {laneWords.map((word, index) => (
-            <span key={`${index}-dup3`}>{word}</span>
-          ))}
-        </motion.div>
-      </div>
-    );
-  }
-
-  return keywordGroups;
-};
-
 function Auth() {
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' or 'register'
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [error, setError] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -202,13 +101,6 @@ function Auth() {
     countryId: '',
     birthdate: '',
   });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % imagePaths.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const getTodayDate = () => {
     const today = new Date();
@@ -321,7 +213,6 @@ function Auth() {
       style={{
         height: '100vh',
         width: '100vw',
-        backgroundColor: 'rgb(22, 32, 62)',
         position: 'relative',
         display: 'flex',
         flexDirection: 'row',
@@ -329,7 +220,7 @@ function Auth() {
         overflow: 'hidden',
       }}
     >
-      {/* Semi-transparent overlay */}
+      {/* Slightly blurred background image */}
       <div
         style={{
           position: 'absolute',
@@ -337,89 +228,38 @@ function Auth() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          zIndex: 0,
+          background: `url('/images/authpage.png') center center / cover no-repeat`,
+          filter: 'blur(1.2px)', // Reduced blur for more clarity in the center
+        }}
+      />
+      {/* Strong shadowy gradient on all sides */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           zIndex: 1,
+          pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.60) 0%, rgba(0,0,0,0.85) 100%)',
+        }}
+      />
+      {/* Semi-transparent overlay for extra darkening */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.18)',
+          zIndex: 2,
         }}
       />
 
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2 }}>
-        {renderFloatingKeywords()}
-      </div>
-
-      <div
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '20px',
-          transform: 'translateY(-50%)',
-          zIndex: 1000,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '42px',
-            fontWeight: 'bold',
-            color: '#ff0000',
-            fontFamily: 'Segoe UI, sans-serif',
-            textShadow: `
-              0 0 12px rgba(255, 0, 0, 0.9),
-              0 0 20px rgba(255, 0, 0, 0.8),
-              0 0 30px rgba(255, 0, 0, 0.6),
-              0 0 40px rgba(255, 0, 0, 0.5)
-            `,
-            letterSpacing: '1px',
-            transition: 'none',
-            userSelect: 'none',
-          }}
-        >
-          RnbDom
-        </h1>
-      </div>
-
-      {/* Image Holder container */}
-      <div
-        style={{
-          flexBasis: '50vw',
-          marginLeft: '20px',
-          marginRight: '20px',
-          marginTop: '20px',
-          marginBottom: '24px',
-          left: '200px',
-          bottom: '10px',
-          borderRadius: '15px',
-          overflow: 'hidden',
-          boxShadow: '0 0 20px rgba(255,255,255,0.2)',
-          position: 'relative',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 3,
-        }}
-      >
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={currentImageIndex}
-            src={imagePaths[currentImageIndex]}
-            alt="Cycling background"
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              filter: 'brightness(0.85)',
-              borderRadius: '15px',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-            }}
-          />
-        </AnimatePresence>
-      </div>
-
-      {/* Enhanced Sliding Sidebar Container */}
+      {/* Picture/Sidebar container with glossy black background */}
       <div
         style={{
           position: 'fixed',
@@ -428,13 +268,13 @@ function Auth() {
           height: '100vh',
           width: '25vw',
           overflow: 'hidden',
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          padding: '15px 25px',
-          boxSizing: 'border-box',
+          background: 'rgba(10, 10, 20, 0.92)',
           boxShadow: '-4px 0 20px rgba(0,0,0,0.5)',
           borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(12px) saturate(1.5)', // reduced blur
+          WebkitBackdropFilter: 'blur(12px) saturate(1.5)', // reduced blur
           zIndex: 4,
+          backgroundImage: 'linear-gradient(135deg, rgba(40,40,60,0.7) 0%, rgba(0,0,0,0.9) 100%)',
         }}
       >
         <div style={{ position: 'relative', height: '100%', perspective: '1000px' }}>
@@ -865,9 +705,6 @@ function Auth() {
           )}
         </AnimatePresence>
       </div>
-
-     
-      
 
       {/* Success Modal */}
       <AnimatePresence>
