@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,32 +12,32 @@ export default function Layout({ children }) {
   const [error, setError] = useState('');
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Get user data on mount
   const [userImage, setUserImage] = useState(null);
 
-useEffect(() => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    fetch('http://localhost:5000/frontpage', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('Failed to fetch user data');
-      return res.json();
-    })
-    .then(data => {
-      setUserName(data.userName || 'User');
-      setUserImage(data.profilePicture || null);
-    })
-    .catch(err => {
-      console.error('Error fetching user data:', err);
-      setUserName('User');
-      setUserImage(null);
-    });
-  }
-}, []);
-
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch('http://localhost:5000/frontpage', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch user data');
+          return res.json();
+        })
+        .then(data => {
+          setUserName(data.userName || 'User');
+          setUserImage(data.profilePicture || null);
+        })
+        .catch(err => {
+          console.error('Error fetching user data:', err);
+          setUserName('User');
+          setUserImage(null);
+        });
+    }
+  }, []);
 
   // Search functionality
   useEffect(() => {
@@ -50,7 +50,7 @@ useEffect(() => {
 
     setIsSearching(true);
     setError('');
-    
+
     const handler = setTimeout(() => {
       const token = localStorage.getItem('token');
       fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}`, {
@@ -97,25 +97,25 @@ useEffect(() => {
         key={showId}
         role="button"
         tabIndex={0}
-       onClick={() => {
-  navigate(`/show/${showId}`);
-  setSearchOpen(false);     // <-- close search on navigation
-  setSearchTerm('');        // <-- clear search input to remove results
-  setSearchResults([]);     // <-- clear results too
-}}
-       onKeyDown={e => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    navigate(`/show/${showId}`);
-    setSearchOpen(false);
-    setSearchTerm('');
-    setSearchResults([]);
-  }
-}}
+        onClick={() => {
+          navigate(`/show/${showId}`);
+          setSearchOpen(false);     // <-- close search on navigation
+          setSearchTerm('');        // <-- clear search input to remove results
+          setSearchResults([]);     // <-- clear results too
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            navigate(`/show/${showId}`);
+            setSearchOpen(false);
+            setSearchTerm('');
+            setSearchResults([]);
+          }
+        }}
       >
-        <img 
-          src={`/shows/${thumbnail}`} 
-          alt={title} 
-          className="movie-thumbnail" 
+        <img
+          src={`/shows/${thumbnail}`}
+          alt={title}
+          className="movie-thumbnail"
           loading="lazy"
           onError={(e) => {
             e.target.src = '/placeholder.jpg'; // Fallback image
@@ -164,17 +164,24 @@ useEffect(() => {
     }
   };
 
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="layout-container">
       {/* Backdrop for mobile */}
       {menuOpen && (
-        <div 
+        <div
           className="sidebar-backdrop"
           onClick={() => setMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Fixed Sidebar */}
       <div
         className={`sidebar ${menuOpen ? 'sidebar-open' : 'sidebar-closed'}`}
         onMouseEnter={() => setMenuOpen(true)}
@@ -182,21 +189,18 @@ useEffect(() => {
       >
         <div className="sidebar-header">
           <FiMenu size={24} className="menu-icon" />
-         {menuOpen && (
-  <span
-    className="logo-text logo-clickable"
-    onClick={() => {
-      navigate('/frontpage');
-      setMenuOpen(false);
-    }}
-    title="Go to frontpage"
-  >
-    RnbDom
-  </span>
-)}
-
-
-
+          {menuOpen && (
+            <span
+              className="logo-text logo-clickable"
+              onClick={() => {
+                navigate('/frontpage');
+                setMenuOpen(false);
+              }}
+              title="Go to frontpage"
+            >
+              RnbDom
+            </span>
+          )}
         </div>
 
         {menuOpen && (
@@ -223,8 +227,8 @@ useEffect(() => {
                       autoFocus
                     />
                     {searchTerm && (
-                      <FiX 
-                        size={16} 
+                      <FiX
+                        size={16}
                         className="clear-search-icon"
                         onClick={() => setSearchTerm('')}
                       />
@@ -242,8 +246,6 @@ useEffect(() => {
 
             {/* Navigation Items */}
             <div className="nav-section">
-              
-
               <div className="menu-item" onClick={() => handleMenuItemClick('/actors')}>
                 <FiUsers size={18} />
                 <span>Actors</span>
@@ -271,51 +273,55 @@ useEffect(() => {
         )}
       </div>
 
-{/* Main Content */}
-<div className="main-content">
-  {/* Header with user info */}
-  <div className="header">
-    <div
-      className="user-info"
-      onClick={() => navigate('/profile')}
-      style={{ cursor: 'pointer' }}
-    >
-      {userImage ? (
-  <img
-    src={`http://localhost:5000/images/user/${userImage}`}
-    alt="Profile"
-    className="user-avatar-img"
-    onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
-  />
-) : (
-  <div className="user-avatar">
-    {userName ? userName.charAt(0).toUpperCase() : 'U'}
-  </div>
-)}
-      <span className="user-name">{userName || 'User'}</span>
-    </div>
-  </div>
+      {/* Main Content Area */}
+      <div className="main-content">
+        {/* Fixed Header with user info */}
+        <div className="header">
+          {location.pathname === '/frontpage' && (
+            <div className="button-group">
+              <button onClick={() => scrollToSection('trending')} className="header-button">Trending</button>
+              <button onClick={() => scrollToSection('recommended')} className="header-button">Recommended</button>
+              <button onClick={() => scrollToSection('watchagain')} className="header-button">Watch Again</button>
+            </div>
+          )}
 
-  {/* Content Area */}
-  <div className="content-area">
-    {searchTerm.trim() !== '' ? (
-      <>
-        <h2 className="search-results-title">
-          Search Results {isSearching && '(Searching...)'}
-        </h2>
-        <div className="movie-grid">
-          {searchResults.length > 0
-            ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
-            : !isSearching && <p className="no-results">No results found</p>}
+          <div className="user-info" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
+            {userImage ? (
+              <img
+                src={`http://localhost:5000/images/user/${userImage}`}
+                alt="Profile"
+                className="user-avatar-img"
+                onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
+              />
+            ) : (
+              <div className="user-avatar">
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
+            <span className="user-name">{userName || 'User'}</span>
+          </div>
         </div>
-      </>
-    ) : (
-      children
-    )}
-  </div>
-</div>
 
-      {/* Enhanced Styles - Darker Theme */}
+        {/* Scrollable Content Area */}
+        <div className="content-area">
+          {searchTerm.trim() !== '' ? (
+            <>
+              <h2 className="search-results-title">
+                Search Results {isSearching && '(Searching...)'}
+              </h2>
+              <div className="movie-grid">
+                {searchResults.length > 0
+                  ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
+                  : !isSearching && <p className="no-results">No results found</p>}
+              </div>
+            </>
+          ) : (
+            children
+          )}
+        </div>
+      </div>
+
+      {/* Enhanced Styles - Fixed Layout */}
       <style>{`
         .layout-container {
           min-height: 100vh;
@@ -337,21 +343,73 @@ useEffect(() => {
           display: none;
         }
 
-           .logo-text {
-  font-weight: 700;
-  font-size: 24px; /* Larger */
-  color: #e0e0e0;
-  margin-left: 40px; /* Shift right */
-  transition: all 0.3s ease;
-}
+        .header-button {
+          font-weight: 700;
+          font-size: 1.2rem;
+          padding: 8px 16px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          outline: none;
 
-.logo-clickable:hover {
-  color: #ff4c4c; /* Red shine */
-  transform: scale(1.20);
-  text-shadow: 0 0 8px rgba(255, 76, 76, 0.8);
-  cursor: pointer;
-}
+          /* Gradient text */
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6); /* blue to bright purple */
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
 
+          text-decoration: underline;
+          text-underline-offset: 4px;
+          position: relative;
+          transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        .header-button::after {
+          content: "";
+          position: absolute;
+          left: 15%;
+          right: 15%;
+          bottom: 4px;
+          height: 2px;
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+          transform-origin: center;
+          transform: scaleX(1);
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          border-radius: 1px;
+          pointer-events: none;
+          opacity: 0.6;
+        }
+
+        .header-button:hover {
+          /* Make text glow in purple */
+          text-shadow: 0 0 10px #8b5cf6, 0 0 15px #3b82f6;
+          color: transparent; /* keep gradient */
+        }
+
+        .header-button:hover::after {
+          transform: scaleX(1.4);
+          opacity: 1;
+        }
+
+        .button-group {
+          margin-right: 50px;
+          display: inline-flex; /* keep buttons inline */
+          gap: 10px; /* optional spacing */
+        }
+
+        .logo-text {
+          font-weight: 700;
+          font-size: 24px; /* Larger */
+          color: #e0e0e0;
+          margin-left: 40px; /* Shift right */
+          transition: all 0.3s ease;
+        }
+
+        .logo-clickable:hover {
+          color: #ff4c4c; /* Red shine */
+          transform: scale(1.20);
+          text-shadow: 0 0 8px rgba(255, 76, 76, 0.8);
+          cursor: pointer;
+        }
 
         @media (max-width: 768px) {
           .sidebar-backdrop {
@@ -359,14 +417,57 @@ useEffect(() => {
           }
         }
 
+        /* CUSTOM SCROLLBAR STYLES */
+        .sidebar::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 10px;
+          margin: 8px 0;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, #4a5568, #2d3748);
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          transition: all 0.3s ease;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, #5a6578, #3d4758);
+          box-shadow: 0 0 6px rgba(74, 85, 104, 0.4);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:active {
+          background: linear-gradient(135deg, #6a7588, #4d5768);
+        }
+
+        .sidebar::-webkit-scrollbar-corner {
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Firefox scrollbar */
+        .sidebar {
+          scrollbar-width: thin;
+          scrollbar-color: #4a5568 rgba(255, 255, 255, 0.02);
+        }
+
+        /* FIXED SIDEBAR */
         .sidebar {
           background: rgba(8, 8, 20, 0.98);
           backdrop-filter: blur(15px);
           border-right: 1px solid rgba(255, 255, 255, 0.05);
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100vh;
           z-index: 1000;
           box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+          overflow-y: auto;
+          overflow-x: hidden;
         }
 
         .sidebar-closed {
@@ -395,19 +496,13 @@ useEffect(() => {
           color: #4a5568;
         }
 
-        .logo-text {
-          font-weight: 600;
-          font-size: 18px;
-          color: #b0b0b0;
-          animation: fadeIn 0.3s ease;
-        }
-
         .sidebar-content {
           padding: 0 15px;
           animation: fadeIn 0.3s ease;
           display: flex;
           flex-direction: column;
           height: calc(100vh - 80px);
+          padding-right: 8px; /* Add space for scrollbar */
         }
 
         .search-section {
@@ -514,13 +609,22 @@ useEffect(() => {
           padding-left: 12px;
         }
 
+        /* MAIN CONTENT WITH PROPER MARGINS */
         .main-content {
           flex: 1;
           display: flex;
           flex-direction: column;
           min-height: 100vh;
+          margin-left: 60px; /* Space for closed sidebar */
+          transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Adjust margin when sidebar is open */
+        .sidebar-open ~ .main-content {
+          margin-left: 280px;
+        }
+
+        /* FIXED HEADER */
         .header {
           padding: 20px 40px;
           display: flex;
@@ -529,27 +633,38 @@ useEffect(() => {
           background: rgba(0, 0, 0, 0.2);
           backdrop-filter: blur(15px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          position: fixed;
+          top: 0;
+          right: 0;
+          left: 60px; /* Start after closed sidebar */
+          z-index: 100;
+          transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-      .user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: rgba(187, 104, 104, 0.03);
-  border-radius: 25px;
-  transition: all 0.3s ease; /* smooth transition */
-  border: 1px solid rgba(158, 97, 97, 0.05);
-  cursor: pointer; /* indicate clickable */
-}
+        /* Adjust header position when sidebar is open */
+        .sidebar-open ~ .main-content .header {
+          left: 280px;
+        }
+
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 16px;
+          background: rgba(187, 104, 104, 0.03);
+          border-radius: 25px;
+          transition: all 0.3s ease;
+          border: 1px solid rgba(158, 97, 97, 0.05);
+          cursor: pointer;
+        }
 
         .user-info:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: scale(1.3); /* enlarge to 110% */
-  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25); /* optional subtle glow */
-  z-index: 10; /* keep on top */
-}
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.1);
+          transform: scale(1.3);
+          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
+          z-index: 10;
+        }
 
         .user-avatar {
           width: 32px;
@@ -563,12 +678,13 @@ useEffect(() => {
           font-size: 14px;
           color: #e0e0e0;
         }
+
         .user-avatar-img {
-           width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .user-name {
@@ -576,10 +692,12 @@ useEffect(() => {
           color: #b0b0b0;
         }
 
+        /* SCROLLABLE CONTENT AREA */
         .content-area {
           flex: 1;
-          padding: 30px 40px;
+          padding: 100px 40px 30px; /* Top padding to account for fixed header */
           overflow-y: auto;
+          margin-top: 0;
         }
 
         .search-results-title {
@@ -679,22 +797,26 @@ useEffect(() => {
           to { opacity: 1; transform: translateX(0); }
         }
 
+        /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {
           .sidebar-open {
             position: fixed;
             height: 100vh;
             z-index: 1001;
+            left: 0;
+          }
+          
+          .main-content {
+            margin-left: 0;
+          }
+          
+          .header {
+            left: 0;
+            padding: 15px 20px;
           }
           
           .content-area {
-            padding: 20px;
-          }
-          
-    
-
-          
-          .header {
-            padding: 15px 20px;
+            padding: 80px 20px 20px;
           }
         }
       `}</style>

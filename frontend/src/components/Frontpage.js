@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
+import { useLocation } from 'react-router-dom';
 
 function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
@@ -10,8 +11,14 @@ function FrontPage() {
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
   const [userName, setUserName] = useState('User');
   const [profilePicture, setProfilePicture] = useState('');
-
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // Refs for scroll animations
+  const heroRef = useRef(null);
+  const trendingRef = useRef(null);
+  const recommendedRef = useRef(null);
+  const watchAgainRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -45,6 +52,47 @@ function FrontPage() {
       });
   }, []);
 
+  // Scroll animations setup
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+        }
+      });
+    }, observerOptions);
+
+    // Observe all sections
+    const sections = [heroRef, trendingRef, recommendedRef, watchAgainRef];
+    sections.forEach(ref => {
+      if (ref.current) {
+        observer.observe(ref.current);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [trendingShows, recommendedShows, watchAgainShows]);
+
+  // Scroll to section from URL params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const scrollTo = params.get('scrollTo');
+    if (scrollTo) {
+      setTimeout(() => {
+        const target = document.getElementById(scrollTo);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500);
+    }
+  }, [location.search]);
+
+  // Auto-slide for trending shows
   useEffect(() => {
     if (trendingShows.length === 0) return;
     const interval = setInterval(() => {
@@ -65,12 +113,13 @@ function FrontPage() {
     e.target.src = '/placeholder.jpg';
   };
 
-  const renderShowBox = useCallback((show) => (
+  const renderShowBox = useCallback((show, index) => (
     <div
       className="show-card"
       key={show.SHOW_ID}
       role="button"
       tabIndex={0}
+      style={{ animationDelay: `${index * 0.1}s` }}
       onClick={() => navigate(`/show/${show.SHOW_ID}`)}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/show/${show.SHOW_ID}`)}
     >
@@ -114,46 +163,48 @@ function FrontPage() {
   return (
     <Layout>
       {/* Hero Section */}
-      {trendingShows.length > 0 && (
-        <section className="hero-section">
-          <div className="hero-content">
-            <h2 className="hero-title">
-              {trending.TITLE}
-            </h2>
-            <p className="hero-description">
-              {trending.DESCRIPTION}
-            </p>
-            <div className="hero-actions">
-              <span className="hero-rating">
-                ⭐ {trending.RATING}
-              </span>
-              <button
-                onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
-                className="hero-button"
-              >
-                Watch Now
-              </button>
+      <div className="hero-wrapper" ref={heroRef}>
+        {trendingShows.length > 0 && (
+          <section className="hero-section">
+            <div className="hero-content">
+              <h2 className="hero-title">
+                {trending.TITLE}
+              </h2>
+              <p className="hero-description">
+                {trending.DESCRIPTION}
+              </p>
+              <div className="hero-actions">
+                <span className="hero-rating">
+                  ⭐ {trending.RATING}
+                </span>
+                <button
+                  onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+                  className="hero-button"
+                >
+                  Watch Now
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="hero-image">
-            <img
-              src={getImagePath(trending.THUMBNAIL)}
-              alt={trending.TITLE}
-              className="hero-img"
-              loading="lazy"
-              onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
-            />
-          </div>
-        </section>
-      )}
+            <div className="hero-image">
+              <img
+                src={getImagePath(trending.THUMBNAIL)}
+                alt={trending.TITLE}
+                className="hero-img"
+                loading="lazy"
+                onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
+              />
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Trending Now Section */}
-      <section className="shows-section">
+      <section id="trending" className="shows-section" ref={trendingRef}>
         <h2 className="section-title trending-title">
           Trending Now
         </h2>
         <div className="shows-grid">
-          {trendingShows.map(renderShowBox)}
+          {trendingShows.map((show, index) => renderShowBox(show, index))}
         </div>
         {trendingShows.length === 0 && (
           <p className="empty-message">
@@ -164,23 +215,23 @@ function FrontPage() {
 
       {/* Recommended Shows Section */}
       {recommendedShows.length > 0 && (
-        <section className="shows-section">
+        <section id="recommended" className="shows-section" ref={recommendedRef}>
           <h2 className="section-title recommended-title">
             Recommended for You
           </h2>
           <div className="shows-grid">
-            {recommendedShows.map(renderShowBox)}
+            {recommendedShows.map((show, index) => renderShowBox(show, index))}
           </div>
         </section>
       )}
 
       {/* Watch Again Section */}
-      <section className="shows-section">
+      <section id="watchagain" className="shows-section" ref={watchAgainRef}>
         <h2 className="section-title watch-again-title">
           Watch Again
         </h2>
         <div className="shows-grid">
-          {watchAgainShows.map(renderShowBox)}
+          {watchAgainShows.map((show, index) => renderShowBox(show, index))}
         </div>
         {watchAgainShows.length === 0 && (
           <p className="empty-message">
@@ -190,16 +241,110 @@ function FrontPage() {
       </section>
 
       <style>{`
+        /* Scroll Animation Keyframes */
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(60px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-60px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(60px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes cardStagger {
+          from {
+            opacity: 0;
+            transform: translateY(40px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* Base styles for animation elements */
+        .hero-wrapper {
+          position: relative;
+          width: calc(100vw - 120px);
+          margin-left: calc(-50vw + 50% + 60px);
+          margin-top: -20px;
+          overflow: hidden;
+          opacity: 0;
+          transform: translateY(60px);
+          transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .hero-wrapper.animate-in {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .shows-section {
+          margin-bottom: 60px;
+          opacity: 0;
+          transform: translateY(60px);
+          transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .shows-section.animate-in {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .shows-section.animate-in .section-title {
+          animation: slideInLeft 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .shows-section.animate-in .show-card {
+          animation: cardStagger 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) both;
+        }
+
         .hero-section {
           display: flex;
+          width: 100vw;
+          height: 380px;
           background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
-          overflow: hidden;
-          margin-bottom: 60px;
-          height: 300px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+          border: none;
+          border-radius: 0;
+          margin: 0;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
           backdrop-filter: blur(10px);
+          overflow: hidden;
         }
 
         .hero-content {
@@ -210,6 +355,9 @@ function FrontPage() {
           justify-content: center;
           color: #ddd;
           background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+          transform: translateX(-100px);
+          opacity: 0;
+          animation: slideInLeft 1s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
         }
 
         .hero-title {
@@ -221,6 +369,9 @@ function FrontPage() {
           background-clip: text;
           font-weight: 700;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          transform: translateY(30px);
+          opacity: 0;
+          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.6s both;
         }
 
         .hero-description {
@@ -231,12 +382,18 @@ function FrontPage() {
           max-height: 140px;
           margin-bottom: 15px;
           color: #ccc;
+          transform: translateY(30px);
+          opacity: 0;
+          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.8s both;
         }
 
         .hero-actions {
           display: flex;
           align-items: center;
           gap: 15px;
+          transform: translateY(30px);
+          opacity: 0;
+          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 1s both;
         }
 
         .hero-rating {
@@ -246,6 +403,12 @@ function FrontPage() {
           font-size: 1rem;
           font-weight: bold;
           color: white;
+          transition: all 0.3s ease;
+        }
+
+        .hero-rating:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .hero-button {
@@ -262,12 +425,15 @@ function FrontPage() {
         }
 
         .hero-button:hover {
-          transform: translateY(-2px);
+          transform: translateY(-2px) scale(1.05);
           box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         .hero-image {
           flex: 1 1 60%;
+          transform: translateX(100px);
+          opacity: 0;
+          animation: slideInRight 1s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
         }
 
         .hero-img {
@@ -275,10 +441,12 @@ function FrontPage() {
           height: 100%;
           object-fit: cover;
           filter: brightness(0.85);
+          transition: all 0.3s ease;
         }
 
-        .shows-section {
-          margin-bottom: 60px;
+        .hero-img:hover {
+          filter: brightness(1);
+          transform: scale(1.02);
         }
 
         .section-title {
@@ -288,18 +456,34 @@ function FrontPage() {
           font-weight: bold;
           padding-bottom: 10px;
           display: inline-block;
+          position: relative;
         }
 
-        .trending-title {
-          border-bottom: 3px solid #667eea;
+        .section-title::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 0;
+          height: 3px;
+          border-radius: 2px;
+          transition: width 0.8s ease;
         }
 
-        .recommended-title {
-          border-bottom: 3px solid #f093fb;
+        .shows-section.animate-in .section-title::after {
+          width: 100%;
         }
 
-        .watch-again-title {
-          border-bottom: 3px solid #764ba2;
+        .trending-title::after {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .recommended-title::after {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .watch-again-title::after {
+          background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
 
         .shows-grid {
@@ -313,14 +497,16 @@ function FrontPage() {
           border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 16px;
           overflow: hidden;
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
           backdrop-filter: blur(10px);
           cursor: pointer;
+          transform: translateY(20px);
+          opacity: 0;
         }
 
         .show-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+          transform: translateY(-12px) scale(1.02);
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
           border-color: rgba(255, 255, 255, 0.1);
         }
 
@@ -334,11 +520,11 @@ function FrontPage() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s ease;
+          transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
 
         .show-card:hover .card-image {
-          transform: scale(1.05);
+          transform: scale(1.1);
         }
 
         .card-overlay {
@@ -357,7 +543,7 @@ function FrontPage() {
           align-items: center;
           justify-content: center;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
 
         .show-card:hover .card-overlay {
@@ -375,12 +561,18 @@ function FrontPage() {
           cursor: pointer;
           transition: all 0.3s ease;
           backdrop-filter: blur(10px);
+          transform: translateY(20px);
+        }
+
+        .show-card:hover .view-button {
+          transform: translateY(0);
         }
 
         .view-button:hover {
           background: rgba(255, 255, 255, 0.3);
           border-color: rgba(255, 255, 255, 0.5);
-          transform: scale(1.05);
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
 
         .card-content {
@@ -393,6 +585,11 @@ function FrontPage() {
           color: #e0e0e0;
           margin: 0 0 12px 0;
           line-height: 1.3;
+          transition: color 0.3s ease;
+        }
+
+        .show-card:hover .card-title {
+          color: #fff;
         }
 
         .card-rating {
@@ -404,6 +601,11 @@ function FrontPage() {
 
         .rating-star {
           font-size: 1.1rem;
+          transition: transform 0.3s ease;
+        }
+
+        .show-card:hover .rating-star {
+          transform: scale(1.2);
         }
 
         .rating-value {
@@ -417,6 +619,11 @@ function FrontPage() {
           font-size: 0.95rem;
           line-height: 1.5;
           margin: 0 0 15px 0;
+          transition: color 0.3s ease;
+        }
+
+        .show-card:hover .card-description {
+          color: #d0d0d0;
         }
 
         .card-genres {
@@ -425,6 +632,11 @@ function FrontPage() {
           font-style: italic;
           border-top: 1px solid rgba(255, 255, 255, 0.05);
           padding-top: 12px;
+          transition: color 0.3s ease;
+        }
+
+        .show-card:hover .card-genres {
+          color: #bbb;
         }
 
         .empty-message {
@@ -432,9 +644,17 @@ function FrontPage() {
           text-align: center;
           font-size: 1.1rem;
           margin-top: 40px;
+          opacity: 0;
+          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
         }
 
+        /* Responsive adjustments */
         @media (max-width: 768px) {
+          .hero-wrapper {
+            width: calc(100vw - 40px);
+            margin-left: calc(-50vw + 50% + 20px);
+          }
+
           .hero-section {
             flex-direction: column;
             height: auto;
@@ -443,6 +663,7 @@ function FrontPage() {
           .hero-content {
             flex: none;
             padding: 20px;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
           }
 
           .hero-title {
@@ -452,6 +673,7 @@ function FrontPage() {
           .hero-image {
             flex: none;
             height: 200px;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.5s both;
           }
 
           .shows-grid {
@@ -469,6 +691,19 @@ function FrontPage() {
 
           .section-title {
             font-size: 1.5rem;
+          }
+
+          .show-card:hover {
+            transform: translateY(-8px) scale(1.01);
+          }
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
           }
         }
       `}</style>
