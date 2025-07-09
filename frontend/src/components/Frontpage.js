@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
+import { useLocation } from 'react-router-dom';
 
 function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
@@ -10,7 +11,7 @@ function FrontPage() {
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
   const [userName, setUserName] = useState('User');
   const [profilePicture, setProfilePicture] = useState('');
-
+  const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +45,19 @@ function FrontPage() {
         }
       });
   }, []);
+
+  useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const scrollTo = params.get('scrollTo');
+  if (scrollTo) {
+    setTimeout(() => {
+      const target = document.getElementById(scrollTo);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 500); // wait for content to load
+  }
+}, [location.search]);
 
   useEffect(() => {
     if (trendingShows.length === 0) return;
@@ -114,41 +128,43 @@ function FrontPage() {
   return (
     <Layout>
       {/* Hero Section */}
-      {trendingShows.length > 0 && (
-        <section className="hero-section">
-          <div className="hero-content">
-            <h2 className="hero-title">
-              {trending.TITLE}
-            </h2>
-            <p className="hero-description">
-              {trending.DESCRIPTION}
-            </p>
-            <div className="hero-actions">
-              <span className="hero-rating">
-                ⭐ {trending.RATING}
-              </span>
-              <button
-                onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
-                className="hero-button"
-              >
-                Watch Now
-              </button>
+      <div className="hero-wrapper">
+        {trendingShows.length > 0 && (
+          <section className="hero-section">
+            <div className="hero-content">
+              <h2 className="hero-title">
+                {trending.TITLE}
+              </h2>
+              <p className="hero-description">
+                {trending.DESCRIPTION}
+              </p>
+              <div className="hero-actions">
+                <span className="hero-rating">
+                  ⭐ {trending.RATING}
+                </span>
+                <button
+                  onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+                  className="hero-button"
+                >
+                  Watch Now
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="hero-image">
-            <img
-              src={getImagePath(trending.THUMBNAIL)}
-              alt={trending.TITLE}
-              className="hero-img"
-              loading="lazy"
-              onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
-            />
-          </div>
-        </section>
-      )}
+            <div className="hero-image">
+              <img
+                src={getImagePath(trending.THUMBNAIL)}
+                alt={trending.TITLE}
+                className="hero-img"
+                loading="lazy"
+                onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
+              />
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Trending Now Section */}
-      <section className="shows-section">
+      <section id="trending" className="shows-section">
         <h2 className="section-title trending-title">
           Trending Now
         </h2>
@@ -164,7 +180,7 @@ function FrontPage() {
 
       {/* Recommended Shows Section */}
       {recommendedShows.length > 0 && (
-        <section className="shows-section">
+        <section id="recommended" className="shows-section">
           <h2 className="section-title recommended-title">
             Recommended for You
           </h2>
@@ -175,7 +191,7 @@ function FrontPage() {
       )}
 
       {/* Watch Again Section */}
-      <section className="shows-section">
+      <section id="watchagain" className="shows-section">
         <h2 className="section-title watch-again-title">
           Watch Again
         </h2>
@@ -190,17 +206,27 @@ function FrontPage() {
       </section>
 
       <style>{`
+
+        .hero-wrapper {
+  position: relative;
+  width: calc(100vw - 120px); /* leave space on both sides (e.g., 60px left + 60px right) */
+  margin-left: calc(-50vw + 50% + 60px); /* offset to center with left margin preserved */
+  margin-top: -20px;
+  overflow: hidden;
+}
+
+
         .hero-section {
-          display: flex;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
-          overflow: hidden;
-          margin-bottom: 60px;
-          height: 300px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-          backdrop-filter: blur(10px);
-        }
+  display: flex;
+  width: 100vw;
+  height: 380px; /* increase height slightly */
+  background: rgba(255, 255, 255, 0.02);
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+}
 
         .hero-content {
           flex: 0 0 40%;

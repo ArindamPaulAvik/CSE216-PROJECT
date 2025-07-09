@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,31 +12,33 @@ export default function Layout({ children }) {
   const [error, setError] = useState('');
 
   const navigate = useNavigate();
+  const location = useLocation();
+
 
   // Get user data on mount
   const [userImage, setUserImage] = useState(null);
 
-useEffect(() => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    fetch('http://localhost:5000/frontpage', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('Failed to fetch user data');
-      return res.json();
-    })
-    .then(data => {
-      setUserName(data.userName || 'User');
-      setUserImage(data.profilePicture || null);
-    })
-    .catch(err => {
-      console.error('Error fetching user data:', err);
-      setUserName('User');
-      setUserImage(null);
-    });
-  }
-}, []);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch('http://localhost:5000/frontpage', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch user data');
+          return res.json();
+        })
+        .then(data => {
+          setUserName(data.userName || 'User');
+          setUserImage(data.profilePicture || null);
+        })
+        .catch(err => {
+          console.error('Error fetching user data:', err);
+          setUserName('User');
+          setUserImage(null);
+        });
+    }
+  }, []);
 
 
   // Search functionality
@@ -50,7 +52,7 @@ useEffect(() => {
 
     setIsSearching(true);
     setError('');
-    
+
     const handler = setTimeout(() => {
       const token = localStorage.getItem('token');
       fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}`, {
@@ -97,25 +99,25 @@ useEffect(() => {
         key={showId}
         role="button"
         tabIndex={0}
-       onClick={() => {
-  navigate(`/show/${showId}`);
-  setSearchOpen(false);     // <-- close search on navigation
-  setSearchTerm('');        // <-- clear search input to remove results
-  setSearchResults([]);     // <-- clear results too
-}}
-       onKeyDown={e => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    navigate(`/show/${showId}`);
-    setSearchOpen(false);
-    setSearchTerm('');
-    setSearchResults([]);
-  }
-}}
+        onClick={() => {
+          navigate(`/show/${showId}`);
+          setSearchOpen(false);     // <-- close search on navigation
+          setSearchTerm('');        // <-- clear search input to remove results
+          setSearchResults([]);     // <-- clear results too
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            navigate(`/show/${showId}`);
+            setSearchOpen(false);
+            setSearchTerm('');
+            setSearchResults([]);
+          }
+        }}
       >
-        <img 
-          src={`/shows/${thumbnail}`} 
-          alt={title} 
-          className="movie-thumbnail" 
+        <img
+          src={`/shows/${thumbnail}`}
+          alt={title}
+          className="movie-thumbnail"
           loading="lazy"
           onError={(e) => {
             e.target.src = '/placeholder.jpg'; // Fallback image
@@ -164,11 +166,19 @@ useEffect(() => {
     }
   };
 
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+
   return (
     <div className="layout-container">
       {/* Backdrop for mobile */}
       {menuOpen && (
-        <div 
+        <div
           className="sidebar-backdrop"
           onClick={() => setMenuOpen(false)}
         />
@@ -182,18 +192,18 @@ useEffect(() => {
       >
         <div className="sidebar-header">
           <FiMenu size={24} className="menu-icon" />
-         {menuOpen && (
-  <span
-    className="logo-text logo-clickable"
-    onClick={() => {
-      navigate('/frontpage');
-      setMenuOpen(false);
-    }}
-    title="Go to frontpage"
-  >
-    RnbDom
-  </span>
-)}
+          {menuOpen && (
+            <span
+              className="logo-text logo-clickable"
+              onClick={() => {
+                navigate('/frontpage');
+                setMenuOpen(false);
+              }}
+              title="Go to frontpage"
+            >
+              RnbDom
+            </span>
+          )}
 
 
 
@@ -223,8 +233,8 @@ useEffect(() => {
                       autoFocus
                     />
                     {searchTerm && (
-                      <FiX 
-                        size={16} 
+                      <FiX
+                        size={16}
                         className="clear-search-icon"
                         onClick={() => setSearchTerm('')}
                       />
@@ -242,7 +252,7 @@ useEffect(() => {
 
             {/* Navigation Items */}
             <div className="nav-section">
-              
+
 
               <div className="menu-item" onClick={() => handleMenuItemClick('/actors')}>
                 <FiUsers size={18} />
@@ -271,49 +281,54 @@ useEffect(() => {
         )}
       </div>
 
-{/* Main Content */}
-<div className="main-content">
-  {/* Header with user info */}
-  <div className="header">
-    <div
-      className="user-info"
-      onClick={() => navigate('/profile')}
-      style={{ cursor: 'pointer' }}
-    >
-      {userImage ? (
-  <img
-    src={`http://localhost:5000/images/user/${userImage}`}
-    alt="Profile"
-    className="user-avatar-img"
-    onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
-  />
-) : (
-  <div className="user-avatar">
-    {userName ? userName.charAt(0).toUpperCase() : 'U'}
-  </div>
-)}
-      <span className="user-name">{userName || 'User'}</span>
-    </div>
-  </div>
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Header with user info */}
+        <div className="header">
+          {location.pathname === '/frontpage' && (
+            <div className="button-group">
+              <button onClick={() => scrollToSection('trending')} className="header-button">Trending</button>
+              <button onClick={() => scrollToSection('recommended')} className="header-button">Recommended</button>
+              <button onClick={() => scrollToSection('watchagain')} className="header-button">Watch Again</button>
+            </div>
+          )}
 
-  {/* Content Area */}
-  <div className="content-area">
-    {searchTerm.trim() !== '' ? (
-      <>
-        <h2 className="search-results-title">
-          Search Results {isSearching && '(Searching...)'}
-        </h2>
-        <div className="movie-grid">
-          {searchResults.length > 0
-            ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
-            : !isSearching && <p className="no-results">No results found</p>}
+          <div className="user-info" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
+            {userImage ? (
+              <img
+                src={`http://localhost:5000/images/user/${userImage}`}
+                alt="Profile"
+                className="user-avatar-img"
+                onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
+              />
+            ) : (
+              <div className="user-avatar">
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
+            <span className="user-name">{userName || 'User'}</span>
+          </div>
         </div>
-      </>
-    ) : (
-      children
-    )}
-  </div>
-</div>
+
+
+        {/* Content Area */}
+        <div className="content-area">
+          {searchTerm.trim() !== '' ? (
+            <>
+              <h2 className="search-results-title">
+                Search Results {isSearching && '(Searching...)'}
+              </h2>
+              <div className="movie-grid">
+                {searchResults.length > 0
+                  ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
+                  : !isSearching && <p className="no-results">No results found</p>}
+              </div>
+            </>
+          ) : (
+            children
+          )}
+        </div>
+      </div>
 
       {/* Enhanced Styles - Darker Theme */}
       <style>{`
@@ -337,6 +352,61 @@ useEffect(() => {
           display: none;
         }
 
+        .header-button {
+            font-weight: 700;
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            outline: none;
+
+            /* Gradient text */
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6); /* blue to bright purple */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            position: relative;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+          }
+
+          .header-button::after {
+            content: "";
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            bottom: 4px;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transform-origin: center;
+            transform: scaleX(1);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            border-radius: 1px;
+            pointer-events: none;
+            opacity: 0.6;
+          }
+
+          .header-button:hover {
+            /* Make text glow in purple */
+            text-shadow: 0 0 10px #8b5cf6, 0 0 15px #3b82f6;
+            color: transparent; /* keep gradient */
+          }
+
+          .header-button:hover::after {
+            transform: scaleX(1.4);
+            opacity: 1;
+          }
+
+          .button-group {
+            margin-right: 50px;
+            display: inline-flex; /* keep buttons inline */
+            gap: 10px; /* optional spacing */
+          }
+
+
+
            .logo-text {
   font-weight: 700;
   font-size: 24px; /* Larger */
@@ -351,7 +421,6 @@ useEffect(() => {
   text-shadow: 0 0 8px rgba(255, 76, 76, 0.8);
   cursor: pointer;
 }
-
 
         @media (max-width: 768px) {
           .sidebar-backdrop {

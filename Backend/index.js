@@ -329,20 +329,26 @@ res.json({
 });
 
 // ======================== GET FULL SHOW DETAILS ========================
+
 app.get('/show/:id', async (req, res) => {
   const showId = req.params.id;
 
   try {
+    // Single query approach using GROUP_CONCAT to get all genres in one go
     const [rows] = await pool.query(`
       SELECT s.*, 
              c.CATEGORY_NAME,
              p.PUBLISHER_NAME,
-             a.AGE_RESTRICTION_NAME
+             a.AGE_RESTRICTION_NAME,
+             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') as GENRES
       FROM \`SHOW\` s
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
       LEFT JOIN AGE_RESTRICTION a ON s.AGE_RESTRICTION_ID = a.AGE_RESTRICTION_ID
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE s.SHOW_ID = ?
+      GROUP BY s.SHOW_ID
       LIMIT 1
     `, [showId]);
 

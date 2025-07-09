@@ -17,6 +17,10 @@ function ShowDetails() {
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const videoRef = useRef(null);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
+
   // Fetch current favorite status on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -276,7 +280,7 @@ function ShowDetails() {
             }}>
               {show.TITLE} {show.CATEGORY_ID === 2 && `S${show.SEASON}`}
             </h1>
-            
+
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -297,7 +301,7 @@ function ShowDetails() {
                 <span>⭐</span>
                 <span>{show.RATING}/10</span>
               </div>
-              
+
               <span style={{
                 background: 'rgba(255,255,255,0.1)',
                 padding: '8px 16px',
@@ -308,7 +312,7 @@ function ShowDetails() {
               }}>
                 {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
               </span>
-              
+
               <span style={{
                 background: 'rgba(255,255,255,0.1)',
                 padding: '8px 16px',
@@ -319,7 +323,7 @@ function ShowDetails() {
               }}>
                 {show.RELEASE_DATE?.slice(0, 4)}
               </span>
-              
+
               {show.AGE_RESTRICTION_NAME && (
                 <span style={{
                   background: 'rgba(255,255,255,0.2)',
@@ -350,7 +354,7 @@ function ShowDetails() {
               alignItems: 'center',
               flexWrap: 'wrap'
             }}>
-              <button 
+              <button
                 onClick={() => selectedEpisode && playEpisode(selectedEpisode)}
                 style={{
                   background: 'linear-gradient(45deg, #fff 0%, #f0f0f0 100%)',
@@ -424,103 +428,128 @@ function ShowDetails() {
           margin: '0 auto',
           color: '#fff'
         }}>
-          {/* Show Information */}
-          <div style={{
-            marginBottom: '40px',
-            lineHeight: '1.8'
-          }}>
-            <div style={{
-              fontSize: '1.1rem',
-              color: '#ccc'
-            }}>
-              <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Category:</strong> {show.CATEGORY_NAME || 'N/A'}
-              </p>
-              
-              <p style={{ marginBottom: '15px' }}>
-               <strong style={{ color: '#fff' }}>Genre:</strong> {show.GENRES || 'N/A' }
-              </p>
-              
-              <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Duration:</strong> {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
-              </p>
-              
-              <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Release Date:</strong> {formatReleaseDate(show.RELEASE_DATE)}
-              </p>
-              
-              <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Publisher:</strong> {show.PUBLISHER_NAME || 'N/A'}
-              </p>
-              
-              <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Rating:</strong> {show.RATING}/10
-              </p>
-              
-              <p style={{ marginBottom: '15px' }}>
-                <strong style={{ color: '#fff' }}>Age Rating:</strong> {show.AGE_RESTRICTION_NAME || 'N/A'}
-              </p>
-              
-              {show.SEASON_COUNT > 0 && (
-                <p style={{ marginBottom: '15px' }}>
-                  <strong style={{ color: '#fff' }}>Seasons:</strong> {show.SEASON_COUNT}
-                </p>
-              )}
-            </div>
+          {/* Container for Episodes and Show Info */}
+<div style={{
+  display: 'flex',
+  gap: '40px',
+  marginTop: '40px',
+  marginBottom: '30px',
+  width: '100%', // full width so info box can go all the way right
+  maxWidth: '100vw', // limit to viewport width
+  boxSizing: 'border-box',
+  paddingRight: 0,  // no right padding to allow edge alignment
+}}>
 
-            {/* Episodes Section */}
-            {episodes.length > 0 && (
-              <div style={{ marginTop: '40px' }}>
-                <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px', color: '#fff' }}>
-                  Episodes
-                </h2>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: '15px',
-                  marginBottom: '30px'
-                }}>
-                  {episodes.map((episode) => (
-                    <div
-                      key={episode.SHOW_EPISODE_ID}
-                      style={{
-                        backgroundColor: selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '#333' : '#1a1a1a',
-                        padding: '15px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        border: selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '2px solid #e50914' : '1px solid #333',
-                        transition: 'all 0.3s ease',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#2a2a2a';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '#333' : '#1a1a1a';
-                      }}
-                    >
-                      <div onClick={() => setSelectedEpisode(episode)} style={{cursor: 'pointer'}}>
-                        <h3 style={{ color: '#fff', marginBottom: '5px' }}>
-                          Episode {episode.EPISODE_NUMBER}: {episode.SHOW_EPISODE_TITLE}
-                        </h3>
-                        <p style={{ color: '#ccc', fontSize: '0.9rem' }}>
-                          {episode.SHOW_EPISODE_DESCRIPTION}
-                        </p>
-                        <p style={{ color: '#999', fontSize: '0.8rem', marginTop: '5px' }}>
-                          {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+  {/* Episodes Section (left) */}
+  {/* Episodes Section (left) */}
+{episodes.length > 0 && (
+  <div style={{
+    width: '500px',  // Adjust width as needed
+    maxWidth: '100%', 
+    minWidth: '300px',
+    flexShrink: 0,
+  }}>
+    <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px', color: '#fff' }}>
+      Episodes
+    </h2>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+    }}>
+      {episodes.map((episode) => (
+        <div
+          key={episode.SHOW_EPISODE_ID}
+          style={{
+            backgroundColor: selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '#333' : '#1a1a1a',
+            padding: '10px 15px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            border: selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '2px solid #e50914' : '1px solid #333',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#2a2a2a';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = selectedEpisode?.SHOW_EPISODE_ID === episode.SHOW_EPISODE_ID ? '#333' : '#1a1a1a';
+          }}
+          onClick={() => {
+            setSelectedEpisode(episode);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        >
+          <span style={{ color: '#fff', fontWeight: '600' }}>
+            Episode {episode.EPISODE_NUMBER}
+          </span>
+          <span style={{ color: '#999', fontSize: '0.85rem' }}>
+            {formatDuration(episode.SHOW_EPISODE_DURATION)}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
-            {/* Comments Section */}
-            {selectedEpisode && (
-              <CommentsSection selectedEpisode={selectedEpisode} />
-            )}
-          </div>
+
+  {/* Show Information Section (right) */}
+  <div style={{
+    flex: '0 0 280px',  // fixed width
+    position: 'sticky',
+    top: '20px',       // optional: so it sticks slightly below top on scroll
+    alignSelf: 'flex-start',
+    right: 0,
+    background: 'rgba(42, 42, 42, 0.85)',
+    padding: '20px 25px',
+    borderRadius: '12px 0 0 12px', // rounded only left side for style
+    color: '#ccc',
+    lineHeight: '1.8',
+    boxShadow: 'none',
+    marginLeft: 'auto', // keep pushed right
+  }}> 
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Category:</strong> {show.CATEGORY_NAME || 'N/A'}
+    </p>
+
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Genre:</strong> {show.GENRES || 'N/A'}
+    </p>
+
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Duration:</strong> {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
+    </p>
+
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Release Date:</strong> {formatReleaseDate(show.RELEASE_DATE)}
+    </p>
+
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Publisher:</strong> {show.PUBLISHER_NAME || 'N/A'}
+    </p>
+
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Rating:</strong> {show.RATING}/10
+    </p>
+
+    <p style={{ marginBottom: '15px' }}>
+      <strong style={{ color: '#fff' }}>Age Rating:</strong> {show.AGE_RESTRICTION_NAME || 'N/A'}
+    </p>
+
+    {show.SEASON_COUNT > 0 && (
+      <p style={{ marginBottom: '15px' }}>
+        <strong style={{ color: '#fff' }}>Seasons:</strong> {show.SEASON_COUNT}
+      </p>
+    )}
+  </div>
+</div>
+
+{/* Comments Section below */}
+{selectedEpisode && (
+  <CommentsSection selectedEpisode={selectedEpisode} />
+)}
         </div>
       </div>
     </Layout>
