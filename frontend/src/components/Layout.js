@@ -142,7 +142,26 @@ export default function Layout({ children, activeSection }) {
 
   const handleSearchToggle = () => {
     setSearchOpen(prev => !prev);
-    if (searchOpen) {
+    if (!searchOpen) {
+      setSearchTerm('');
+      setIsSearching(true);
+      setError('');
+      // Immediately fetch all shows with empty string search
+      const token = localStorage.getItem('token');
+      fetch('http://localhost:5000/search?query=', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setSearchResults(data.results || data.shows || data || []);
+          setIsSearching(false);
+        })
+        .catch(() => {
+          setSearchResults([]);
+          setIsSearching(false);
+          setError('Search failed. Please try again.');
+        });
+    } else {
       setSearchTerm('');
       setSearchResults([]);
       setError('');

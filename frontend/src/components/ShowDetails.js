@@ -632,16 +632,31 @@ function ShowDetails() {
             y: heroY, 
             opacity: heroOpacity,
             position: 'relative',
-            height: '70vh',
-            background: `linear-gradient(rgba(22,33,62,0.7), rgba(26,26,64,0.95)), url(/showS/${show.THUMBNAIL}) center/cover`,
+            height: '82vh', // Increased height for more space
+            background: `linear-gradient(rgba(22,33,62,0.55), rgba(26,26,64,0.90)), url(/banners/${show.BANNER}) center/cover`, // Less opaque overlay
             display: 'flex',
             alignItems: 'flex-end',
-            padding: '0 60px 60px'
+            padding: '0 60px 80px', // More bottom padding
+            overflow: 'hidden'
           }}
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
+          {/* Fade-out gradient at the bottom */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: '120px',
+              background: 'linear-gradient(to bottom, rgba(26,26,64,0) 0%, #16213e 100%)',
+              pointerEvents: 'none',
+              zIndex: 2
+            }}
+          />
+
           <motion.div 
             style={{
               maxWidth: '800px',
@@ -1082,6 +1097,18 @@ function ShowDetails() {
                     {show.WATCH_COUNT || 0} views
                   </p>
                 </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <h3 style={{ color: '#533483', marginBottom: '10px', fontSize: '1.1rem', fontWeight: '600' }}>
+                    Genre
+                  </h3>
+                  <p style={{ fontSize: '0.95rem', color: '#ccc' }}>
+                    {show.GENRES || 'N/A'}
+                  </p>
+                </motion.div>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -1111,23 +1138,7 @@ function ShowDetails() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
-              >
-                <motion.h2 
-                  style={{
-                    fontSize: '2.2rem',
-                    fontWeight: 'bold',
-                    marginBottom: '30px',
-                    color: '#ccc',
-                    textAlign: 'center',
-                    textShadow: '1px 1px 2px #533483'
-                  }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 1.0 }}
-                >
-                  Comments
-                </motion.h2>
-                
+              > 
                 <motion.div 
                   style={{
                     background: 'rgba(22, 33, 62, 0.85)',

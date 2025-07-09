@@ -527,22 +527,6 @@ function CommentSection({ episodeId }) {
                   {comment.USERNAME || 'Anonymous'}
                   {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
                 </strong>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  {/* Delete for comment (same as for replies) */}
-                  {(() => { return String(comment.USER_ID) === String(currentUserId) && !comment.isTemp; })() && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(comment.COMMENT_ID, false, null)}
-                      disabled={actionLoading.has(comment.COMMENT_ID)}
-                      style={{ ...iconButtonStyle, color: actionLoading.has(comment.COMMENT_ID) ? '#555' : '#e50914', background: 'rgba(229, 9, 20, 0.08)', border: '1px solid #e50914', borderRadius: '6px' }}
-                    >
-                      <motion.span whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 4px #e50914)' }} whileTap={{ scale: 0.9 }}>
-                        <AiFillDelete size={16} />
-                      </motion.span>
-                      Delete
-                    </button>
-                  )}
-                </div>
               </div>
               {/* Comment Content */}
               <p style={{
