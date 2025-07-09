@@ -4,37 +4,42 @@ import { motion, useInView } from 'framer-motion';
 import axios from 'axios';
 import Layout from './Layout';
 
-function ActorsPage() {
-  const [actors, setActors] = useState([]);
-  const [filteredActors, setFilteredActors] = useState([]);
+function DirectorsPage() {
+  const [directors, setDirectors] = useState([]);
+  const [filteredDirectors, setFilteredDirectors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     axios
-      .get('http://localhost:5000/actors', {
+      .get('http://localhost:5000/directors', {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        setActors(res.data);
-        setFilteredActors(res.data);
+        // Ensure DIRECTOR_NAME is always set
+        const directorsWithName = res.data.map(d => ({
+          ...d,
+          DIRECTOR_NAME: d.DIRECTOR_NAME || ((d.DIRECTOR_FIRSTNAME && d.DIRECTOR_LASTNAME) ? `${d.DIRECTOR_FIRSTNAME} ${d.DIRECTOR_LASTNAME}` : '')
+        }));
+        setDirectors(directorsWithName);
+        setFilteredDirectors(directorsWithName);
       })
       .catch(console.error);
   }, []);
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
-      setFilteredActors(actors);
+      setFilteredDirectors(directors);
     } else {
-      const filtered = actors.filter(actor =>
-        actor.NAME.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = directors.filter(director =>
+        (director.DIRECTOR_NAME || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredActors(filtered);
+      setFilteredDirectors(filtered);
     }
-  }, [searchTerm, actors]);
+  }, [searchTerm, directors]);
 
-  const ActorCard = ({ actor, index }) => {
+  const DirectorCard = ({ director, index }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { 
       once: true, 
@@ -58,14 +63,14 @@ function ActorsPage() {
           transition: { duration: 0.3 },
         }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => navigate(`/actor/${actor.ACTOR_ID}`)}
+        onClick={() => navigate(`/director/${director.DIRECTOR_ID}`)}
         className="actor-card"
       >
         <div className="actor-card-inner">
           <div className="actor-image-container">
             <motion.img
-              src={`/actors/${actor.PICTURE}`}
-              alt={actor.NAME}
+              src={`/directors/${director.PICTURE}`}
+              alt={director.DIRECTOR_NAME}
               className="actor-image"
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.4 }}
@@ -80,7 +85,7 @@ function ActorsPage() {
                 whileHover={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <h3 className="actor-name">{actor.NAME}</h3>
+                <h3 className="actor-name">{director.DIRECTOR_NAME}</h3>
                 <p className="actor-role">View Profile</p>
               </motion.div>
             </div>
@@ -90,9 +95,9 @@ function ActorsPage() {
             whileHover={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
             transition={{ duration: 0.3 }}
           >
-            <p className="actor-name-bottom">{actor.NAME}</p>
+            <p className="actor-name-bottom">{director.DIRECTOR_NAME}</p>
             <div className="actor-stats">
-              <span className="stat-item">✨ Actor</span>
+              <span className="stat-item">🎬 Director</span>
             </div>
           </motion.div>
         </div>
@@ -116,7 +121,7 @@ function ActorsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            🎬 Actors
+            🎬 Directors
           </motion.h1>
           <motion.p
             className="page-subtitle"
@@ -124,9 +129,8 @@ function ActorsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Discover talented actors and their amazing performances
+            Discover talented directors and their amazing works
           </motion.p>
-          
           {/* Search Bar */}
           <motion.div
             className="search-container"
@@ -150,7 +154,7 @@ function ActorsPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search actors..."
+                placeholder="Search directors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
@@ -177,17 +181,16 @@ function ActorsPage() {
             </div>
           </motion.div>
         </motion.div>
-
-        {/* Actor Grid */}
+        {/* Director Grid */}
         <motion.div
           className="actors-grid"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          {filteredActors.length > 0 ? (
-            filteredActors.map((actor, index) => (
-              <ActorCard key={actor.ACTOR_ID} actor={actor} index={index} />
+          {filteredDirectors.length > 0 ? (
+            filteredDirectors.map((director, index) => (
+              <DirectorCard key={director.DIRECTOR_ID} director={director} index={index} />
             ))
           ) : (
             <div className="no-results">
@@ -211,14 +214,13 @@ function ActorsPage() {
                   <circle cx="12" cy="12" r="10" />
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
-                <h3>No actors found</h3>
+                <h3>No directors found</h3>
                 <p>Try adjusting your search query</p>
               </motion.div>
             </div>
           )}
         </motion.div>
       </div>
-
       <style jsx>{`
         .actors-page {
           min-height: 100vh;
@@ -506,4 +508,4 @@ function ActorsPage() {
   );
 }
 
-export default ActorsPage;
+export default DirectorsPage;

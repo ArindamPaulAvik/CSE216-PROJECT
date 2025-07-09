@@ -20,6 +20,8 @@ function App() {
           <Route path="/show/:id" element={<ShowDetails />} />
           <Route path="/actors" element={<ActorsPage />} />
           <Route path="/actor/:id" element={<ActorDetailPage />} />
+          <Route path="/directors" element={React.createElement(require('./components/DirectorsPage').default)} />
+          <Route path="/director/:id" element={React.createElement(require('./components/DirectorDetailPage').default)} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/favourites" element={<Favourites />} /> {/* Add favorites route */}
         </Routes>

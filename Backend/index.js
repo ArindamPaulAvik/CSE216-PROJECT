@@ -1,3 +1,4 @@
+// ...existing code...
 // index.js
 const express = require('express');
 const cors = require('cors');
@@ -27,6 +28,7 @@ app.use(require('./routes/favorites'));
 app.use(require('./routes/actors'));
 app.use('/search', require('./routes/search'));
 app.use('/comments', require('./routes/comments'));
+app.use('/directors', require('./routes/directors'));
 
 
 
