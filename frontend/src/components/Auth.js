@@ -234,6 +234,7 @@ function Auth() {
       const res = await axios.post('http://localhost:5000/login', loginData);
       if (res.status === 200) {
         localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user_id', res.data.userId); // Store user_id for comment logic
         navigate('/frontpage');
       }
     } catch (err) {

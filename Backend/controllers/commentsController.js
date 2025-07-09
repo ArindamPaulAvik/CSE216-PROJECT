@@ -24,74 +24,67 @@ async function updateCommentCounts(commentId) {
   }
 }
 
-// 🔹 Fetch comments for an episode with username using stored counts and user interactions
+// 🔹 Fetch comments for an episode with nested replies (single level) and user info
 exports.getComments = async (req, res) => {
   const episodeId = req.params.episodeId;
-  const userId = req.user ? req.user.userId : null; // Handle case where user might not be authenticated
-  
+  const userId = req.user ? req.user.userId : null;
   try {
-    let query, params;
-    
-    if (userId) {
-      // Include user's interaction status in the query
-      query = `
-        SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-               u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT,
-               ci.interaction_type AS USER_INTERACTION
-        FROM COMMENT c
-        JOIN USER u ON c.USER_ID = u.USER_ID
-        LEFT JOIN comment_interactions ci ON c.COMMENT_ID = ci.comment_id AND ci.user_id = ?
-        WHERE c.SHOW_EPISODE_ID = ? AND c.DELETED = 0
-        ORDER BY c.TIME DESC
-      `;
-      params = [userId, episodeId];
-    } else {
-      // No user authentication, just get comments without interaction status
-      query = `
-        SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-               u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT,
-               NULL AS USER_INTERACTION
-        FROM COMMENT c
-        JOIN USER u ON c.USER_ID = u.USER_ID
-        WHERE c.SHOW_EPISODE_ID = ? AND c.DELETED = 0
-        ORDER BY c.TIME DESC
-      `;
-      params = [episodeId];
+    // Fetch all comments for the episode
+    const [comments] = await pool.query(
+      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT,
+              c.PARENT_ID, c.DELETED,
+              ${userId ? 'ci.interaction_type AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
+       FROM COMMENT c
+       JOIN USER u ON c.USER_ID = u.USER_ID
+       ${userId ? 'LEFT JOIN comment_interactions ci ON c.COMMENT_ID = ci.comment_id AND ci.user_id = ?' : ''}
+       WHERE c.SHOW_EPISODE_ID = ?
+       ORDER BY c.TIME ASC`,
+      userId ? [userId, episodeId] : [episodeId]
+    );
+
+    // Organize comments into parent and replies (single nested level)
+    const parents = [];
+    const repliesMap = {};
+    for (const c of comments) {
+      if (!c.PARENT_ID) {
+        parents.push({ ...c, replies: [] });
+      } else {
+        if (!repliesMap[c.PARENT_ID]) repliesMap[c.PARENT_ID] = [];
+        repliesMap[c.PARENT_ID].push(c);
+      }
     }
-    
-    const [comments] = await pool.query(query, params);
-    
-    res.json(comments);
+    // Attach replies to parents
+    for (const parent of parents) {
+      parent.replies = repliesMap[parent.COMMENT_ID] || [];
+    }
+    res.json(parents);
   } catch (err) {
     console.error('Error fetching comments:', err);
     res.status(500).json({ error: 'Failed to fetch comments' });
   }
 };
 
-// 🔹 Add a comment
+// 🔹 Add a comment or reply (if parent_id is provided)
 exports.addComment = async (req, res) => {
   const userId = req.user.userId;
-  const { episode_id, comment_text } = req.body;
-  
+  const { episode_id, comment_text, parent_id } = req.body;
   try {
     const [result] = await pool.query(
       `INSERT INTO COMMENT 
        (USER_ID, SHOW_EPISODE_ID, TEXT, PARENT_ID, TIME, IMG_LINK, LIKE_COUNT, DISLIKE_COUNT, DELETED, EDITED, PINNED)
-       VALUES (?, ?, ?, NULL, NOW(), NULL, 0, 0, 0, 0, 0)`,
-      [userId, episode_id, comment_text]
+       VALUES (?, ?, ?, ?, NOW(), NULL, 0, 0, 0, 0, 0)`,
+      [userId, episode_id, comment_text, parent_id || null]
     );
-    
     const [commentRows] = await pool.query(
-  `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-          u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT
-   FROM COMMENT c
-   JOIN USER u ON c.USER_ID = u.USER_ID
-   WHERE c.COMMENT_ID = ?`,
-  [result.insertId]
-);
-
-res.json(commentRows[0]);
-
+      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID
+       FROM COMMENT c
+       JOIN USER u ON c.USER_ID = u.USER_ID
+       WHERE c.COMMENT_ID = ?`,
+      [result.insertId]
+    );
+    res.json(commentRows[0]);
   } catch (err) {
     console.error('❌ Add comment error:', err);
     res.status(500).json({ error: 'Failed to add comment' });
@@ -192,12 +185,20 @@ exports.dislikeComment = async (req, res) => {
   }
 };
 
-// 🔹 Soft delete a comment
+// 🔹 Soft delete a comment (only if user owns it)
 exports.deleteComment = async (req, res) => {
   const commentId = req.params.commentId;
-  
+  const userId = req.user.userId;
   try {
-    await pool.query(`UPDATE COMMENT SET DELETED = 1 WHERE COMMENT_ID = ?`, [commentId]);
+    // Check ownership
+    const [rows] = await pool.query('SELECT USER_ID FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+    if (rows[0].USER_ID !== userId) {
+      return res.status(403).json({ error: 'You can only delete your own comment' });
+    }
+    await pool.query('UPDATE COMMENT SET DELETED = 1 WHERE COMMENT_ID = ?', [commentId]);
     res.json({ message: 'Comment soft-deleted' });
   } catch (err) {
     console.error('Error deleting comment:', err);

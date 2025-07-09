@@ -24,7 +24,7 @@ exports.login = async (req, res) => {
     const userId = rows[0].USER_ID;
     const token = jwt.sign({ userId, email }, SECRET_KEY, { expiresIn: '2h' });
 
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ message: 'Login successful', token, userId });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Internal server error' });
