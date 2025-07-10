@@ -102,6 +102,38 @@ function Auth() {
     birthdate: '',
   });
 
+  // Mouse and background offset for floating background
+  const [mousePosition, setMousePosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const [bgOffset, setBgOffset] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    // Track mouse position
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    // Animate background offset to follow mouse
+    let animationFrame;
+    function animate() {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      // Calculate offset based on mouse position relative to center, max ±15px
+      const offsetX = ((mousePosition.x - centerX) / centerX) * 15;
+      const offsetY = ((mousePosition.y - centerY) / centerY) * 15;
+      setBgOffset(prev => ({
+        x: prev.x + (offsetX - prev.x) * 0.05, // Smoother (was 0.1)
+        y: prev.y + (offsetY - prev.y) * 0.05
+      }));
+      animationFrame = requestAnimationFrame(animate);
+    }
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [mousePosition]);
+
   const getTodayDate = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -220,19 +252,23 @@ function Auth() {
         overflow: 'hidden',
       }}
     >
-      {/* Slightly blurred background image */}
+      {/* Enhanced background image with mouse following */}
       <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 0,
-          background: `url('/images/authpage.png') center center / cover no-repeat`,
-          filter: 'blur(1.2px)', // Reduced blur for more clarity in the center
-        }}
-      />
+  style={{
+    position: 'absolute',
+    top: '-10%',    // Start above the viewport
+    left: '-10%',   // Start left of the viewport
+    right: '-10%',  // Extend right of the viewport
+    bottom: '-10%', // Extend below the viewport
+    zIndex: 0,
+    background: `url('/images/authpage.png') center center / cover no-repeat`,
+    filter: 'blur(1.2px)',
+    transform: `translate(${bgOffset.x}px, ${bgOffset.y}px)`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    willChange: 'transform',
+  }}
+/>
       {/* Strong shadowy gradient on all sides */}
       <div
         style={{
