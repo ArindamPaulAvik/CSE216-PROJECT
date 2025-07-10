@@ -4,6 +4,7 @@ import { AiFillLike, AiFillDislike, AiFillDelete, AiOutlineComment } from 'react
 import { motion } from 'framer-motion';
 import { FaFilter } from 'react-icons/fa';
 import { FaComments } from 'react-icons/fa';
+import { FaImage } from 'react-icons/fa';
 
 // Modal styles
 const modalOverlayStyle = {
@@ -75,6 +76,14 @@ function CommentSection({ episodeId }) {
   const [openMenu, setOpenMenu] = useState(null); // { type, id }
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortMode, setSortMode] = useState('recent'); // 'recent' or 'liked'
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef();
+
+  // Add state for reply image and preview (per reply box)
+  const [replyImage, setReplyImage] = useState(null);
+  const [replyImagePreview, setReplyImagePreview] = useState(null);
+  const replyFileInputRef = useRef();
 
   const token = localStorage.getItem('token');
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -156,9 +165,41 @@ function CommentSection({ episodeId }) {
     }
   }, [episodeId, fetchComments, fetchUserInteractions]);
 
+  // Handle image selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Remove selected image
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   // Add parent comment
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !selectedImage) return;
+    let imgLink = null;
+    let tempImgPreview = imagePreview;
+    if (selectedImage) {
+      // Upload image to backend
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      try {
+        const res = await axios.post('http://localhost:5000/comments/upload-image', formData, {
+          headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+        });
+        imgLink = res.data.imgLink;
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        imgLink = null;
+      }
+    }
     const tempComment = {
       COMMENT_ID: `temp-${Date.now()}`,
       COMMENT_TEXT: newComment,
@@ -167,14 +208,17 @@ function CommentSection({ episodeId }) {
       LIKE_COUNT: 0,
       DISLIKE_COUNT: 0,
       isTemp: true,
-      replies: []
+      replies: [],
+      IMG_LINK: tempImgPreview || imgLink,
     };
     setComments(prev => [tempComment, ...prev]);
     setNewComment('');
+    setSelectedImage(null);
+    setImagePreview(null);
     try {
       const res = await axios.post(
         `http://localhost:5000/comments`,
-        { episode_id: episodeId, comment_text: newComment },
+        { episode_id: episodeId, comment_text: newComment, img_link: imgLink },
         { headers }
       );
       setComments(prev => prev.map(comment =>
@@ -189,9 +233,41 @@ function CommentSection({ episodeId }) {
     }
   };
 
-  // Add reply to a parent comment
+  // Handle reply image selection
+  const handleReplyImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReplyImage(file);
+      setReplyImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Remove selected reply image
+  const handleRemoveReplyImage = () => {
+    setReplyImage(null);
+    setReplyImagePreview(null);
+    if (replyFileInputRef.current) replyFileInputRef.current.value = '';
+  };
+
+  // Add reply to a parent comment (with image support)
   const handleAddReply = async (parentId) => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() && !replyImage) return;
+    let imgLink = null;
+    let tempImgPreview = replyImagePreview;
+    if (replyImage) {
+      // Upload image to backend
+      const formData = new FormData();
+      formData.append('image', replyImage);
+      try {
+        const res = await axios.post('http://localhost:5000/comments/upload-image', formData, {
+          headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+        });
+        imgLink = res.data.imgLink;
+      } catch (err) {
+        console.error('Error uploading reply image:', err);
+        imgLink = null;
+      }
+    }
     const tempReply = {
       COMMENT_ID: `temp-reply-${Date.now()}`,
       COMMENT_TEXT: replyText,
@@ -200,7 +276,8 @@ function CommentSection({ episodeId }) {
       LIKE_COUNT: 0,
       DISLIKE_COUNT: 0,
       isTemp: true,
-      PARENT_ID: parentId
+      PARENT_ID: parentId,
+      IMG_LINK: tempImgPreview || imgLink,
     };
     setComments(prev => prev.map(parent =>
       parent.COMMENT_ID === parentId
@@ -208,11 +285,13 @@ function CommentSection({ episodeId }) {
         : parent
     ));
     setReplyText('');
+    setReplyImage(null);
+    setReplyImagePreview(null);
     setReplyingTo(null);
     try {
       const res = await axios.post(
         `http://localhost:5000/comments`,
-        { episode_id: episodeId, comment_text: tempReply.COMMENT_TEXT, parent_id: parentId },
+        { episode_id: episodeId, comment_text: tempReply.COMMENT_TEXT, parent_id: parentId, img_link: imgLink },
         { headers }
       );
       setComments(prev => prev.map(parent =>
@@ -461,26 +540,61 @@ function CommentSection({ episodeId }) {
       <h2 style={{ color: '#fff', textAlign: 'center', textShadow: '1px 1px 2px #533483', fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '30px' }}>Comments</h2>
       {/* Add Comment Section */}
       <div style={{ marginBottom: '20px' }}>
-        <textarea
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Write a comment..."
-          style={{
-            width: '100%',
-            padding: '15px',
-            backgroundColor: '#16213e',
-            color: '#fff',
-            border: '1.5px solid #533483',
-            borderRadius: '8px',
-            resize: 'none',
-            minHeight: '80px',
-            fontFamily: 'inherit',
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write a comment..."
+            style={{
+              width: '100%',
+              padding: '10px',
+              backgroundColor: '#16213e',
+              color: '#fff',
+              border: '1.5px solid #533483',
+              borderRadius: '8px',
+              resize: 'none',
+              minHeight: '80px',
+              fontFamily: 'inherit',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: 4,
+              padding: 6,
+              marginLeft: 4,
+              boxShadow: selectedImage ? '0 0 8px 2px #a259ff' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'box-shadow 0.2s',
+            }}
+            title="Add image"
+          >
+            <FaImage size={22} color={selectedImage ? '#a259ff' : '#aaa'} />
+          </button>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleImageChange}
+          />
+        </div>
+        {imagePreview && (
+          <div style={{ margin: '10px 0 0 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src={imagePreview} alt="Preview" style={{ maxWidth: 120, maxHeight: 80, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
+            <button onClick={handleRemoveImage} style={{ color: '#e50914', background: 'none', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>Remove</button>
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
           <motion.button
             onClick={handleAddComment}
-            disabled={!newComment.trim()}
+            disabled={!newComment.trim() && !selectedImage}
             whileHover={{
               scale: 1.05,
               boxShadow: '0px 0px 10px #7f5af0',
@@ -488,13 +602,15 @@ function CommentSection({ episodeId }) {
             whileTap={{ scale: 0.95 }}
             style={{
               padding: '10px 22px',
-              background: !newComment.trim() ? '#533483' : 'linear-gradient(45deg, #533483 0%, #16213e 100%)',
+              background: !newComment.trim() && !selectedImage
+                ? '#533483'
+                : 'linear-gradient(45deg, #533483 0%, #16213e 100%)',
               color: '#fff',
               border: 'none',
               borderRadius: '8px',
               fontWeight: 'bold',
               fontSize: '1rem',
-              cursor: !newComment.trim() ? 'not-allowed' : 'pointer',
+              cursor: !newComment.trim() && !selectedImage ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s',
               boxShadow: '0 4px 15px rgba(22,33,62,0.2)'
             }}
@@ -737,6 +853,12 @@ function CommentSection({ episodeId }) {
               }}>
                 {comment.DELETED ? '[DELETED]' : comment.COMMENT_TEXT}
               </p>
+              {/* Show image in comment if exists */}
+              {comment.IMG_LINK && (
+                <div style={{ margin: '10px 0' }}>
+                  <img src={`http://localhost:5000${comment.IMG_LINK}`} alt="Comment" style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
+                </div>
+              )}
               {/* Like/Dislike Buttons + Reply Button */}
               {!comment.isTemp && !comment.DELETED && (
                 <div style={{
@@ -819,37 +941,72 @@ function CommentSection({ episodeId }) {
               {/* Reply Box */}
               {replyingTo === comment.COMMENT_ID && (
                 <div style={{ marginTop: '15px', marginLeft: '0' }}>
-                  <textarea
-                    value={replyText}
-                    onChange={e => setReplyText(e.target.value)}
-                    placeholder="Write a reply..."
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      backgroundColor: '#1a1a40',
-                      color: '#fff',
-                      border: '1.5px solid #7f5af0',
-                      borderRadius: '8px',
-                      resize: 'none',
-                      minHeight: '50px',
-                      fontFamily: 'inherit',
-                    }}
-                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <textarea
+                      value={replyText}
+                      onChange={e => setReplyText(e.target.value)}
+                      placeholder="Write a reply..."
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: '#1a1a40',
+                        color: '#fff',
+                        border: '1.5px solid #7f5af0',
+                        borderRadius: '8px',
+                        resize: 'none',
+                        minHeight: '50px',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => replyFileInputRef.current && replyFileInputRef.current.click()}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: 4,
+                        padding: 6,
+                        marginLeft: 4,
+                        boxShadow: replyImage ? '0 0 8px 2px #a259ff' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'box-shadow 0.2s',
+                      }}
+                      title="Add image"
+                    >
+                      <FaImage size={20} color={replyImage ? '#a259ff' : '#aaa'} />
+                    </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={replyFileInputRef}
+                      style={{ display: 'none' }}
+                      onChange={handleReplyImageChange}
+                    />
+                  </div>
+                  {replyImagePreview && (
+                    <div style={{ margin: '10px 0 0 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <img src={replyImagePreview} alt="Preview" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
+                      <button onClick={handleRemoveReplyImage} style={{ color: '#e50914', background: 'none', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Remove</button>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
                     <motion.button
                       onClick={() => handleAddReply(comment.COMMENT_ID)}
-                      disabled={!replyText.trim()}
+                      disabled={!replyText.trim() && !replyImage}
                       whileHover={{ scale: 1.05, boxShadow: '0px 0px 10px #7f5af0' }}
                       whileTap={{ scale: 0.95 }}
                       style={{
                         padding: '7px 18px',
-                        background: !replyText.trim() ? '#533483' : 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
+                        background: !replyText.trim() && !replyImage ? '#533483' : 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
                         color: '#fff',
                         border: 'none',
                         borderRadius: '8px',
                         fontWeight: 'bold',
                         fontSize: '0.95rem',
-                        cursor: !replyText.trim() ? 'not-allowed' : 'pointer',
+                        cursor: !replyText.trim() && !replyImage ? 'not-allowed' : 'pointer',
                         transition: 'all 0.3s',
                         boxShadow: '0 2px 8px rgba(127,90,240,0.15)'
                       }}
@@ -857,7 +1014,7 @@ function CommentSection({ episodeId }) {
                       Reply
                     </motion.button>
                     <motion.button
-                      onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                      onClick={() => { setReplyingTo(null); setReplyText(''); handleRemoveReplyImage(); }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       style={{
@@ -1074,6 +1231,12 @@ function CommentSection({ episodeId }) {
                             </motion.span>
                             <span style={{ minWidth: '16px' }}>{reply.DISLIKE_COUNT || 0}</span>
                           </button>
+                        </div>
+                      )}
+                      {/* In the reply display, show image if present */}
+                      {reply.IMG_LINK && (
+                        <div style={{ margin: '8px 0' }}>
+                          <img src={`http://localhost:5000${reply.IMG_LINK}`} alt="Reply" style={{ maxWidth: 120, maxHeight: 80, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
                         </div>
                       )}
                     </motion.div>

@@ -1,5 +1,19 @@
 const pool = require('../db');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+
+// Set up multer storage for comment images
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../public/images/comment_uploads'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
 
 // Helper function to update comment counts
 async function updateCommentCounts(commentId) {
@@ -31,7 +45,7 @@ exports.getComments = async (req, res) => {
   try {
     // Fetch all comments for the episode
     const [comments] = await pool.query(
-      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
+      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,c.IMG_LINK,
               u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT,
               c.PARENT_ID, c.DELETED,
               ${userId ? 'ci.interaction_type AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
@@ -75,17 +89,17 @@ exports.getComments = async (req, res) => {
 // 🔹 Add a comment or reply (if parent_id is provided)
 exports.addComment = async (req, res) => {
   const userId = req.user.userId;
-  const { episode_id, comment_text, parent_id } = req.body;
+  const { episode_id, comment_text, parent_id, img_link } = req.body;
   try {
     const [result] = await pool.query(
       `INSERT INTO COMMENT 
        (USER_ID, SHOW_EPISODE_ID, TEXT, PARENT_ID, TIME, IMG_LINK, LIKE_COUNT, DISLIKE_COUNT, DELETED, EDITED, PINNED)
-       VALUES (?, ?, ?, ?, NOW(), NULL, 0, 0, 0, 0, 0)`,
-      [userId, episode_id, comment_text, parent_id || null]
+       VALUES (?, ?, ?, ?, NOW(), ?, 0, 0, 0, 0, 0)`,
+      [userId, episode_id, comment_text, parent_id || null, img_link || null]
     );
     const [commentRows] = await pool.query(
       `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID, c.IMG_LINK
        FROM COMMENT c
        JOIN USER u ON c.USER_ID = u.USER_ID
        WHERE c.COMMENT_ID = ?`,
@@ -278,3 +292,16 @@ exports.getUserInteractions = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user interactions' });
   }
 };
+
+// 🔹 Upload image for comment
+exports.uploadCommentImage = [
+  upload.single('image'),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+    // Return the relative path to be stored in IMG_LINK
+    const imgLink = `/images/comment_uploads/${req.file.filename}`;
+    res.json({ imgLink });
+  }
+];

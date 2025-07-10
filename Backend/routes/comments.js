@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-// At the top of routes/comments.js
-const commentsController = require('../controllers/commentsController'); // Adjust path as needed
+const commentsController = require('../controllers/commentsController');
 const authenticateToken = require('../middleware/authenticateToken');
 
 // ✅ Get all comments for an episode
@@ -14,7 +13,6 @@ router.post('/', authenticateToken, commentsController.addComment);
 router.put('/:commentId/like', authenticateToken, commentsController.likeComment);
 
 // ✅ Dislike a comment
-
 router.put('/:commentId/dislike', authenticateToken, commentsController.dislikeComment);
 
 // ✅ Soft delete a comment
@@ -22,7 +20,9 @@ router.delete('/:commentId', authenticateToken, commentsController.deleteComment
 
 // Add this route to your comments routes file
 // (wherever you have your other comment routes)
-
 router.get('/episode/:episodeId/user-interactions', authenticateToken, commentsController.getUserInteractions);
+
+// Image upload for comments
+router.post('/upload-image', commentsController.uploadCommentImage);
 
 module.exports = router;
