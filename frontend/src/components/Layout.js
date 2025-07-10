@@ -431,9 +431,9 @@ rgb(42, 19, 213)
         }
 
         .logo-clickable:hover {
-          color: #ff4c4c; /* Red shine */
+          color:rgb(91, 76, 255); /* Red shine */
           transform: scale(1.20);
-          text-shadow: 0 0 8px rgba(255, 76, 76, 0.8);
+          text-shadow: 0 0 8px rgba(88, 76, 255, 0.8);
           cursor: pointer;
         }
 
