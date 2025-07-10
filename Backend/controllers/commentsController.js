@@ -47,7 +47,7 @@ exports.getComments = async (req, res) => {
     const [comments] = await pool.query(
       `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,c.IMG_LINK,
               u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, u.PROFILE_PICTURE,
-              c.PARENT_ID, c.DELETED,
+              c.PARENT_ID, c.DELETED, c.EDITED,
               ${userId ? 'ci.interaction_type AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
        FROM COMMENT c
        JOIN USER u ON c.USER_ID = u.USER_ID
@@ -340,3 +340,66 @@ exports.uploadCommentImage = [
     res.json({ imgLink });
   }
 ];
+
+// 🔹 Edit a comment or reply
+// Replace your editComment function with this debug version:
+exports.editComment = async (req, res) => {
+  console.log('🔍 Edit comment called with:', {
+    commentId: req.params.commentId,
+    userId: req.user?.userId,
+    body: req.body
+  });
+
+  const commentId = req.params.commentId;
+  const userId = req.user.userId;
+  const { text } = req.body;
+  
+  if (!text || !text.trim()) {
+    console.log('❌ Text validation failed');
+    return res.status(400).json({ error: 'Text is required' });
+  }
+  
+  try {
+    console.log('🔍 Checking ownership for comment:', commentId);
+    
+    // Check ownership
+    const [rows] = await pool.query('SELECT USER_ID FROM COMMENT WHERE COMMENT_ID = ? AND DELETED = 0', [commentId]);
+    console.log('🔍 Ownership check result:', rows);
+    
+    if (!rows.length) {
+      console.log('❌ Comment not found');
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+    
+    if (rows[0].USER_ID !== userId) {
+      console.log('❌ User not authorized:', { owner: rows[0].USER_ID, requester: userId });
+      return res.status(403).json({ error: 'You can only edit your own comment' });
+    }
+    
+    console.log('✅ Updating comment text...');
+    await pool.query('UPDATE COMMENT SET TEXT = ?, EDITED = 1 WHERE COMMENT_ID = ?', [text, commentId]);
+    
+    console.log('🔍 Fetching updated comment...');
+    const [updated] = await pool.query(
+      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID, c.EDITED,
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID, c.IMG_LINK, u.PROFILE_PICTURE
+       FROM COMMENT c
+       JOIN USER u ON c.USER_ID = u.USER_ID
+       WHERE c.COMMENT_ID = ? AND c.DELETED = 0`,
+      [commentId]
+    );
+    
+    console.log('🔍 Updated comment result:', updated);
+    
+    if (!updated.length) {
+      console.log('❌ Comment not found after update');
+      return res.status(404).json({ error: 'Comment not found after update' });
+    }
+    
+    console.log('✅ Edit successful, returning:', updated[0]);
+    res.json(updated[0]);
+  } catch (err) {
+    console.error('❌ Error editing comment:', err);
+    res.status(500).json({ error: 'Failed to edit comment' });
+  }
+};

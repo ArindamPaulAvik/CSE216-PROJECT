@@ -25,4 +25,7 @@ router.get('/episode/:episodeId/user-interactions', authenticateToken, commentsC
 // Image upload for comments
 router.post('/upload-image', commentsController.uploadCommentImage);
 
+// Edit comment or reply
+router.put('/:commentId/edit', authenticateToken, commentsController.editComment);
+
 module.exports = router;

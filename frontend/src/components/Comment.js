@@ -80,6 +80,8 @@ function CommentSection({ episodeId }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef();
+  const [editingComment, setEditingComment] = useState(null); // { commentId, text, isReply }
+  const [editText, setEditText] = useState('');
 
   // Add state for reply image and preview (per reply box)
   const [replyImage, setReplyImage] = useState(null);
@@ -158,6 +160,79 @@ function CommentSection({ episodeId }) {
       console.error('Error fetching user interactions:', err);
     }
   }, [episodeId, headers]);
+
+  const handleStartEdit = (commentId, text, isReply) => {
+    setEditingComment({ commentId, isReply });
+    setEditText(text);
+    setOpenMenu(null);
+  };
+
+  // Add this function to handle canceling edit
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditText('');
+  };
+
+  // Add this function to handle saving the edit
+  const handleSaveEdit = async (commentId, isReply = false) => {
+    if (!editText.trim()) {
+      alert('Comment text cannot be empty');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/comments/${commentId}/edit`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ text: editText.trim() })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server error: ${response.status}`);
+      }
+
+      const updatedComment = await response.json();
+      
+      // Update the comments state
+      setComments(prev => prev.map(comment => {
+  if (!isReply && comment.COMMENT_ID === commentId) {
+    // Editing parent comment
+    return { 
+      ...comment, 
+      COMMENT_TEXT: updatedComment.COMMENT_TEXT || editText.trim(), 
+      EDITED: updatedComment.EDITED !== undefined ? updatedComment.EDITED : 1
+    };
+  } else if (isReply && comment.replies && comment.replies.some(reply => reply.COMMENT_ID === commentId)) {
+    // Editing reply
+    return {
+      ...comment,
+      replies: comment.replies.map(reply => 
+        reply.COMMENT_ID === commentId 
+          ? { 
+              ...reply, 
+              COMMENT_TEXT: updatedComment.COMMENT_TEXT || editText.trim(), 
+              EDITED: updatedComment.EDITED !== undefined ? updatedComment.EDITED : 1
+            }
+          : reply
+      )
+    };
+  }
+  return comment;
+}));
+
+      // Clear edit state
+      setEditingComment(null);
+      setEditText('');
+      
+    } catch (error) {
+      console.error('Error editing comment:', error);
+      alert(`Failed to edit comment: ${error.message}`);
+    }
+  };
 
   useEffect(() => {
     if (episodeId) {
@@ -754,8 +829,11 @@ function CommentSection({ episodeId }) {
                     {comment.DELETED ? '[USER]' : (comment.USERNAME || 'Anonymous')}
                     {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
                   </strong>
-                  <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em' }}>
+                  <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em', display: 'flex', alignItems: 'center', gap: 6 }}>
                     {formatTime(comment.TIME)}
+                    {!!comment.EDITED && !comment.DELETED && (
+                      <span style={{ color: '#888', fontSize: '12px', fontStyle: 'italic', marginLeft: 4 }}>(edited)</span>
+                    )}
                   </span>
                 </div>
                 {/* Three dots menu button for comment */}
@@ -802,7 +880,7 @@ function CommentSection({ episodeId }) {
                         <>
                           <button
                             type="button"
-                            onClick={() => { setOpenMenu(null); /* implement edit later */ }}
+                            onClick={() => { setOpenMenu(null); handleStartEdit(comment.COMMENT_ID, comment.COMMENT_TEXT, false); }}
                             style={{
                               background: 'none',
                               border: 'none',
@@ -867,6 +945,57 @@ function CommentSection({ episodeId }) {
                 )}
               </div>
               {/* Comment Content */}
+              {editingComment && editingComment.commentId === comment.COMMENT_ID && !editingComment.isReply ? (
+              <div style={{ margin: '10px 0' }}>
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: '#1a1a40',
+                    color: '#fff',
+                    border: '1.5px solid #7f5af0',
+                    borderRadius: '8px',
+                    resize: 'none',
+                    minHeight: '60px',
+                    fontFamily: 'inherit',
+                    fontSize: '14px'
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button
+                    onClick={() => handleSaveEdit(comment.COMMENT_ID, false)}
+                    style={{
+                      padding: '6px 12px',
+                      background: 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#222',
+                      color: '#fff',
+                      border: '1px solid #666',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
               <p style={{
                 margin: '10px 0',
                 lineHeight: '1.5',
@@ -875,6 +1004,7 @@ function CommentSection({ episodeId }) {
               }}>
                 {comment.DELETED ? '[DELETED]' : comment.COMMENT_TEXT}
               </p>
+            )}
               {/* Show image in comment if exists */}
               {comment.IMG_LINK && (
                 <div style={{ margin: '10px 0' }}>
@@ -1105,8 +1235,11 @@ function CommentSection({ episodeId }) {
                           <span style={{ color: '#7f5af0', fontWeight: 600 }}>
                             {reply.DELETED ? '[USER]' : (reply.USERNAME || 'Anonymous')}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}
                           </span>
-                          <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em' }}>
+                          <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em', display: 'flex', alignItems: 'center', gap: 6 }}>
                             {formatTime(reply.TIME)}
+                            {!!reply.EDITED && !reply.DELETED && (
+                              <span style={{ color: '#888', fontSize: '11px', fontStyle: 'italic', marginLeft: 4 }}>(edited)</span>
+                            )}
                           </span>
                         </div>
                         {/* Three dots menu button for reply */}
@@ -1153,7 +1286,7 @@ function CommentSection({ episodeId }) {
                                 <>
                                   <button
                                     type="button"
-                                    onClick={() => { setOpenMenu(null); /* implement edit later */ }}
+                                    onClick={() => { setOpenMenu(null); handleStartEdit(reply.COMMENT_ID, reply.COMMENT_TEXT, true); }}
                                     style={{
                                       background: 'none',
                                       border: 'none',
@@ -1173,7 +1306,7 @@ function CommentSection({ episodeId }) {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => { setOpenMenu(null); handleDelete(reply.COMMENT_ID, true, comment.COMMENT_ID); }}
+                                    onClick={() => handleDelete(reply.COMMENT_ID, true, null)}
                                     style={{
                                       background: 'none',
                                       border: 'none',
@@ -1217,7 +1350,61 @@ function CommentSection({ episodeId }) {
                         </div>
                         )}
                       </div>
-                      <div style={{ color: reply.DELETED ? '#888' : '#fff', marginBottom: '6px' }}>{reply.DELETED ? '[DELETED]' : reply.COMMENT_TEXT}</div>
+                      {editingComment && editingComment.commentId === reply.COMMENT_ID && editingComment.isReply ? (
+  <div style={{ marginBottom: '6px' }}>
+    <textarea
+      value={editText}
+      onChange={(e) => setEditText(e.target.value)}
+      style={{
+        width: '100%',
+        padding: '8px',
+        backgroundColor: '#1a1a40',
+        color: '#fff',
+        border: '1.5px solid #7f5af0',
+        borderRadius: '8px',
+        resize: 'none',
+        minHeight: '50px',
+        fontFamily: 'inherit',
+        fontSize: '13px'
+      }}
+    />
+    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+      <button
+        onClick={() => handleSaveEdit(reply.COMMENT_ID, true)}
+        style={{
+          padding: '5px 10px',
+          background: 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '12px',
+          cursor: 'pointer',
+          fontWeight: 'bold'
+        }}
+      >
+        Save
+      </button>
+      <button
+        onClick={handleCancelEdit}
+        style={{
+          padding: '5px 10px',
+          background: '#222',
+          color: '#fff',
+          border: '1px solid #666',
+          borderRadius: '6px',
+          fontSize: '12px',
+          cursor: 'pointer'
+        }}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+) : (
+  <div style={{ color: reply.DELETED ? '#888' : '#fff', marginBottom: '6px' }}>
+    {reply.DELETED ? '[DELETED]' : reply.COMMENT_TEXT}
+  </div>
+)}
                       {/* Like/Dislike/Reply for reply - all in one row below the reply content */}
                       {!reply.isTemp && !reply.DELETED && (
                         <div style={{
