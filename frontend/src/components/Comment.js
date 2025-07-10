@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { AiFillLike, AiFillDislike, AiFillDelete, AiOutlineComment } from 'react-icons/ai';
 import { motion } from 'framer-motion';
@@ -54,6 +54,7 @@ function CommentSection({ episodeId }) {
   const [actionLoading, setActionLoading] = useState(new Set());
   const [replyingTo, setReplyingTo] = useState(null); // commentId being replied to
   const [replyText, setReplyText] = useState('');
+  const [openMenu, setOpenMenu] = useState(null); // { type, id }
 
   const token = localStorage.getItem('token');
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -443,6 +444,20 @@ function CommentSection({ episodeId }) {
   // Cancel delete
   const cancelDelete = () => setDeleteTarget(null);
 
+  // Add a ref for the menu to handle outside click
+  const menuRef = useRef();
+
+  // Close menu on click outside
+  useEffect(() => {
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenu(null);
+      }
+    }
+    if (openMenu) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openMenu]);
+
   return (
     <div style={{ padding: '20px', color: '#fff', background: 'rgba(22, 33, 62, 0.85)', borderRadius: '15px', border: '1px solid #533483', boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)', maxWidth: '1000px', margin: '0 auto' }}>
       <h2 style={{ color: '#fff', textAlign: 'center', textShadow: '1px 1px 2px #533483', fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '30px' }}>Comments</h2>
@@ -521,12 +536,118 @@ function CommentSection({ episodeId }) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '10px'
+                marginBottom: '10px',
+                position: 'relative'
               }}>
                 <strong style={{ color: '#7f5af0' }}>
                   {comment.USERNAME || 'Anonymous'}
                   {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
                 </strong>
+                {/* Three dots menu button for comment */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    aria-label="More options"
+                    onClick={() => setOpenMenu(openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? null : { type: 'comment', id: comment.COMMENT_ID })}
+                    style={{
+                      background: openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? 'rgba(127,90,240,0.15)' : 'none',
+                      border: 'none',
+                      color: '#aaa',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: '50%',
+                      transition: 'background 0.2s, box-shadow 0.2s',
+                      outline: 'none',
+                      boxShadow: openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 8px 2px #7f5af0'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000'}
+                  >
+                    &#8942;
+                  </button>
+                  {openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID && (
+                    <div ref={menuRef} style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 'calc(100% + 8px)',
+                      background: '#22224a',
+                      border: '1.5px solid #7f5af0',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 12px rgba(127,90,240,0.15)',
+                      zIndex: 10,
+                      minWidth: '110px',
+                      padding: '6px 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                    }}>
+                      {String(comment.USER_ID) === String(currentUserId) && !comment.isTemp ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => { setOpenMenu(null); /* implement edit later */ }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#7f5af0',
+                              fontWeight: 600,
+                              width: '100%',
+                              padding: '10px 16px',
+                              cursor: 'pointer',
+                              fontSize: '15px',
+                              textAlign: 'left',
+                              borderRadius: '6px',
+                              transition: 'background 0.2s',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setOpenMenu(null); handleDelete(comment.COMMENT_ID, false, null); }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#e50914',
+                              fontWeight: 600,
+                              width: '100%',
+                              padding: '10px 16px',
+                              cursor: 'pointer',
+                              fontSize: '15px',
+                              textAlign: 'left',
+                              borderRadius: '6px',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setOpenMenu(null); /* implement report later */ }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ffb300',
+                            fontWeight: 600,
+                            width: '100%',
+                            padding: '10px 16px',
+                            cursor: 'pointer',
+                            fontSize: '15px',
+                            textAlign: 'left',
+                            borderRadius: '6px',
+                            transition: 'background 0.2s',
+                          }}
+                        >
+                          Report
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               {/* Comment Content */}
               <p style={{
@@ -688,8 +809,8 @@ function CommentSection({ episodeId }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
                       style={{
-                        backgroundColor: reply.isTemp ? '#22224a' : '#1a1a40',
-                        border: reply.isTemp ? '2px solid #7f5af0' : '1.5px solid #7f5af0',
+                        backgroundColor: comment.isTemp ? '#1a1a40' : '#16213e', // match parent
+                        border: comment.isTemp ? '2px solid #7f5af0' : '1.5px solid #533483', // match parent
                         borderRadius: '10px',
                         padding: '10px',
                         marginBottom: '10px',
@@ -698,22 +819,111 @@ function CommentSection({ episodeId }) {
                         boxShadow: reply.isTemp ? '0 0 6px 1px #7f5af0' : '0 2px 8px rgba(127,90,240,0.10)'
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', position: 'relative' }}>
                         <span style={{ color: '#7f5af0', fontWeight: 600 }}>{reply.USERNAME || 'Anonymous'}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}</span>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          {/* Delete for reply */}
-                          {(() => { console.log('Reply USER_ID:', reply.USER_ID, 'Current user:', currentUserId); return String(reply.USER_ID) === String(currentUserId) && !reply.isTemp; })() && (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(reply.COMMENT_ID, true, comment.COMMENT_ID)}
-                              disabled={actionLoading.has(reply.COMMENT_ID)}
-                              style={{ ...iconButtonStyle, color: actionLoading.has(reply.COMMENT_ID) ? '#555' : '#e50914', background: 'rgba(229, 9, 20, 0.08)', border: '1px solid #e50914', borderRadius: '6px' }}
-                            >
-                              <motion.span whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 4px #e50914)' }} whileTap={{ scale: 0.9 }}>
-                                <AiFillDelete size={15} />
-                              </motion.span>
-                              Delete
-                            </button>
+                        {/* Three dots menu button for reply */}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            type="button"
+                            aria-label="More options"
+                            onClick={() => setOpenMenu(openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? null : { type: 'reply', id: reply.COMMENT_ID })}
+                            style={{
+                              background: openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? 'rgba(127,90,240,0.15)' : 'none',
+                              border: 'none',
+                              color: '#aaa',
+                              fontSize: '18px',
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                              borderRadius: '50%',
+                              transition: 'background 0.2s, box-shadow 0.2s',
+                              outline: 'none',
+                              boxShadow: openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 8px 2px #7f5af0'}
+                            onMouseLeave={e => e.currentTarget.style.boxShadow = openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000'}
+                          >
+                            &#8942;
+                          </button>
+                          {openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID && (
+                            <div ref={menuRef} style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 'calc(100% + 8px)',
+                              background: '#22224a',
+                              border: '1.5px solid #7f5af0',
+                              borderRadius: '8px',
+                              boxShadow: '0 2px 12px rgba(127,90,240,0.15)',
+                              zIndex: 10,
+                              minWidth: '110px',
+                              padding: '6px 0',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'stretch',
+                            }}>
+                              {String(reply.USER_ID) === String(currentUserId) && !reply.isTemp ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setOpenMenu(null); /* implement edit later */ }}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#7f5af0',
+                                      fontWeight: 600,
+                                      width: '100%',
+                                      padding: '10px 16px',
+                                      cursor: 'pointer',
+                                      fontSize: '15px',
+                                      textAlign: 'left',
+                                      borderRadius: '6px',
+                                      transition: 'background 0.2s',
+                                      marginBottom: '2px',
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setOpenMenu(null); handleDelete(reply.COMMENT_ID, true, comment.COMMENT_ID); }}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#e50914',
+                                      fontWeight: 600,
+                                      width: '100%',
+                                      padding: '10px 16px',
+                                      cursor: 'pointer',
+                                      fontSize: '15px',
+                                      textAlign: 'left',
+                                      borderRadius: '6px',
+                                      transition: 'background 0.2s',
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => { setOpenMenu(null); /* implement report later */ }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#ffb300',
+                                    fontWeight: 600,
+                                    width: '100%',
+                                    padding: '10px 16px',
+                                    cursor: 'pointer',
+                                    fontSize: '15px',
+                                    textAlign: 'left',
+                                    borderRadius: '6px',
+                                    transition: 'background 0.2s',
+                                  }}
+                                >
+                                  Report
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
