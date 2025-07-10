@@ -262,7 +262,7 @@ function Auth() {
     bottom: '-10%', // Extend below the viewport
     zIndex: 0,
     background: `url('/images/authpage.png') center center / cover no-repeat`,
-    filter: 'blur(1.2px)',
+    filter: 'blur(1.5px)',
     transform: `translate(${bgOffset.x}px, ${bgOffset.y}px)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
