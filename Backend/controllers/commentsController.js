@@ -1,5 +1,19 @@
 const pool = require('../db');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+
+// Set up multer storage for comment images
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../public/images/comment_uploads'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
 
 // Helper function to update comment counts
 async function updateCommentCounts(commentId) {
@@ -31,8 +45,8 @@ exports.getComments = async (req, res) => {
   try {
     // Fetch all comments for the episode
     const [comments] = await pool.query(
-      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT,
+      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,c.IMG_LINK,
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, u.PROFILE_PICTURE,
               c.PARENT_ID, c.DELETED,
               ${userId ? 'ci.interaction_type AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
        FROM COMMENT c
@@ -43,10 +57,17 @@ exports.getComments = async (req, res) => {
       userId ? [userId, episodeId] : [episodeId]
     );
 
+    // Map deleted comments to show [DELETED] and [USER]
+    const mappedComments = comments.map(c => ({
+      ...c,
+      COMMENT_TEXT: c.DELETED ? '[DELETED]' : c.COMMENT_TEXT,
+      USERNAME: c.DELETED ? '[USER]' : c.USERNAME
+    }));
+
     // Organize comments into parent and replies (single nested level)
     const parents = [];
     const repliesMap = {};
-    for (const c of comments) {
+    for (const c of mappedComments) {
       if (!c.PARENT_ID) {
         parents.push({ ...c, replies: [] });
       } else {
@@ -68,17 +89,17 @@ exports.getComments = async (req, res) => {
 // 🔹 Add a comment or reply (if parent_id is provided)
 exports.addComment = async (req, res) => {
   const userId = req.user.userId;
-  const { episode_id, comment_text, parent_id } = req.body;
+  const { episode_id, comment_text, parent_id, img_link } = req.body;
   try {
     const [result] = await pool.query(
       `INSERT INTO COMMENT 
        (USER_ID, SHOW_EPISODE_ID, TEXT, PARENT_ID, TIME, IMG_LINK, LIKE_COUNT, DISLIKE_COUNT, DELETED, EDITED, PINNED)
-       VALUES (?, ?, ?, ?, NOW(), NULL, 0, 0, 0, 0, 0)`,
-      [userId, episode_id, comment_text, parent_id || null]
+       VALUES (?, ?, ?, ?, NOW(), ?, 0, 0, 0, 0, 0)`,
+      [userId, episode_id, comment_text, parent_id || null, img_link || null]
     );
     const [commentRows] = await pool.query(
       `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID, c.IMG_LINK
        FROM COMMENT c
        JOIN USER u ON c.USER_ID = u.USER_ID
        WHERE c.COMMENT_ID = ?`,
@@ -186,20 +207,91 @@ exports.dislikeComment = async (req, res) => {
 };
 
 // 🔹 Soft delete a comment (only if user owns it)
+const fs = require('fs');
+
+// 🔹 Soft delete a comment (only if user owns it) + Clean up images
 exports.deleteComment = async (req, res) => {
   const commentId = req.params.commentId;
   const userId = req.user.userId;
+
   try {
-    // Check ownership
-    const [rows] = await pool.query('SELECT USER_ID FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
+    // Check ownership and get image info
+    const [rows] = await pool.query('SELECT USER_ID, PARENT_ID, IMG_LINK FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
     if (!rows.length) {
       return res.status(404).json({ error: 'Comment not found' });
     }
     if (rows[0].USER_ID !== userId) {
       return res.status(403).json({ error: 'You can only delete your own comment' });
     }
+
+    const parentId = rows[0].PARENT_ID;
+    const imgLink = rows[0].IMG_LINK;
+
+    // Helper function to delete image file
+    const deleteImageFile = (imgPath) => {
+      if (imgPath) {
+        const fullPath = path.join(__dirname, '../public', imgPath);
+        const fs = require('fs');
+        fs.unlink(fullPath, (err) => {
+          if (err) {
+            console.error('Error deleting image file:', err);
+          } else {
+            console.log('Image file deleted:', fullPath);
+          }
+        });
+      }
+    };
+
+    // Soft delete the comment
     await pool.query('UPDATE COMMENT SET DELETED = 1 WHERE COMMENT_ID = ?', [commentId]);
-    res.json({ message: 'Comment soft-deleted' });
+
+    // Function to hard delete comment and its deleted children if no undeleted children remain
+    async function tryHardDelete(commentId) {
+      // Check if any undeleted replies exist for this comment
+      const [undeletedReplies] = await pool.query(
+        'SELECT COMMENT_ID FROM COMMENT WHERE PARENT_ID = ? AND DELETED = 0',
+        [commentId]
+      );
+
+      if (undeletedReplies.length === 0) {
+        // Get all images that will be deleted (parent + deleted children)
+        const [imagesToDelete] = await pool.query(
+          'SELECT IMG_LINK FROM COMMENT WHERE COMMENT_ID = ? OR (PARENT_ID = ? AND DELETED = 1)',
+          [commentId, commentId]
+        );
+
+        // Delete image files
+        imagesToDelete.forEach(row => {
+          if (row.IMG_LINK) {
+            deleteImageFile(row.IMG_LINK);
+          }
+        });
+
+        // Hard delete this comment and its deleted children
+        await pool.query(
+          'DELETE FROM COMMENT WHERE COMMENT_ID = ? OR (PARENT_ID = ? AND DELETED = 1)',
+          [commentId, commentId]
+        );
+      } else {
+        // Only soft delete - delete the image immediately since comment is marked as deleted
+        deleteImageFile(imgLink);
+      }
+    }
+
+    // Try hard delete the current comment if no undeleted children
+    await tryHardDelete(commentId);
+
+    // If parent exists and is deleted, check if parent can also be hard deleted
+    if (parentId) {
+      // Check if parent is deleted
+      const [parentRow] = await pool.query('SELECT DELETED FROM COMMENT WHERE COMMENT_ID = ?', [parentId]);
+      if (parentRow.length && parentRow[0].DELETED === 1) {
+        // Try hard delete parent (which deletes parent and all its deleted children)
+        await tryHardDelete(parentId);
+      }
+    }
+
+    res.json({ message: 'Comment deleted successfully' });
   } catch (err) {
     console.error('Error deleting comment:', err);
     res.status(500).json({ error: 'Failed to delete comment' });
@@ -235,3 +327,16 @@ exports.getUserInteractions = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user interactions' });
   }
 };
+
+// 🔹 Upload image for comment
+exports.uploadCommentImage = [
+  upload.single('image'),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+    // Return the relative path to be stored in IMG_LINK
+    const imgLink = `/images/comment_uploads/${req.file.filename}`;
+    res.json({ imgLink });
+  }
+];
