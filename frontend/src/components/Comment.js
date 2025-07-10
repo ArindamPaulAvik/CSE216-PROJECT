@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import axios from 'axios';
 import { AiFillLike, AiFillDislike, AiFillDelete, AiOutlineComment } from 'react-icons/ai';
 import { motion } from 'framer-motion';
+import { FaFilter } from 'react-icons/fa';
+import { FaComments } from 'react-icons/fa';
 
 // Modal styles
 const modalOverlayStyle = {
@@ -43,6 +45,22 @@ const modalButton = {
   transition: 'all 0.2s',
 };
 
+// Helper to format time (e.g., '2 hours ago')
+function formatTime(timeString) {
+  const now = new Date();
+  const commentTime = new Date(timeString);
+  const diffMs = now - commentTime;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? 's' : ''} ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  return commentTime.toLocaleDateString();
+}
+
 function CommentSection({ episodeId }) {
   // Modal state for delete confirmation
   const [deleteTarget, setDeleteTarget] = useState(null); // { commentId, isReply, parentId }
@@ -55,9 +73,25 @@ function CommentSection({ episodeId }) {
   const [replyingTo, setReplyingTo] = useState(null); // commentId being replied to
   const [replyText, setReplyText] = useState('');
   const [openMenu, setOpenMenu] = useState(null); // { type, id }
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortMode, setSortMode] = useState('recent'); // 'recent' or 'liked'
 
   const token = localStorage.getItem('token');
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+
+  const filterRef = useRef();
+
+  // Close filter popup on outside click
+  useEffect(() => {
+    if (!filterOpen) return;
+    function handleClick(e) {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [filterOpen]);
 
   // Always get current user id from localStorage, and update if it changes (even in same tab)
   const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem('user_id'));
@@ -376,61 +410,16 @@ function CommentSection({ episodeId }) {
   // Actually perform the delete after confirmation
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    const { commentId, isReply, parentId } = deleteTarget;
+    const { commentId } = deleteTarget;
     setActionLoading(prev => new Set([...prev, commentId]));
-
-    // Store for restoration
-    let commentToDelete = null;
-    if (isReply && parentId) {
-      const parent = comments.find(c => c.COMMENT_ID === parentId);
-      if (parent && parent.replies) {
-        commentToDelete = parent.replies.find(r => r.COMMENT_ID === commentId);
-      }
-      // Optimistically remove reply
-      setComments(prev => prev.map(c =>
-        c.COMMENT_ID === parentId
-          ? { ...c, replies: c.replies.filter(r => r.COMMENT_ID !== commentId) }
-          : c
-      ));
-    } else {
-      commentToDelete = comments.find(c => c.COMMENT_ID === commentId);
-      // Optimistically remove parent comment
-      setComments(prev => prev.filter(c => c.COMMENT_ID !== commentId));
-    }
-
-    // Remove from user interactions
-    setUserLikes(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(commentId);
-      return newSet;
-    });
-    setUserDislikes(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(commentId);
-      return newSet;
-    });
 
     try {
       await axios.delete(`http://localhost:5000/comments/${commentId}`, { headers });
-    } catch (err) {
-      console.error('Error deleting comment:', err);
-      // Restore on error
-      if (isReply && parentId && commentToDelete) {
-        setComments(prev => prev.map(c =>
-          c.COMMENT_ID === parentId
-            ? { ...c, replies: [...c.replies, commentToDelete] }
-            : c
-        ));
-      } else if (commentToDelete) {
-        setComments(prev => {
-          const newComments = [...prev];
-          const originalIndex = comments.findIndex(c => c.COMMENT_ID === commentId);
-          newComments.splice(originalIndex, 0, commentToDelete);
-          return newComments;
-        });
-      }
+      // After deletion, always fetch latest comments and user interactions from backend
       await fetchComments();
       await fetchUserInteractions();
+    } catch (err) {
+      console.error('Error deleting comment:', err);
     } finally {
       setActionLoading(prev => {
         const newSet = new Set(prev);
@@ -458,6 +447,15 @@ function CommentSection({ episodeId }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [openMenu]);
 
+  // Sort comments and replies by time (most recent first)
+  const sortedComments = [...comments].sort((a, b) => {
+    if (sortMode === 'liked') {
+      return (b.LIKE_COUNT || 0) - (a.LIKE_COUNT || 0) || new Date(b.TIME) - new Date(a.TIME);
+    }
+    // Default: most recent
+    return new Date(b.TIME) - new Date(a.TIME);
+  });
+
   return (
     <div style={{ padding: '20px', color: '#fff', background: 'rgba(22, 33, 62, 0.85)', borderRadius: '15px', border: '1px solid #533483', boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)', maxWidth: '1000px', margin: '0 auto' }}>
       <h2 style={{ color: '#fff', textAlign: 'center', textShadow: '1px 1px 2px #533483', fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '30px' }}>Comments</h2>
@@ -469,7 +467,7 @@ function CommentSection({ episodeId }) {
           placeholder="Write a comment..."
           style={{
             width: '100%',
-            padding: '10px',
+            padding: '15px',
             backgroundColor: '#16213e',
             color: '#fff',
             border: '1.5px solid #533483',
@@ -479,30 +477,104 @@ function CommentSection({ episodeId }) {
             fontFamily: 'inherit',
           }}
         />
-        <motion.button
-          onClick={handleAddComment}
-          disabled={!newComment.trim()}
-          whileHover={{
-            scale: 1.05,
-            boxShadow: '0px 0px 10px #7f5af0',
-          }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            marginTop: '10px',
-            padding: '10px 22px',
-            background: !newComment.trim() ? '#533483' : 'linear-gradient(45deg, #533483 0%, #16213e 100%)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            fontSize: '1rem',
-            cursor: !newComment.trim() ? 'not-allowed' : 'pointer',
-            transition: 'all 0.3s',
-            boxShadow: '0 4px 15px rgba(22,33,62,0.2)'
-          }}
-        >
-          Post Comment
-        </motion.button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+          <motion.button
+            onClick={handleAddComment}
+            disabled={!newComment.trim()}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: '0px 0px 10px #7f5af0',
+            }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              padding: '10px 22px',
+              background: !newComment.trim() ? '#533483' : 'linear-gradient(45deg, #533483 0%, #16213e 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              cursor: !newComment.trim() ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s',
+              boxShadow: '0 4px 15px rgba(22,33,62,0.2)'
+            }}
+          >
+            Post Comment
+          </motion.button>
+          <div style={{ position: 'relative', marginLeft: 'auto' }}>
+            <motion.button
+              type="button"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                outline: filterOpen ? '2px solid #a259ff' : 'none',
+                borderRadius: 4,
+                padding: 2,
+                boxShadow: filterOpen ? '0 0 8px 2px #a259ff' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              whileHover={{
+                boxShadow: '0 0 8px 2px #a259ff',
+                filter: 'drop-shadow(0 0 6px #a259ff)'
+              }}
+              onClick={() => setFilterOpen(v => !v)}
+              aria-label="Filter comments"
+            >
+              <FaFilter size={18} color="#a259ff" />
+            </motion.button>
+            {filterOpen && (
+              <div
+                ref={filterRef}
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  background: '#222',
+                  color: '#fff',
+                  borderRadius: 8,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+                  zIndex: 100,
+                  minWidth: 120,
+                  padding: 8,
+                  marginTop: 6,
+                }}
+              >
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    background: sortMode === 'liked' ? '#a259ff22' : 'none',
+                    borderRadius: 6,
+                    marginBottom: 2,
+                  }}
+                  onClick={() => {
+                    setSortMode('liked');
+                    setFilterOpen(false);
+                  }}
+                >
+                  Most Liked
+                </div>
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    background: sortMode === 'recent' ? '#a259ff22' : 'none',
+                    borderRadius: 6,
+                  }}
+                  onClick={() => {
+                    setSortMode('recent');
+                    setFilterOpen(false);
+                  }}
+                >
+                  Most Recent
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       {/* Comments List */}
       {loading ? (
@@ -515,7 +587,7 @@ function CommentSection({ episodeId }) {
         </div>
       ) : (
         <div>
-          {comments.map((comment) => (
+          {sortedComments.map((comment) => (
             <motion.div
               key={comment.COMMENT_ID}
               initial={comment.isTemp ? { opacity: 0, y: -20 } : false}
@@ -539,11 +611,17 @@ function CommentSection({ episodeId }) {
                 marginBottom: '10px',
                 position: 'relative'
               }}>
-                <strong style={{ color: '#7f5af0' }}>
-                  {comment.USERNAME || 'Anonymous'}
-                  {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
-                </strong>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <strong style={{ color: '#7f5af0' }}>
+                    {comment.DELETED ? '[USER]' : (comment.USERNAME || 'Anonymous')}
+                    {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
+                  </strong>
+                  <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em' }}>
+                    {formatTime(comment.TIME)}
+                  </span>
+                </div>
                 {/* Three dots menu button for comment */}
+                {!comment.DELETED && (
                 <div style={{ position: 'relative' }}>
                   <button
                     type="button"
@@ -648,6 +726,7 @@ function CommentSection({ episodeId }) {
                     </div>
                   )}
                 </div>
+                )}
               </div>
               {/* Comment Content */}
               <p style={{
@@ -656,10 +735,10 @@ function CommentSection({ episodeId }) {
                 wordBreak: 'break-word',
                 color: '#fff'
               }}>
-                {comment.COMMENT_TEXT}
+                {comment.DELETED ? '[DELETED]' : comment.COMMENT_TEXT}
               </p>
               {/* Like/Dislike Buttons + Reply Button */}
-              {!comment.isTemp && (
+              {!comment.isTemp && !comment.DELETED && (
                 <div style={{
                   display: 'flex',
                   gap: '15px',
@@ -820,8 +899,16 @@ function CommentSection({ episodeId }) {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', position: 'relative' }}>
-                        <span style={{ color: '#7f5af0', fontWeight: 600 }}>{reply.USERNAME || 'Anonymous'}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}</span>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ color: '#7f5af0', fontWeight: 600 }}>
+                            {reply.DELETED ? '[USER]' : (reply.USERNAME || 'Anonymous')}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}
+                          </span>
+                          <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em' }}>
+                            {formatTime(reply.TIME)}
+                          </span>
+                        </div>
                         {/* Three dots menu button for reply */}
+                        {!reply.DELETED && (
                         <div style={{ position: 'relative' }}>
                           <button
                             type="button"
@@ -926,10 +1013,11 @@ function CommentSection({ episodeId }) {
                             </div>
                           )}
                         </div>
+                        )}
                       </div>
-                      <div style={{ color: '#fff', marginBottom: '6px' }}>{reply.COMMENT_TEXT}</div>
+                      <div style={{ color: reply.DELETED ? '#888' : '#fff', marginBottom: '6px' }}>{reply.DELETED ? '[DELETED]' : reply.COMMENT_TEXT}</div>
                       {/* Like/Dislike/Reply for reply - all in one row below the reply content */}
-                      {!reply.isTemp && (
+                      {!reply.isTemp && !reply.DELETED && (
                         <div style={{
                           display: 'flex',
                           gap: '15px',
@@ -998,12 +1086,29 @@ function CommentSection({ episodeId }) {
       )}
     {/* Delete Confirmation Modal */}
     {deleteTarget && (
-      <div style={modalOverlayStyle}>
+      <div style={{
+        ...modalOverlayStyle,
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(22, 33, 62, 0.65)',
+      }}>
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.8, opacity: 0 }}
-          style={modalBoxStyle}
+          style={{
+            ...modalBoxStyle,
+            position: 'fixed',
+            left: '50vw',
+            top: '50vh',
+            transform: 'translate(-50%, -50%)',
+            margin: 0,
+            zIndex: 2100,
+          }}
         >
           <h3 style={{ color: '#e50914', marginBottom: '18px', fontWeight: 'bold', fontSize: '1.25rem' }}>Delete Confirmation</h3>
           <div style={{ color: '#fff', marginBottom: '10px', fontSize: '1.08rem' }}>
@@ -1031,7 +1136,6 @@ function CommentSection({ episodeId }) {
     </div>
   );
 }
-
 const iconButtonStyle = {
   background: 'none',
   border: 'none',
@@ -1044,5 +1148,4 @@ const iconButtonStyle = {
   borderRadius: '4px',
   transition: 'all 0.2s ease',
 };
-
 export default CommentSection;

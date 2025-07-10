@@ -43,10 +43,17 @@ exports.getComments = async (req, res) => {
       userId ? [userId, episodeId] : [episodeId]
     );
 
+    // Map deleted comments to show [DELETED] and [USER]
+    const mappedComments = comments.map(c => ({
+      ...c,
+      COMMENT_TEXT: c.DELETED ? '[DELETED]' : c.COMMENT_TEXT,
+      USERNAME: c.DELETED ? '[USER]' : c.USERNAME
+    }));
+
     // Organize comments into parent and replies (single nested level)
     const parents = [];
     const repliesMap = {};
-    for (const c of comments) {
+    for (const c of mappedComments) {
       if (!c.PARENT_ID) {
         parents.push({ ...c, replies: [] });
       } else {
@@ -189,17 +196,53 @@ exports.dislikeComment = async (req, res) => {
 exports.deleteComment = async (req, res) => {
   const commentId = req.params.commentId;
   const userId = req.user.userId;
+
   try {
     // Check ownership
-    const [rows] = await pool.query('SELECT USER_ID FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
+    const [rows] = await pool.query('SELECT USER_ID, PARENT_ID FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
     if (!rows.length) {
       return res.status(404).json({ error: 'Comment not found' });
     }
     if (rows[0].USER_ID !== userId) {
       return res.status(403).json({ error: 'You can only delete your own comment' });
     }
+
+    const parentId = rows[0].PARENT_ID;
+
+    // Soft delete the comment
     await pool.query('UPDATE COMMENT SET DELETED = 1 WHERE COMMENT_ID = ?', [commentId]);
-    res.json({ message: 'Comment soft-deleted' });
+
+    // Function to hard delete comment and its deleted children if no undeleted children remain
+    async function tryHardDelete(commentId) {
+      // Check if any undeleted replies exist for this comment
+      const [undeletedReplies] = await pool.query(
+        'SELECT COMMENT_ID FROM COMMENT WHERE PARENT_ID = ? AND DELETED = 0',
+        [commentId]
+      );
+
+      if (undeletedReplies.length === 0) {
+        // Hard delete this comment and its deleted children
+        await pool.query(
+          'DELETE FROM COMMENT WHERE COMMENT_ID = ? OR (PARENT_ID = ? AND DELETED = 1)',
+          [commentId, commentId]
+        );
+      }
+    }
+
+    // Try hard delete the current comment if no undeleted children
+    await tryHardDelete(commentId);
+
+    // If parent exists and is deleted, check if parent can also be hard deleted
+    if (parentId) {
+      // Check if parent is deleted
+      const [parentRow] = await pool.query('SELECT DELETED FROM COMMENT WHERE COMMENT_ID = ?', [parentId]);
+      if (parentRow.length && parentRow[0].DELETED === 1) {
+        // Try hard delete parent (which deletes parent and all its deleted children)
+        await tryHardDelete(parentId);
+      }
+    }
+
+    res.json({ message: 'Comment deleted successfully' });
   } catch (err) {
     console.error('Error deleting comment:', err);
     res.status(500).json({ error: 'Failed to delete comment' });
