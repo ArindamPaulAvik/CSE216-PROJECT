@@ -207,13 +207,16 @@ exports.dislikeComment = async (req, res) => {
 };
 
 // 🔹 Soft delete a comment (only if user owns it)
+const fs = require('fs');
+
+// 🔹 Soft delete a comment (only if user owns it) + Clean up images
 exports.deleteComment = async (req, res) => {
   const commentId = req.params.commentId;
   const userId = req.user.userId;
 
   try {
-    // Check ownership
-    const [rows] = await pool.query('SELECT USER_ID, PARENT_ID FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
+    // Check ownership and get image info
+    const [rows] = await pool.query('SELECT USER_ID, PARENT_ID, IMG_LINK FROM COMMENT WHERE COMMENT_ID = ?', [commentId]);
     if (!rows.length) {
       return res.status(404).json({ error: 'Comment not found' });
     }
@@ -222,6 +225,22 @@ exports.deleteComment = async (req, res) => {
     }
 
     const parentId = rows[0].PARENT_ID;
+    const imgLink = rows[0].IMG_LINK;
+
+    // Helper function to delete image file
+    const deleteImageFile = (imgPath) => {
+      if (imgPath) {
+        const fullPath = path.join(__dirname, '../public', imgPath);
+        const fs = require('fs');
+        fs.unlink(fullPath, (err) => {
+          if (err) {
+            console.error('Error deleting image file:', err);
+          } else {
+            console.log('Image file deleted:', fullPath);
+          }
+        });
+      }
+    };
 
     // Soft delete the comment
     await pool.query('UPDATE COMMENT SET DELETED = 1 WHERE COMMENT_ID = ?', [commentId]);
@@ -235,11 +254,27 @@ exports.deleteComment = async (req, res) => {
       );
 
       if (undeletedReplies.length === 0) {
+        // Get all images that will be deleted (parent + deleted children)
+        const [imagesToDelete] = await pool.query(
+          'SELECT IMG_LINK FROM COMMENT WHERE COMMENT_ID = ? OR (PARENT_ID = ? AND DELETED = 1)',
+          [commentId, commentId]
+        );
+
+        // Delete image files
+        imagesToDelete.forEach(row => {
+          if (row.IMG_LINK) {
+            deleteImageFile(row.IMG_LINK);
+          }
+        });
+
         // Hard delete this comment and its deleted children
         await pool.query(
           'DELETE FROM COMMENT WHERE COMMENT_ID = ? OR (PARENT_ID = ? AND DELETED = 1)',
           [commentId, commentId]
         );
+      } else {
+        // Only soft delete - delete the image immediately since comment is marked as deleted
+        deleteImageFile(imgLink);
       }
     }
 
