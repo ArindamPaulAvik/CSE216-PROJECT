@@ -1118,6 +1118,9 @@ function ShowDetails() {
             {selectedEpisode && (
               <motion.div 
                 style={{
+                   position: 'static', // or remove position entirely
+                    transform: 'none', // remove any transforms
+                    overflow: 'visible', // ensure modal isn't clipped
                   marginBottom: '50px'
                 }}
                 initial={{ opacity: 0, y: 30 }}

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FaFilter } from 'react-icons/fa';
 import { FaComments } from 'react-icons/fa';
 import { FaImage } from 'react-icons/fa';
+import ReactDOM from 'react-dom';
 
 // Modal styles
 const modalOverlayStyle = {
@@ -1292,54 +1293,82 @@ function CommentSection({ episodeId }) {
         </div>
       )}
     {/* Delete Confirmation Modal */}
-    {deleteTarget && (
-      <div style={{
-        ...modalOverlayStyle,
-        position: 'fixed',
-        inset: 0,
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(22, 33, 62, 0.65)',
+   {deleteTarget && ReactDOM.createPortal(
+  <div 
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(22, 33, 62, 0.65)',
+      backdropFilter: 'blur(4px)',
+    }}
+    onClick={cancelDelete} // Click outside to close
+  >
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.8, opacity: 0 }}
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking modal
+      style={{
+        ...modalBoxStyle,
+        position: 'relative',
+        margin: 0,
+        zIndex: 2100,
+        maxWidth: '90vw',
+        maxHeight: '90vh',
+      }}
+    >
+      <h3 style={{ 
+        color: '#e50914', 
+        marginBottom: '18px', 
+        fontWeight: 'bold', 
+        fontSize: '1.25rem' 
       }}>
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          style={{
-            ...modalBoxStyle,
-            position: 'fixed',
-            left: '50vw',
-            top: '50vh',
-            transform: 'translate(-50%, -50%)',
-            margin: 0,
-            zIndex: 2100,
-          }}
-        >
-          <h3 style={{ color: '#e50914', marginBottom: '18px', fontWeight: 'bold', fontSize: '1.25rem' }}>Delete Confirmation</h3>
-          <div style={{ color: '#fff', marginBottom: '10px', fontSize: '1.08rem' }}>
-            Are you sure you want to delete this {deleteTarget.isReply ? 'reply' : 'comment'}?
-          </div>
-          <div style={modalButtonRow}>
-            <button
-              onClick={confirmDelete}
-              style={{ ...modalButton, background: 'linear-gradient(45deg, #e50914 0%, #7f5af0 100%)', color: '#fff', border: 'none' }}
-              disabled={actionLoading.has(deleteTarget.commentId)}
-            >
-              {actionLoading.has(deleteTarget.commentId) ? 'Deleting...' : 'Delete'}
-            </button>
-            <button
-              onClick={cancelDelete}
-              style={{ ...modalButton, background: '#222', color: '#fff', border: '1.5px solid #7f5af0' }}
-              disabled={actionLoading.has(deleteTarget.commentId)}
-            >
-              Cancel
-            </button>
-          </div>
-        </motion.div>
+        Delete Confirmation
+      </h3>
+      <div style={{ 
+        color: '#fff', 
+        marginBottom: '10px', 
+        fontSize: '1.08rem' 
+      }}>
+        Are you sure you want to delete this {deleteTarget.isReply ? 'reply' : 'comment'}?
       </div>
-    )}
+      <div style={modalButtonRow}>
+        <button
+          onClick={confirmDelete}
+          style={{ 
+            ...modalButton, 
+            background: 'linear-gradient(45deg, #e50914 0%, #7f5af0 100%)', 
+            color: '#fff', 
+            border: 'none' 
+          }}
+          disabled={actionLoading.has(deleteTarget.commentId)}
+        >
+          {actionLoading.has(deleteTarget.commentId) ? 'Deleting...' : 'Delete'}
+        </button>
+        <button
+          onClick={cancelDelete}
+          style={{ 
+            ...modalButton, 
+            background: '#222', 
+            color: '#fff', 
+            border: '1.5px solid #7f5af0' 
+          }}
+          disabled={actionLoading.has(deleteTarget.commentId)}
+        >
+          Cancel
+        </button>
+      </div>
+    </motion.div>
+  </div>,
+  document.body
+)}
     </div>
   );
 }
