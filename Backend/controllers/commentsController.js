@@ -46,7 +46,7 @@ exports.getComments = async (req, res) => {
     // Fetch all comments for the episode
     const [comments] = await pool.query(
       `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,c.IMG_LINK,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT,
+              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, u.PROFILE_PICTURE,
               c.PARENT_ID, c.DELETED,
               ${userId ? 'ci.interaction_type AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
        FROM COMMENT c

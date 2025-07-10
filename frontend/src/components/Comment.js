@@ -728,6 +728,27 @@ function CommentSection({ episodeId }) {
                 position: 'relative'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {/* Profile Picture */}
+                  <img
+                    src={
+                      !comment.DELETED
+                        ? (comment.PROFILE_PICTURE
+                            ? `http://localhost:5000/images/user/${comment.PROFILE_PICTURE}`
+                            : 'http://localhost:5000/images/user/default-user.jpg')
+                        : undefined
+                    }
+                    alt="Profile"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      marginRight: 8,
+                      border: '2px solid #7f5af0',
+                      background: '#222',
+                      display: comment.DELETED ? 'none' : 'block',
+                    }}
+                  />
                   <strong style={{ color: '#7f5af0' }}>
                     {comment.DELETED ? '[USER]' : (comment.USERNAME || 'Anonymous')}
                     {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
@@ -1057,6 +1078,29 @@ function CommentSection({ episodeId }) {
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', position: 'relative' }}>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
+                          {/* Profile Picture for reply */}
+                          <img
+                            src={
+                              !reply.DELETED
+                                ? (reply.PROFILE_PICTURE
+                                    ? (reply.PROFILE_PICTURE.startsWith('/images/user/')
+                                        ? `http://localhost:5000${reply.PROFILE_PICTURE}`
+                                        : `http://localhost:5000/images/user/${reply.PROFILE_PICTURE}`)
+                                    : 'http://localhost:5000/images/user/default-user.jpg')
+                                : undefined
+                            }
+                            alt="Profile"
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              marginRight: 8,
+                              border: '2px solid #7f5af0',
+                              background: '#222',
+                              display: reply.DELETED ? 'none' : 'block',
+                            }}
+                          />
                           <span style={{ color: '#7f5af0', fontWeight: 600 }}>
                             {reply.DELETED ? '[USER]' : (reply.USERNAME || 'Anonymous')}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}
                           </span>
