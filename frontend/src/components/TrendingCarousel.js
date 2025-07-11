@@ -226,7 +226,7 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .trending-carousel {
           position: relative;
           width: 100%;

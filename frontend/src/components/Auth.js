@@ -296,451 +296,499 @@ function Auth() {
       />
 
       {/* Picture/Sidebar container with glossy black background */}
-      <div
+      {/* Centered Auth Form Container */}
+<div
+  style={{
+    position: 'relative',
+    width: '100%',
+    minHeight: 'calc(100vh - 240px)', // smaller height
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: '40px',   // reduced from 60px
+    paddingBottom: '40px',
+    zIndex: 4,
+  }}
+>
+  <div
+    style={{
+      width: '100%',
+      maxWidth: '450px',
+      minHeight: '450px',
+      background: 'rgba(10, 10, 20, 0.92)',
+      borderRadius: '12px',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+      border: '1px solid rgba(255,255,255,0.15)',
+      backdropFilter: 'blur(12px) saturate(1.5)',
+      WebkitBackdropFilter: 'blur(12px) saturate(1.5)',
+      backgroundImage: 'linear-gradient(135deg, rgba(40,40,60,0.7) 0%, rgba(0,0,0,0.9) 100%)',
+      padding: '25px',
+      position: 'relative',
+      perspective: '1000px',
+    }}
+  >
+    <AnimatePresence mode="wait" custom={mode === 'login' ? -1 : 1}>
+      <motion.div
+        key={mode}
+        custom={mode === 'login' ? -1 : 1}
+        variants={formVariants}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        transition={{
+          type: 'spring',
+          stiffness: 100,
+          damping: 20,
+          duration: 0.6,
+        }}
         style={{
-          position: 'fixed',
-          right: 0,
-          top: 0,
-          height: '100vh',
-          width: '25vw',
-          overflow: 'hidden',
-          background: 'rgba(10, 10, 20, 0.92)',
-          boxShadow: '-4px 0 20px rgba(0,0,0,0.5)',
-          borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-          backdropFilter: 'blur(12px) saturate(1.5)', // reduced blur
-          WebkitBackdropFilter: 'blur(12px) saturate(1.5)', // reduced blur
-          zIndex: 4,
-          backgroundImage: 'linear-gradient(135deg, rgba(40,40,60,0.7) 0%, rgba(0,0,0,0.9) 100%)',
+          width: '100%',
+          height: '100%',
+          transformStyle: 'preserve-3d',
         }}
       >
-        <div style={{ position: 'relative', height: '100%', perspective: '1000px' }}>
-          <AnimatePresence mode="wait" custom={mode === 'login' ? -1 : 1}>
-            <motion.div
-              key={mode}
-              custom={mode === 'login' ? -1 : 1}
-              variants={formVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                type: 'spring',
-                stiffness: 100,
-                damping: 20,
-                duration: 0.6,
-              }}
+        {mode === 'login' ? (
+  <motion.div
+    variants={containerVariants}
+    initial="hidden"
+    animate="visible"
+    style={{ width: '100%', height: '100%' }}
+  >
+    <motion.form
+      onSubmit={handleLoginSubmit}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        justifyContent: 'space-between',
+      }}
+    >
+      <motion.h2
+        variants={itemVariants}
+        style={{
+          textAlign: 'center',
+          color: 'white',
+          fontSize: '28px',
+          fontWeight: '700',
+          marginBottom: '20px',
+        }}
+      >
+        Log In
+      </motion.h2>
+
+      <motion.label
+        variants={itemVariants}
+        style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
+      >
+        Email
+        <input
+          type="email"
+          name="email"
+          placeholder="Enter your email"
+          required
+          value={loginData.email}
+          onChange={handleLoginChange}
+          style={inputStyle}
+          onFocus={(e) => {
+            e.target.style.border = '2px solid #e50914';
+            e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+            e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+          }}
+          onBlur={(e) => {
+            e.target.style.border = '2px solid transparent';
+            e.target.style.boxShadow = 'none';
+            e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+          }}
+        />
+      </motion.label>
+
+      <motion.label
+        variants={itemVariants}
+        style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
+      >
+        Password
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter your password"
+          required
+          value={loginData.password}
+          onChange={handleLoginChange}
+          style={inputStyle}
+          onFocus={(e) => {
+            e.target.style.border = '2px solid #e50914';
+            e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+            e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+          }}
+          onBlur={(e) => {
+            e.target.style.border = '2px solid transparent';
+            e.target.style.boxShadow = 'none';
+            e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+          }}
+        />
+      </motion.label>
+
+      <motion.button
+        variants={buttonVariants}
+        whileHover="hover"
+        whileTap="tap"
+        type="submit"
+        disabled={isLoading}
+        style={{
+          ...submitBtnStyle,
+          width: '50%',
+          marginLeft: 'auto',     // center horizontally
+          marginRight: 'auto', 
+          background: isLoading
+            ? 'linear-gradient(45deg, #666, #888)'
+            : 'linear-gradient(45deg, #e50914, #ff1744)',
+          cursor: isLoading ? 'not-allowed' : 'pointer',
+          marginTop: '25px',
+          marginBottom: '5px',
+        }}
+      >
+        {isLoading ? (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            style={{
+              width: '20px',
+              height: '20px',
+              border: '2px solid transparent',
+              borderTop: '2px solid white',
+              borderRadius: '50%',
+              display: 'inline-block',
+              marginRight: '8px',
+              marginTop: '-5px', // Adjusted for better alignment
+            }}
+          />
+        ) : null}
+        {isLoading ? 'Logging in...' : 'Log In'}
+      </motion.button>
+
+      <motion.div
+        variants={switchTextVariants}
+        style={switchTextStyle}
+      >
+        Don't have an account?{' '}
+        <motion.span
+          onClick={() => switchMode('register')}
+          style={hoverSpanStyle}
+          whileHover={{
+            scale: 1.05,
+            textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
+          }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Register here
+        </motion.span>
+      </motion.div>
+    </motion.form>
+  </motion.div>
+) : (
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            style={{ width: '100%', height: '100%' }}
+          >
+            <motion.form
+              onSubmit={handleRegisterSubmit}
               style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                transformStyle: 'preserve-3d',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '15px 20px',
               }}
             >
-              {mode === 'login' ? (
-                // Enhanced Login Form
-                <motion.div 
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  style={{ width: '100%', height: '100%' }}
+              {/* Headline - span both columns */}
+              <motion.h2
+                variants={itemVariants}
+                style={{
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  color: 'white',
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  marginBottom: '10px',
+                }}
+              >
+                Register
+              </motion.h2>
+
+              {/* Email */}
+              <motion.label
+                variants={itemVariants}
+                style={{ fontWeight: '500', color: '#e0e0e0' }}
+              >
+                Email
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  required
+                  value={registerData.email}
+                  onChange={handleRegisterChange}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.border = '2px solid #e50914';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.border = '2px solid transparent';
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+              </motion.label>
+
+              {/* Password */}
+              <motion.label
+                variants={itemVariants}
+                style={{ fontWeight: '500', color: '#e0e0e0' }}
+              >
+                Password
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  required
+                  value={registerData.password}
+                  onChange={handleRegisterChange}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.border = '2px solid #e50914';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.border = '2px solid transparent';
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+              </motion.label>
+
+              {/* First Name */}
+              <motion.label
+                variants={itemVariants}
+                style={{ fontWeight: '500', color: '#e0e0e0' }}
+              >
+                First Name
+                <input
+                  name="userFirstname"
+                  type="text"
+                  placeholder="Enter your first name"
+                  required
+                  value={registerData.userFirstname}
+                  onChange={handleRegisterChange}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.border = '2px solid #e50914';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.border = '2px solid transparent';
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+              </motion.label>
+
+              {/* Last Name */}
+              <motion.label
+                variants={itemVariants}
+                style={{ fontWeight: '500', color: '#e0e0e0' }}
+              >
+                Last Name
+                <input
+                  name="userLastname"
+                  type="text"
+                  placeholder="Enter your last name"
+                  required
+                  value={registerData.userLastname}
+                  onChange={handleRegisterChange}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.border = '2px solid #e50914';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.border = '2px solid transparent';
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+              </motion.label>
+
+              {/* Country */}
+              <motion.label
+                variants={itemVariants}
+                style={{ fontWeight: '500', color: '#e0e0e0' }}
+              >
+                Country
+                <select
+                  name="countryId"
+                  value={registerData.countryId}
+                  onChange={handleRegisterChange}
+                  required
+                    style={{
+                      ...inputStyle,
+                      appearance: 'none',
+                    }}
+                  onFocus={(e) => {
+                    e.target.style.border = '2px solid #e50914';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.border = '2px solid transparent';
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
                 >
-                  <motion.form 
-                    onSubmit={handleLoginSubmit} 
-                    style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-                  >
-                    <motion.h2 
-                      variants={itemVariants}
-                      style={{ 
-                        textAlign: 'center', 
-                        marginBottom: '20px', 
-                        color: 'white',
-                        fontSize: '28px',
-                        fontWeight: '700',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      Log In
-                    </motion.h2>
+                  <option  value="AUS" style={{ backgroundColor: '#222', color: '#fff' }}>Australia</option>
+                  <option value="BD" style={{ backgroundColor: '#222', color: '#fff' }}>Bangladesh</option>
+                  <option value="BRA" style={{ backgroundColor: '#222', color: '#fff' }}>Brazil</option>
+                  <option value="CAN" style={{ backgroundColor: '#222', color: '#fff' }}>Canada</option>
+                  <option value="FRA" style={{ backgroundColor: '#222', color: '#fff' }}>France</option>
+                  <option value="GER" style={{ backgroundColor: '#222', color: '#fff' }}>Germany</option>
+                  <option value="IND" style={{ backgroundColor: '#222', color: '#fff' }}>India</option>
+                  <option value="JPN" style={{ backgroundColor: '#222', color: '#fff' }}>Japan</option>
+                  <option value="KOR" style={{ backgroundColor: '#222', color: '#fff' }}>South Korea</option>
+                  <option value="UK" style={{ backgroundColor: '#222', color: '#fff' }}>United Kingdom</option>
+                  <option value="USA" style={{ backgroundColor: '#222', color: '#fff' }}>United States</option>
+                </select>
+              </motion.label>
 
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginLeft:'15px', marginBottom: '10px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Email
-                      <input
-                        type="email"
-                        name="email"
-                        placeholder="Enter your email"
-                        required
-                        value={loginData.email}
-                        onChange={handleLoginChange}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
+              {/* Birthdate */}
+              <motion.label
+                variants={itemVariants}
+                style={{ fontWeight: '500', color: '#e0e0e0' }}
+              >
+                Birthdate
+                <input
+                  name="birthdate"
+                  type="date"
+                  value={registerData.birthdate}
+                  max={getTodayDate()}
+                  onChange={handleRegisterChange}
+                  required
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.border = '2px solid #e50914';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.border = '2px solid transparent';
+                    e.target.style.boxShadow = 'none';
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+              </motion.label>
 
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginLeft:'15px', marginBottom: '10px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Password
-                      <input
-                        type="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        required
-                        value={loginData.password}
-                        onChange={handleLoginChange}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
+              {/* Submit Button - span both columns */}
+              <motion.button
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  gridColumn: '1 / -1',
+                  ...submitBtnStyle,
+                  width: '50%',
+                  marginLeft: 'auto',     // center horizontally
+                  marginRight: 'auto', 
+                  marginTop: '25px',
+                  marginBottom: '5px',
+                  background: isLoading
+                    ? 'linear-gradient(45deg, #666, #888)'
+                    : 'linear-gradient(45deg, #e50914, #ff1744)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      border: '2px solid transparent',
+                      borderTop: '2px solid white',
+                      borderRadius: '50%',
+                      display: 'inline-block',
+                      marginRight: '8px',
+                      marginTop: '-5px', 
+                    }}
+                  />
+                ) : null}
+                {isLoading ? 'Registering...' : 'Register'}
+              </motion.button>
 
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      type="submit"
-                      disabled={isLoading}
-                      style={{
-                        ...submitBtnStyle,
-                        background: isLoading 
-                          ? 'linear-gradient(45deg, #666, #888)' 
-                          : 'linear-gradient(45deg, #e50914, #ff1744)',
-                        cursor: isLoading ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {isLoading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            border: '2px solid transparent',
-                            borderTop: '2px solid white',
-                            borderRadius: '50%',
-                            display: 'inline-block',
-                            marginRight: '8px',
-                          }}
-                        />
-                      ) : null}
-                      {isLoading ? 'Logging in...' : 'Log In'}
-                    </motion.button>
-
-                    <motion.div 
-                      variants={switchTextVariants}
-                      style={switchTextStyle}
-                    >
-                      Don't have an account?{' '}
-                      <motion.span
-                        onClick={() => switchMode('register')}
-                        style={hoverSpanStyle}
-                        whileHover={{
-                          scale: 1.05,
-                          textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        Register here
-                      </motion.span>
-                    </motion.div>
-                  </motion.form>
-                </motion.div>
-              ) : (
-                // Enhanced Register Form
-                <motion.div 
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  style={{ width: '100%', height: '100%' }}
+              {/* Switch Text - span both columns */}
+              <motion.div
+                variants={switchTextVariants}
+                style={{ ...switchTextStyle, gridColumn: '1 / -1' }}
+              >
+                Already have an account?{' '}
+                <motion.span
+                  onClick={() => switchMode('login')}
+                  style={hoverSpanStyle}
+                  whileHover={{
+                    scale: 1.05,
+                    textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
+                  }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <motion.form 
-                    onSubmit={handleRegisterSubmit} 
-                    style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-                  >
-                    <motion.h2 
-                      variants={itemVariants}
-                      style={{ 
-                        textAlign: 'center', 
-                        marginBottom: '20px', 
-                        color: 'white',
-                        fontSize: '28px',
-                        fontWeight: '700',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      Register
-                    </motion.h2>
+                  Login here
+                </motion.span>
+              </motion.div>
+            </motion.form>
+          </motion.div>
+        )}
+      </motion.div>
+    </AnimatePresence>
 
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginBottom: '10px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Email
-                      <input
-                        name="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        required
-                        value={registerData.email}
-                        onChange={handleRegisterChange}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
+    {/* Error Message */}
+    <AnimatePresence>
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(229, 9, 20, 0.9)',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            textAlign: 'center',
+            boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            maxWidth: '90%',
+            wordWrap: 'break-word',
+          }}
+        >
+          {error}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+</div>
 
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Password
-                      <input
-                        name="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        required
-                        value={registerData.password}
-                        onChange={handleRegisterChange}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
-
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      First Name
-                      <input
-                        name="userFirstname"
-                        type="text"
-                        placeholder="Enter your first name"
-                        required
-                        value={registerData.userFirstname}
-                        onChange={handleRegisterChange}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
-
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Last Name
-                      <input
-                        name="userLastname"
-                        type="text"
-                        placeholder="Enter your last name"
-                        required
-                        value={registerData.userLastname}
-                        onChange={handleRegisterChange}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
-
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Country
-                      <select
-                        name="countryId"
-                        value={registerData.countryId}
-                        onChange={handleRegisterChange}
-                        required
-                        style={{
-                          ...inputStyle,
-                          appearance: 'none',
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      >
-                        <option value="" disabled hidden style={{ color: '#333' }}>Choose Country</option>
-                        <option value="BD" style={{ color: '#333' }}>Bangladesh</option>
-                        <option value="USA" style={{ color: '#333' }}>United States</option>
-                        <option value="GB" style={{ color: '#333' }}>United Kingdom</option>
-                        <option value="IND" style={{ color: '#333' }}>India</option>
-                        <option value="CA" style={{ color: '#333' }}>Canada</option>
-                      </select>
-                    </motion.label>
-
-                    <motion.label 
-                      variants={itemVariants}
-                      style={{ marginBottom: '15px', fontWeight: '500', color: '#e0e0e0' }}
-                    >
-                      Birthdate
-                      <input
-                        name="birthdate"
-                        type="date"
-                        value={registerData.birthdate}
-                        max={getTodayDate()}
-                        onChange={handleRegisterChange}
-                        required
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.border = '2px solid #e50914';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.border = '2px solid transparent';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
-                      />
-                    </motion.label>
-
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      type="submit"
-                      disabled={isLoading}
-                      style={{
-                        ...submitBtnStyle,
-                        background: isLoading? 'linear-gradient(45deg, #666, #888)' 
-                        : 'linear-gradient(45deg, #e50914, #ff1744)',
-                        cursor: isLoading ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {isLoading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            border: '2px solid transparent',
-                            borderTop: '2px solid white',
-                            borderRadius: '50%',
-                            display: 'inline-block',
-                            marginRight: '8px',
-                          }}
-                        />
-                      ) : null}
-                      {isLoading ? 'Registering...' : 'Register'}
-                    </motion.button>
-
-                    <motion.div 
-                      variants={switchTextVariants}
-                      style={switchTextStyle}
-                    >
-                      Already have an account?{' '}
-                      <motion.span
-                        onClick={() => switchMode('login')}
-                        style={hoverSpanStyle}
-                        whileHover={{
-                          scale: 1.05,
-                          textShadow: '0 0 8px rgba(255, 255, 255, 0.8)',
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        Login here
-                      </motion.span>
-                    </motion.div>
-                  </motion.form>
-                </motion.div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Error Message */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                position: 'absolute',
-                bottom: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'rgba(229, 9, 20, 0.9)',
-                color: 'white',
-                padding: '12px 20px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                textAlign: 'center',
-                boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                maxWidth: '90%',
-                wordWrap: 'break-word',
-              }}
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
 
       {/* Success Modal */}
       <AnimatePresence>

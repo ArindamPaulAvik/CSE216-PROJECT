@@ -47,6 +47,32 @@ exports.updateProfile = async (req, res) => {
 
     const profilePicture = req.file ? req.file.filename : null;
 
+    // Format birthdate to ensure it's in YYYY-MM-DD format
+    let formattedBirthDate = BIRTH_DATE;
+    if (BIRTH_DATE) {
+      try {
+        // If it's an ISO string, extract just the date part
+        if (typeof BIRTH_DATE === 'string' && BIRTH_DATE.includes('T')) {
+          formattedBirthDate = BIRTH_DATE.split('T')[0];
+        }
+        // If it's already in YYYY-MM-DD format, keep it
+        else if (typeof BIRTH_DATE === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(BIRTH_DATE)) {
+          formattedBirthDate = BIRTH_DATE;
+        }
+        // If it's a Date object or other format, convert it
+        else {
+          const dateObj = new Date(BIRTH_DATE);
+          if (isNaN(dateObj.getTime())) {
+            throw new Error('Invalid date format');
+          }
+          formattedBirthDate = dateObj.toISOString().split('T')[0];
+        }
+      } catch (error) {
+        console.error('Error formatting birth date:', error);
+        return res.status(400).json({ error: 'Invalid birth date format' });
+      }
+    }
+
     const [[userRow]] = await pool.query(`
       SELECT p.PERSON_ID, u.USER_ID 
       FROM PERSON p 
@@ -71,7 +97,7 @@ exports.updateProfile = async (req, res) => {
     const updateParams = [
       USER_FIRSTNAME,
       USER_LASTNAME,
-      BIRTH_DATE,
+      formattedBirthDate, // Use formatted date
       PHONE_NO,
       COUNTRY_NAME
     ];
@@ -89,6 +115,7 @@ exports.updateProfile = async (req, res) => {
       WHERE USER_ID = ?
     `;
 
+    console.log('Updating with formatted birth date:', formattedBirthDate);
     await pool.query(updateQuery, updateParams);
 
     res.json({
@@ -96,7 +123,7 @@ exports.updateProfile = async (req, res) => {
         firstName: USER_FIRSTNAME,
         lastName: USER_LASTNAME,
         email: EMAIL,
-        birthdate: BIRTH_DATE,
+        birthdate: formattedBirthDate,
         phone: PHONE_NO,
         country: COUNTRY_NAME,
         profilePicture: profilePicture || null
