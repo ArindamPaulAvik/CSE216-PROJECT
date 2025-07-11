@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiMail, FiCalendar, FiCamera, FiSave, FiArrowLeft } from 'react-icons/fi';
+import { FiUser, FiMail, FiCalendar, FiCamera, FiSave, FiArrowLeft, FiHeart, FiGrid, FiInfo } from 'react-icons/fi';
 import Layout from './Layout';
 
 function UserProfile() {
@@ -29,8 +29,7 @@ function UserProfile() {
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        console.log('Token:', token ? 'Present' : 'Missing'); // Debug log
-        
+
         if (!token) {
           navigate('/login');
           return;
@@ -39,7 +38,7 @@ function UserProfile() {
         console.log('Fetching user profile...'); // Debug log
         const response = await fetch('http://localhost:5000/user/profile', {
           method: 'GET',
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
@@ -55,7 +54,7 @@ function UserProfile() {
             navigate('/login');
             return;
           }
-          
+
           // Log the response text for debugging
           const errorText = await response.text();
           console.log('Error response:', errorText);
@@ -71,10 +70,10 @@ function UserProfile() {
 
         const data = await response.json();
         console.log('User data received:', data); // Debug log
-        
+
         setUserInfo(data);
         setOriginalInfo(data);
-        
+
         // Set image preview if profile picture exists
         if (data.profilePicture) {
           setImagePreview(`http://localhost:5000/images/user/${data.profilePicture}`);
@@ -99,6 +98,8 @@ function UserProfile() {
     }));
   };
 
+  const [activeTab, setActiveTab] = useState('details');
+
   // Handle profile picture selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -108,7 +109,7 @@ function UserProfile() {
         setError('Please select a valid image file');
         return;
       }
-      
+
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('Image size must be less than 5MB');
@@ -116,16 +117,51 @@ function UserProfile() {
       }
 
       setSelectedFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target.result);
       };
       reader.readAsDataURL(file);
-      
+
       setError('');
     }
+  };
+
+  // Handle form submission
+  const hasUnsavedChanges = () => {
+    // Format birthdates for comparison
+    let currentFormattedBirthdate = userInfo.birthdate;
+    let originalFormattedBirthdate = originalInfo.birthdate;
+
+    if (currentFormattedBirthdate) {
+      if (currentFormattedBirthdate.includes('T')) {
+        currentFormattedBirthdate = currentFormattedBirthdate.split('T')[0];
+      }
+      else if (currentFormattedBirthdate instanceof Date) {
+        currentFormattedBirthdate = currentFormattedBirthdate.toISOString().split('T')[0];
+      }
+    }
+
+    if (originalFormattedBirthdate) {
+      if (originalFormattedBirthdate.includes('T')) {
+        originalFormattedBirthdate = originalFormattedBirthdate.split('T')[0];
+      }
+      else if (originalFormattedBirthdate instanceof Date) {
+        originalFormattedBirthdate = originalFormattedBirthdate.toISOString().split('T')[0];
+      }
+    }
+
+    return (
+      userInfo.firstName !== originalInfo.firstName ||
+      userInfo.lastName !== originalInfo.lastName ||
+      userInfo.email !== originalInfo.email ||
+      currentFormattedBirthdate !== originalFormattedBirthdate ||
+      userInfo.phone !== originalInfo.phone ||
+      userInfo.country !== originalInfo.country ||
+      selectedFile !== null
+    );
   };
 
   // Handle form submission
@@ -136,26 +172,64 @@ function UserProfile() {
     setSuccess('');
 
     try {
+      // Format birthdate to YYYY-MM-DD format before sending
+      let formattedBirthdate = userInfo.birthdate;
+      if (formattedBirthdate) {
+        // If it's a full ISO string, extract just the date part
+        if (formattedBirthdate.includes('T')) {
+          formattedBirthdate = formattedBirthdate.split('T')[0];
+        }
+        // If it's already a date object, format it
+        else if (formattedBirthdate instanceof Date) {
+          formattedBirthdate = formattedBirthdate.toISOString().split('T')[0];
+        }
+      }
+
+      // Format original birthdate for comparison
+      let originalFormattedBirthdate = originalInfo.birthdate;
+      if (originalFormattedBirthdate) {
+        if (originalFormattedBirthdate.includes('T')) {
+          originalFormattedBirthdate = originalFormattedBirthdate.split('T')[0];
+        }
+        else if (originalFormattedBirthdate instanceof Date) {
+          originalFormattedBirthdate = originalFormattedBirthdate.toISOString().split('T')[0];
+        }
+      }
+
+      // Check if any changes were made
+      const hasChanges =
+        userInfo.firstName !== originalInfo.firstName ||
+        userInfo.lastName !== originalInfo.lastName ||
+        userInfo.email !== originalInfo.email ||
+        formattedBirthdate !== originalFormattedBirthdate ||
+        userInfo.phone !== originalInfo.phone ||
+        userInfo.country !== originalInfo.country ||
+        selectedFile !== null;
+
+      if (!hasChanges) {
+        setError('No changes were made');
+        setIsSaving(false);
+        return;
+      }
+
       const token = localStorage.getItem('token');
       const formData = new FormData();
-      
-      // Append user data
- formData.append('USER_FIRSTNAME', userInfo.firstName);
-formData.append('USER_LASTNAME', userInfo.lastName);
-formData.append('EMAIL', userInfo.email);
-formData.append('BIRTH_DATE', userInfo.birthdate); // Keep format YYYY-MM-DD
-formData.append('PHONE_NO', userInfo.phone); // if your DB uses this
-formData.append('COUNTRY_NAME', userInfo.country); // if you want to update country
 
+      // Append user data with properly formatted date
+      formData.append('USER_FIRSTNAME', userInfo.firstName);
+      formData.append('USER_LASTNAME', userInfo.lastName);
+      formData.append('EMAIL', userInfo.email);
+      formData.append('BIRTH_DATE', formattedBirthdate); // Use formatted date
+      formData.append('PHONE_NO', userInfo.phone);
+      formData.append('COUNTRY_NAME', userInfo.country);
 
-      
       // Append profile picture if selected
       if (selectedFile) {
         formData.append('profilePicture', selectedFile);
       }
 
-      console.log('Submitting form data...'); // Debug log
-      
+      console.log('Submitting form data with formatted birthdate:', formattedBirthdate);
+
       const response = await fetch('http://localhost:5000/user/profile', {
         method: 'PUT',
         headers: {
@@ -165,7 +239,7 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
         body: formData
       });
 
-      console.log('Update response status:', response.status); // Debug log
+      console.log('Update response status:', response.status);
 
       if (!response.ok) {
         const contentType = response.headers.get('content-type');
@@ -187,14 +261,14 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
       }
 
       const updatedData = await response.json();
-      console.log('Updated data received:', updatedData); // Debug log
-      
+      console.log('Updated data received:', updatedData);
+
       setUserInfo(updatedData.user || updatedData);
       setOriginalInfo(updatedData.user || updatedData);
       setIsEditing(false);
       setSelectedFile(null);
       setSuccess('Profile updated successfully!');
-      
+
       // Update image preview with new path
       const userData = updatedData.user || updatedData;
       if (userData.profilePicture) {
@@ -215,7 +289,7 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
     setSelectedFile(null);
     setError('');
     setSuccess('');
-    
+
     // Reset image preview
     if (originalInfo.profilePicture) {
       setImagePreview(`http://localhost:5000/images/user/${originalInfo.profilePicture}`);
@@ -248,7 +322,7 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
       <div className="profile-container">
         {/* Header */}
         <div className="profile-header">
-          <button 
+          <button
             onClick={() => navigate('/frontpage')}
             className="back-button"
           >
@@ -257,16 +331,6 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
           </button>
           <h1>My Profile</h1>
         </div>
-
-        {/* Debug Info - Remove in production */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="debug-info">
-            <p><strong>Debug Info:</strong></p>
-            <p>User Data: {JSON.stringify(userInfo, null, 2)}</p>
-            <p>Is Loading: {isLoading.toString()}</p>
-            <p>Token Present: {localStorage.getItem('token') ? 'Yes' : 'No'}</p>
-          </div>
-        )}
 
         {/* Alert Messages */}
         {error && (
@@ -287,9 +351,9 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
             <div className="profile-picture-section">
               <div className="profile-picture-container">
                 {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
-                    alt="Profile" 
+                  <img
+                    src={imagePreview}
+                    alt="Profile"
                     className="profile-picture"
                     onError={(e) => {
                       console.log('Image load error:', e);
@@ -301,7 +365,7 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
                     <FiUser size={40} />
                   </div>
                 )}
-                
+
                 {isEditing && (
                   <label className="profile-picture-upload">
                     <input
@@ -322,108 +386,146 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
               </div>
             </div>
 
-            {/* Form Fields */}
-            <div className="form-grid">
-              {/* First Name */}
-              <div className="form-group">
-                <label htmlFor="firstName">
-                  <FiUser size={16} />
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={userInfo.firstName}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  required
-                />
-              </div>
-
-              {/* Last Name */}
-              <div className="form-group">
-                <label htmlFor="lastName">
-                  <FiUser size={16} />
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={userInfo.lastName}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  required
-                />
-              </div>
-
-              {/* Email */}
-              <div className="form-group form-group-full">
-                <label htmlFor="email">
-                  <FiMail size={16} />
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={userInfo.email}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  required
-                />
-              </div>
-
-              {/* Birth Date */}
-              <div className="form-group">
-                <label htmlFor="birthdate">
-                  <FiCalendar size={16} />
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  id="birthdate"
-                  name="birthdate"
-                  value={formatDateForInput(userInfo.birthdate)}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  required
-                />
-              </div>
-
-              {/* Phone */}
-              <div className="form-group">
-                <label htmlFor="phone">
-                  <FiUser size={16} />
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={userInfo.phone}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              {/* Country */}
-              <div className="form-group form-group-full">
-                <label htmlFor="country">
-                  <FiUser size={16} />
-                  Country
-                </label>
-                <input
-                  type="text"
-                  id="country"
-                  name="country"
-                  value={userInfo.country}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                />
-              </div>
+            <div className="profile-nav">
+              <button
+                className={`nav-tab ${activeTab === 'details' ? 'active' : ''}`}
+                onClick={() => setActiveTab('details')}
+              >
+                <FiInfo size={16} />
+                <span>Details</span>
+              </button>
+              <button
+                className={`nav-tab ${activeTab === 'favourites' ? 'active' : ''}`}
+                onClick={() => setActiveTab('favourites')}
+              >
+                <FiHeart size={16} />
+                <span>Favourites</span>
+              </button>
+              <button
+                className={`nav-tab ${activeTab === 'posts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('posts')}
+              >
+                <FiGrid size={16} />
+                <span>Posts</span>
+              </button>
             </div>
+
+            {/* Conditional Tab Content */}
+{activeTab === 'details' && (
+  <div className="form-grid">
+    {/* First Name */}
+    <div className="form-group">
+      <label htmlFor="firstName">
+        <FiUser size={16} />
+        First Name
+      </label>
+      <input
+        type="text"
+        id="firstName"
+        name="firstName"
+        value={userInfo.firstName}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+        required
+      />
+    </div>
+
+    {/* Last Name */}
+    <div className="form-group">
+      <label htmlFor="lastName">
+        <FiUser size={16} />
+        Last Name
+      </label>
+      <input
+        type="text"
+        id="lastName"
+        name="lastName"
+        value={userInfo.lastName}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+        required
+      />
+    </div>
+
+    {/* Email */}
+    <div className="form-group form-group-full">
+      <label htmlFor="email">
+        <FiMail size={16} />
+        Email Address
+      </label>
+      <input
+        type="email"
+        id="email"
+        name="email"
+        value={userInfo.email}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+        required
+      />
+    </div>
+
+    {/* Birth Date */}
+    <div className="form-group">
+      <label htmlFor="birthdate">
+        <FiCalendar size={16} />
+        Date of Birth
+      </label>
+      <input
+        type="date"
+        id="birthdate"
+        name="birthdate"
+        value={formatDateForInput(userInfo.birthdate)}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+        required
+      />
+    </div>
+
+    {/* Phone */}
+    <div className="form-group">
+      <label htmlFor="phone">
+        <FiUser size={16} />
+        Phone
+      </label>
+      <input
+        type="tel"
+        id="phone"
+        name="phone"
+        value={userInfo.phone}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+      />
+    </div>
+
+    {/* Country */}
+    <div className="form-group form-group-full">
+      <label htmlFor="country">
+        <FiUser size={16} />
+        Country
+      </label>
+      <input
+        type="text"
+        id="country"
+        name="country"
+        value={userInfo.country}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+      />
+    </div>
+  </div>
+)}
+
+{activeTab === 'favourites' && (
+  <div className="tab-content">
+    <p>Your favourite items will appear here.</p>
+  </div>
+)}
+
+{activeTab === 'posts' && (
+  <div className="tab-content">
+    <p>Your posts will appear here.</p>
+  </div>
+)}
 
             {/* Action Buttons */}
             <div className="form-actions">
@@ -475,17 +577,6 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
           max-width: 800px;
           margin: 0 auto;
           padding: 20px;
-        }
-
-        .debug-info {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          padding: 15px;
-          margin-bottom: 20px;
-          color: #e0e0e0;
-          font-size: 12px;
-          white-space: pre-wrap;
         }
 
         .profile-header {
@@ -605,6 +696,77 @@ formData.append('COUNTRY_NAME', userInfo.country); // if you want to update coun
           background: #5a67d8;
           transform: scale(1.05);
         }
+
+        .profile-nav {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin-bottom: 40px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 12px 0;
+  position: relative;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-tab:hover {
+  color: #e0e0e0;
+}
+
+.nav-tab.active {
+  color: #e0e0e0;
+}
+
+.nav-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background: #667eea;
+  transition: width 0.3s ease;
+}
+
+.nav-tab:hover::after {
+  width: 100%;
+}
+
+.nav-tab.active::after {
+  width: 100%;
+}
+
+.tab-content {
+  padding: 40px 0;
+  text-align: center;
+  color: #999;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .profile-nav {
+    gap: 40px;
+  }
+  
+  .nav-tab {
+    font-size: 12px;
+  }
+}
 
         .profile-picture-info h3 {
           color: #e0e0e0;

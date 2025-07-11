@@ -293,9 +293,9 @@ function FrontPage() {
   const slideVariants = {
     enter: (direction) => {
       return {
-        x: direction > 0 ? '100%' : '-100%', // Slides in from right
+        x: direction > 0 ? '100%' : '-100%',
         opacity: 0,
-        scale: 0.95
+        scale: 1.1
       }
     },
     center: {
@@ -307,32 +307,49 @@ function FrontPage() {
     exit: (direction) => {
       return {
         zIndex: 0,
-        x: direction < 0 ? '100%' : '-100%', // Slides out to right
+        x: direction < 0 ? '100%' : '-100%',
         opacity: 0,
-        scale: 0.95
+        scale: 0.9
       }
     }
   }
 
   const textVariants = {
-    enter: {
-      y: 50,
-      opacity: 0
+    enter: (direction) => {
+      return {
+        x: direction > 0 ? 100 : -100,
+        opacity: 0
+      }
     },
     center: {
-      y: 0,
+      x: 0,
       opacity: 1
     },
-    exit: {
-      y: -50,
-      opacity: 0
+    exit: (direction) => {
+      return {
+        x: direction < 0 ? 100 : -100,
+        opacity: 0
+      }
     }
   };
 
   return (
     <Layout activeSection={activeSection}>
       {/* Hero Section */}
-      <div className="hero-wrapper" ref={heroRef} style={{ width: '89vw', maxWidth: '100%', height: '60vh', minHeight: 480, position: 'relative', margin: '0 auto', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}>
+      <div className="hero-wrapper" ref={heroRef} style={{
+        width: '89vw',
+        maxWidth: '100%',
+        height: '75vh',
+        minHeight: 500,
+        position: 'relative',
+        margin: '0 auto',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
+      }}>
         {/* Left navigation button */}
         <button
           className="nav-button prev-button"
@@ -343,12 +360,15 @@ function FrontPage() {
             left: 18,
             top: '50%',
             transform: 'translateY(-50%)',
-            zIndex: 10
+            zIndex: 10,
+            transition: 'opacity 0.3s ease, transform 0.3s ease',
+            opacity: trendingShows.length <= 1 ? 0.3 : 1
           }}
           aria-label="Previous Movie"
         >
           <ChevronLeft size={32} />
         </button>
+
         {/* Right navigation button */}
         <button
           className="nav-button next-button"
@@ -359,27 +379,44 @@ function FrontPage() {
             right: 18,
             top: '50%',
             transform: 'translateY(-50%)',
-            zIndex: 10
+            zIndex: 10,
+            transition: 'opacity 0.3s ease, transform 0.3s ease',
+            opacity: trendingShows.length <= 1 ? 0.3 : 1
           }}
           aria-label="Next Movie"
         >
           <ChevronRight size={32} />
         </button>
-        {trendingShows.length > 0 && (
-          <div
-            className="hero-banner-bg"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              zIndex: 1,
-              background: `url(${getBannerPath(trending.BANNER)}) center center / cover no-repeat`,
-              filter: 'brightness(0.7)'
-            }}
-          />
-        )}
+
+        {/* Animated background slides */}
+        <AnimatePresence mode="wait" custom={direction}>
+          {trendingShows.length > 0 && (
+            <motion.div
+              key={currentTrendingIndex}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.4 }
+              }}
+              className="hero-banner-bg"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 1,
+                background: `url(${getBannerPath(trending.BANNER)}) center center / cover no-repeat`,
+                filter: 'brightness(0.7)',
+              }}
+            />
+          )}
+        </AnimatePresence>
+
         {/* Gradient fade from left to right */}
         <div
           className="hero-gradient"
@@ -390,37 +427,184 @@ function FrontPage() {
             width: '100%',
             height: '100%',
             zIndex: 2,
-            background: 'linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.3) 60%, transparent 100%)'
+            background: 'linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.3) 60%, transparent 100%)',
+            transition: 'opacity 0.5s ease'
           }}
         />
-        {/* Content on the left */}
-        <div style={{
-          position: 'relative',
-          zIndex: 3,
-          padding: '56px 48px',
-          maxWidth: 600,
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          height: '100%'
-        }}>
-          <h2 className="hero-title" style={{ fontSize: '2.8rem', marginBottom: 24, fontWeight: 700, lineHeight: 1.1 }}>{trending.TITLE}</h2>
-          <p className="hero-description" style={{ fontSize: '1.2rem', marginBottom: 32, maxWidth: 500, color: '#e0e0e0', lineHeight: 1.5 }}>{trending.DESCRIPTION}</p>
-          <div className="hero-actions" style={{ display: 'flex', gap: 18 }}>
-            <span className="hero-rating" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '8px 18px', borderRadius: 20, fontWeight: 'bold', fontSize: '1.1rem' }}>⭐ {trending.RATING}</span>
-            <button
-              onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
-              className="hero-button play-button"
-              style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: '12px 28px', borderRadius: 8, fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+
+        {/* Animated content on the left */}
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={`content-${currentTrendingIndex}`}
+            custom={direction}
+            variants={textVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              duration: 0.5,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+            style={{
+              position: 'relative',
+              zIndex: 3,
+              padding: '70px 60px',
+              maxWidth: 700,
+              color: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              height: '100%',
+            }}
+          >
+            <h2
+              className="hero-title"
+              style={{
+                fontSize: '2.8rem',
+                marginBottom: 24,
+                fontWeight: 700,
+                lineHeight: 1.1,
+              }}
             >
-              <Play size={22} />
-              Watch Now
-            </button>
-          </div>
-        </div>
+              {trending.TITLE}
+            </h2>
+
+            <p
+              className="hero-description"
+              style={{
+                fontSize: '1.2rem',
+                marginBottom: 32,
+                maxWidth: 500,
+                color: '#e0e0e0',
+                lineHeight: 1.5,
+              }}
+            >
+              {trending.DESCRIPTION}
+            </p>
+
+            <div
+              className="hero-actions"
+              style={{
+                display: 'flex',
+                gap: 18,
+              }}
+            >
+              <span
+                className="hero-rating"
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  padding: '8px 18px',
+                  borderRadius: 20,
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  cursor: 'default'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                ⭐ {trending.RATING}
+              </span>
+
+              <button
+                onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+                className="hero-button play-button"
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: '#fff',
+                  padding: '12px 28px',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  fontSize: '1.1rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: 'translateY(0)',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px) scale(1.05)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(1)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+                }}
+              >
+                <Play size={22} />
+                Watch Now
+              </button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
+
+      <style jsx>{`
+  .hero-wrapper {
+    animation: heroReveal 0.8s ease-out forwards;
+  }
+  
+  @keyframes heroReveal {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .nav-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .nav-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .nav-button:active:not(:disabled) {
+    transform: translateY(-50%) scale(0.95);
+  }
+  
+  .nav-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+  
+  .hero-banner-bg {
+    will-change: transform, opacity;
+  }
+  
+  .hero-wrapper .hero-title,
+  .hero-wrapper .hero-description,
+  .hero-wrapper .hero-actions {
+    will-change: transform, opacity;
+  }
+`}</style>
       {/* Dot Indicators below hero section, always separated */}
       <div className="hero-indicators" style={{
         display: 'flex',
