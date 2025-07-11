@@ -20,7 +20,7 @@ exports.getFrontpage = async (req, res) => {
     const userName = userRows[0].USER_FIRSTNAME;
 
     const [trendingshows] = await pool.query(`
-      SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER,
+      SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, s.BANNER,
              GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
       FROM \`SHOW\` s
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID

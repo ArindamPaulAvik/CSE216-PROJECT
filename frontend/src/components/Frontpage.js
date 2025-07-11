@@ -93,7 +93,7 @@ function FrontPage() {
   useEffect(() => {
     if (watchAgainRef.current) {
       watchAgainRef.current.classList.remove('animate-in');
-      
+
       const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -108,7 +108,7 @@ function FrontPage() {
       }, observerOptions);
 
       observer.observe(watchAgainRef.current);
-      
+
       return () => observer.disconnect();
     }
   }, [watchAgainShows]);
@@ -116,7 +116,7 @@ function FrontPage() {
   useEffect(() => {
     if (recommendedRef.current) {
       recommendedRef.current.classList.remove('animate-in');
-      
+
       const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -131,7 +131,7 @@ function FrontPage() {
       }, observerOptions);
 
       observer.observe(recommendedRef.current);
-      
+
       return () => observer.disconnect();
     }
   }, [recommendedShows]);
@@ -153,7 +153,7 @@ function FrontPage() {
   // Auto-slide for trending shows
   useEffect(() => {
     if (trendingShows.length === 0 || !isAutoPlaying) return;
-    
+
     autoPlayRef.current = setInterval(() => {
       setDirection(1);
       setCurrentTrendingIndex(prev => (prev + 1) % trendingShows.length);
@@ -192,7 +192,7 @@ function FrontPage() {
     setDirection(1);
     setCurrentTrendingIndex(prev => (prev + 1) % trendingShows.length);
     setIsAutoPlaying(false);
-    
+
     // Resume autoplay after 10 seconds
     if (autoPlayRef.current) {
       clearInterval(autoPlayRef.current);
@@ -205,7 +205,7 @@ function FrontPage() {
     setDirection(-1);
     setCurrentTrendingIndex(prev => (prev - 1 + trendingShows.length) % trendingShows.length);
     setIsAutoPlaying(false);
-    
+
     // Resume autoplay after 10 seconds
     if (autoPlayRef.current) {
       clearInterval(autoPlayRef.current);
@@ -218,7 +218,7 @@ function FrontPage() {
     setDirection(index > currentTrendingIndex ? 1 : -1);
     setCurrentTrendingIndex(index);
     setIsAutoPlaying(false);
-    
+
     // Resume autoplay after 10 seconds
     if (autoPlayRef.current) {
       clearInterval(autoPlayRef.current);
@@ -231,6 +231,11 @@ function FrontPage() {
   const getImagePath = (thumbnail) => {
     if (!thumbnail) return 'http://localhost:5000/shows/placeholder.jpg';
     return `/shows/${thumbnail}`;
+  };
+
+  const getBannerPath = (banner) => {
+    if (!banner) return 'http://localhost:5000/banners/placeholder.jpg';
+    return `/banners/${banner}`;
   };
 
   const handleImageError = (e, showTitle, thumbnail) => {
@@ -249,15 +254,15 @@ function FrontPage() {
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/show/${show.SHOW_ID}`)}
     >
       <div className="card-image-container">
-        <img 
-          src={getImagePath(show.THUMBNAIL)} 
+        <img
+          src={getImagePath(show.THUMBNAIL)}
           alt={show.TITLE}
           className="card-image"
           loading="lazy"
           onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
         />
         <div className="card-overlay">
-          <button 
+          <button
             className="view-button"
             onClick={() => navigate(`/show/${show.SHOW_ID}`)}
           >
@@ -265,7 +270,7 @@ function FrontPage() {
           </button>
         </div>
       </div>
-      
+
       <div className="card-content">
         <h3 className="card-title">{show.TITLE}</h3>
         <div className="card-rating">
@@ -273,8 +278,8 @@ function FrontPage() {
           <span className="rating-value">{show.RATING}</span>
         </div>
         <p className="card-description">
-          {show.DESCRIPTION && show.DESCRIPTION.length > 120 
-            ? show.DESCRIPTION.substring(0, 120) + '...' 
+          {show.DESCRIPTION && show.DESCRIPTION.length > 120
+            ? show.DESCRIPTION.substring(0, 120) + '...'
             : show.DESCRIPTION || 'No description available'
           }
         </p>
@@ -286,24 +291,28 @@ function FrontPage() {
   ), [navigate]);
 
   const slideVariants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.8
-    }),
+    enter: (direction) => {
+      return {
+        x: direction > 0 ? '100%' : '-100%', // Slides in from right
+        opacity: 0,
+        scale: 0.95
+      }
+    },
     center: {
       zIndex: 1,
       x: 0,
       opacity: 1,
       scale: 1
     },
-    exit: (direction) => ({
-      zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.8
-    })
-  };
+    exit: (direction) => {
+      return {
+        zIndex: 0,
+        x: direction < 0 ? '100%' : '-100%', // Slides out to right
+        opacity: 0,
+        scale: 0.95
+      }
+    }
+  }
 
   const textVariants = {
     enter: {
@@ -323,103 +332,62 @@ function FrontPage() {
   return (
     <Layout activeSection={activeSection}>
       {/* Hero Section */}
-      <div className="hero-wrapper" ref={heroRef} style={{ marginTop: '10px' }}>
+      <div className="hero-wrapper" ref={heroRef} style={{ width: '89vw', maxWidth: '100%', height: '60vh', minHeight: 480, position: 'relative', margin: '0 auto', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}>
         {trendingShows.length > 0 && (
-          <section className="hero-section">
-            <div className="hero-carousel">
-              <AnimatePresence mode="wait" custom={direction}>
-                <motion.div
-                  key={currentTrendingIndex}
-                  custom={direction}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                 transition={{
-  x: { type: "spring", stiffness: 150, damping: 30 },
-  opacity: { duration: 0.4 },
-  scale: { duration: 0.4 }
-}}
-
-                  className="hero-slide"
-                >
-                  <div className="hero-content">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={`content-${currentTrendingIndex}`}
-                        variants={textVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="hero-text"
-                      >
-                        <h2 className="hero-title">
-                          {trending.TITLE}
-                        </h2>
-                        <p className="hero-description">
-                          {trending.DESCRIPTION}
-                        </p>
-                        <div className="hero-actions">
-                          <span className="hero-rating">
-                            ⭐ {trending.RATING}
-                          </span>
-                          <button
-                            onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
-                            className="hero-button play-button"
-                          >
-                            <Play size={20} />
-                            Watch Now
-                          </button>
-                          
-                        </div>
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
-                  <div className="hero-image">
-                    <img
-                      src={getImagePath(trending.THUMBNAIL)}
-                      alt={trending.TITLE}
-                      className="hero-img"
-                      loading="lazy"
-                      onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
-                    />
-                    <div className="hero-gradient"></div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Navigation Controls */}
-              <div className="hero-controls">
-                <button
-                  className="nav-button prev-button"
-                  onClick={prevSlide}
-                  disabled={trendingShows.length <= 1}
-                >
-                  <ChevronLeft size={32} />
-                </button>
-                <button
-                  className="nav-button next-button"
-                  onClick={nextSlide}
-                  disabled={trendingShows.length <= 1}
-                >
-                  <ChevronRight size={32} />
-                </button>
-              </div>
-
-              {/* Dot Indicators */}
-              <div className="hero-indicators">
-                {trendingShows.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`indicator ${index === currentTrendingIndex ? 'active' : ''}`}
-                    onClick={() => goToSlide(index)}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
+          <div
+            className="hero-banner-bg"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 1,
+              background: `url(${getBannerPath(trending.BANNER)}) center center / cover no-repeat`,
+              filter: 'brightness(0.7)'
+            }}
+          />
         )}
+        {/* Gradient fade from left to right */}
+        <div
+          className="hero-gradient"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 2,
+            background: 'linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.3) 60%, transparent 100%)'
+          }}
+        />
+        {/* Content on the left */}
+        <div style={{
+          position: 'relative',
+          zIndex: 3,
+          padding: '56px 48px',
+          maxWidth: 600,
+          color: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          height: '100%'
+        }}>
+          <h2 className="hero-title" style={{ fontSize: '2.8rem', marginBottom: 24, fontWeight: 700, lineHeight: 1.1 }}>{trending.TITLE}</h2>
+          <p className="hero-description" style={{ fontSize: '1.2rem', marginBottom: 32, maxWidth: 500, color: '#e0e0e0', lineHeight: 1.5 }}>{trending.DESCRIPTION}</p>
+          <div className="hero-actions" style={{ display: 'flex', gap: 18 }}>
+            <span className="hero-rating" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '8px 18px', borderRadius: 20, fontWeight: 'bold', fontSize: '1.1rem' }}>⭐ {trending.RATING}</span>
+            <button
+              onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+              className="hero-button play-button"
+              style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: '12px 28px', borderRadius: 8, fontWeight: 600, fontSize: '1.1rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+            >
+              <Play size={22} />
+              Watch Now
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Trending Now Section */}
@@ -524,9 +492,9 @@ function FrontPage() {
         /* Base styles for animation elements */
         .hero-wrapper {
           position: relative;
-          width: calc(100vw - 120px);
-          margin-left: calc(-50vw + 50% + 60px);
-          margin-top: -20px;
+          width: 100vw;
+          margin-left: calc(-50vw + 50%);
+          margin-top: 0;
           overflow: hidden;
           opacity: 0;
           transform: translateY(60px);
@@ -585,15 +553,14 @@ function FrontPage() {
         }
 
         .hero-content {
-          flex: 0 0 45%;
+          flex: 0 0 45%; /* Keep original size */
           padding: 40px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           color: #ddd;
-          background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(0,0,0,0.8));
           position: relative;
-          z-index: 2;
+          z-index: 3;
         }
 
         .hero-text {
@@ -688,7 +655,7 @@ function FrontPage() {
         }
 
         .hero-image {
-          flex: 1 1 55%;
+          flex: 1 1 70%; /* CHANGED: Increased from 55% to 70% */
           position: relative;
           overflow: hidden;
         }
@@ -701,18 +668,18 @@ function FrontPage() {
         }
 
         .hero-gradient {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            to right,
-            rgba(0, 0, 0, 0.8) 0%,
-            rgba(0, 0, 0, 0.4) 30%,
-            transparent 70%
-          );
-        }
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      to right, /* Keep original direction */
+      rgba(0, 0, 0, 0.9) 0%,
+      rgba(0, 0, 0, 0.4) 40%,
+      transparent 70%
+    );
+  }
 
         /* Navigation Controls */
         .hero-controls {
@@ -995,8 +962,8 @@ function FrontPage() {
         /* Responsive adjustments */
         @media (max-width: 768px) {
           .hero-wrapper {
-            width: calc(100vw - 40px);
-            margin-left: calc(-50vw + 50% + 20px);
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
           }
 
           .hero-section {
@@ -1125,4 +1092,4 @@ function FrontPage() {
   );
 }
 
-export default FrontPage ;
+export default FrontPage;
