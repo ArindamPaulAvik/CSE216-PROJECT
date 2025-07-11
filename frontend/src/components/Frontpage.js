@@ -333,6 +333,38 @@ function FrontPage() {
     <Layout activeSection={activeSection}>
       {/* Hero Section */}
       <div className="hero-wrapper" ref={heroRef} style={{ width: '89vw', maxWidth: '100%', height: '60vh', minHeight: 480, position: 'relative', margin: '0 auto', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}>
+        {/* Left navigation button */}
+        <button
+          className="nav-button prev-button"
+          onClick={prevSlide}
+          disabled={trendingShows.length <= 1}
+          style={{
+            position: 'absolute',
+            left: 18,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 10
+          }}
+          aria-label="Previous Movie"
+        >
+          <ChevronLeft size={32} />
+        </button>
+        {/* Right navigation button */}
+        <button
+          className="nav-button next-button"
+          onClick={nextSlide}
+          disabled={trendingShows.length <= 1}
+          style={{
+            position: 'absolute',
+            right: 18,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 10
+          }}
+          aria-label="Next Movie"
+        >
+          <ChevronRight size={32} />
+        </button>
         {trendingShows.length > 0 && (
           <div
             className="hero-banner-bg"
@@ -388,6 +420,38 @@ function FrontPage() {
             </button>
           </div>
         </div>
+      </div>
+      {/* Dot Indicators below hero section, always separated */}
+      <div className="hero-indicators" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+        margin: '0 auto 32px auto',
+        width: '89vw',
+        maxWidth: '100%',
+        position: 'relative',
+        left: '48%',
+        top: '20px'
+      }}>
+        {trendingShows.map((_, index) => (
+          <button
+            key={index}
+            className={`indicator ${index === currentTrendingIndex ? 'active' : ''}`}
+            onClick={() => goToSlide(index)}
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: index === currentTrendingIndex ? '#fff' : 'rgba(255,255,255,0.4)',
+              boxShadow: index === currentTrendingIndex ? '0 0 0 2px #667eea' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            aria-label={`Go to movie ${index + 1}`}
+          />
+        ))}
       </div>
 
       {/* Trending Now Section */}
