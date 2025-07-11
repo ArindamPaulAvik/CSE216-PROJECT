@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Play, Info } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
@@ -11,6 +13,7 @@ function FrontPage() {
   const [userName, setUserName] = useState('User');
   const [profilePicture, setProfilePicture] = useState('');
   const [activeSection, setActiveSection] = useState('trending');
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -19,6 +22,7 @@ function FrontPage() {
   const trendingRef = useRef(null);
   const recommendedRef = useRef(null);
   const watchAgainRef = useRef(null);
+  const autoPlayRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -52,7 +56,7 @@ function FrontPage() {
       });
   }, []);
 
-  // Scroll animations setup - Fixed dependency array
+  // Scroll animations setup
   useEffect(() => {
     const observerOptions = {
       threshold: 0.1,
@@ -67,7 +71,6 @@ function FrontPage() {
       });
     }, observerOptions);
 
-    // Observe all sections - use a small delay to ensure DOM is ready
     const observeSections = () => {
       const sections = [heroRef, trendingRef, recommendedRef, watchAgainRef];
       sections.forEach(ref => {
@@ -77,19 +80,17 @@ function FrontPage() {
       });
     };
 
-    // Small delay to ensure all sections are rendered
     const timeoutId = setTimeout(observeSections, 100);
 
     return () => {
       clearTimeout(timeoutId);
       observer.disconnect();
     };
-  }, []); // Empty dependency array - only run once
+  }, []);
 
   // Re-observe sections when data changes
   useEffect(() => {
     if (watchAgainRef.current) {
-      // Reset animation class and re-trigger if needed
       watchAgainRef.current.classList.remove('animate-in');
       
       const observerOptions = {
@@ -109,12 +110,10 @@ function FrontPage() {
       
       return () => observer.disconnect();
     }
-  }, [watchAgainShows]); // Only re-observe when watchAgainShows changes
+  }, [watchAgainShows]);
 
-  // Re-observe recommended section when data changes
   useEffect(() => {
     if (recommendedRef.current) {
-      // Reset animation class and re-trigger if needed
       recommendedRef.current.classList.remove('animate-in');
       
       const observerOptions = {
@@ -134,7 +133,7 @@ function FrontPage() {
       
       return () => observer.disconnect();
     }
-  }, [recommendedShows]); // Only re-observe when recommendedShows changes
+  }, [recommendedShows]);
 
   // Scroll to section from URL params
   useEffect(() => {
@@ -152,12 +151,18 @@ function FrontPage() {
 
   // Auto-slide for trending shows
   useEffect(() => {
-    if (trendingShows.length === 0) return;
-    const interval = setInterval(() => {
+    if (trendingShows.length === 0 || !isAutoPlaying) return;
+    
+    autoPlayRef.current = setInterval(() => {
       setCurrentTrendingIndex(prev => (prev + 1) % trendingShows.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [trendingShows]);
+    }, 5000);
+
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+      }
+    };
+  }, [trendingShows, isAutoPlaying]);
 
   // Track which section is active on scroll
   useEffect(() => {
@@ -165,9 +170,8 @@ function FrontPage() {
       const trendingTop = trendingRef.current?.getBoundingClientRect().top ?? Infinity;
       const recommendedTop = recommendedRef.current?.getBoundingClientRect().top ?? Infinity;
       const watchAgainTop = watchAgainRef.current?.getBoundingClientRect().top ?? Infinity;
-      const offset = 120; // header + some margin
+      const offset = 120;
 
-      // Find the section closest to the top (but not above)
       let section = 'trending';
       if (recommendedTop - offset < 0 && watchAgainTop - offset > 0) {
         section = 'recommended';
@@ -177,9 +181,45 @@ function FrontPage() {
       setActiveSection(section);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const nextSlide = () => {
+    if (trendingShows.length === 0) return;
+    setCurrentTrendingIndex(prev => (prev + 1) % trendingShows.length);
+    setIsAutoPlaying(false);
+    
+    // Resume autoplay after 10 seconds
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+    }
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  const prevSlide = () => {
+    if (trendingShows.length === 0) return;
+    setCurrentTrendingIndex(prev => (prev - 1 + trendingShows.length) % trendingShows.length);
+    setIsAutoPlaying(false);
+    
+    // Resume autoplay after 10 seconds
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+    }
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  const goToSlide = (index) => {
+    if (trendingShows.length === 0) return;
+    setCurrentTrendingIndex(index);
+    setIsAutoPlaying(false);
+    
+    // Resume autoplay after 10 seconds
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+    }
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
 
   const trending = trendingShows[currentTrendingIndex] || {};
 
@@ -246,33 +286,79 @@ function FrontPage() {
       <div className="hero-wrapper" ref={heroRef} style={{ marginTop: '10px' }}>
         {trendingShows.length > 0 && (
           <section className="hero-section">
-            <div className="hero-content">
-              <h2 className="hero-title">
-                {trending.TITLE}
-              </h2>
-              <p className="hero-description">
-                {trending.DESCRIPTION}
-              </p>
-              <div className="hero-actions">
-                <span className="hero-rating">
-                  ⭐ {trending.RATING}
-                </span>
+            <div className="hero-carousel">
+              <div className="hero-slide">
+                {/* Background Image */}
+                <div className="hero-background">
+                  <img
+                    src={getImagePath(trending.THUMBNAIL)}
+                    alt={trending.TITLE}
+                    className="hero-bg-image"
+                    loading="lazy"
+                    onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
+                  />
+                  <div className="hero-overlay"></div>
+                </div>
+
+                {/* Content */}
+                <div className="hero-content">
+                  <motion.div
+                    key={currentTrendingIndex}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="hero-text"
+                  >
+                    <h1 className="hero-title">{trending.TITLE}</h1>
+                    <p className="hero-description">{trending.DESCRIPTION}</p>
+                    <div className="hero-actions">
+                      <button
+                        onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+                        className="hero-button play-button"
+                      >
+                        <Play size={20} fill="currentColor" />
+                        Play
+                      </button>
+                      <button
+                        onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
+                        className="hero-button info-button"
+                      >
+                        <Info size={20} />
+                        More Info
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Navigation Controls */}
+              <div className="hero-controls">
                 <button
-                  onClick={() => navigate(`/show/${trending.SHOW_ID}`)}
-                  className="hero-button"
+                  className="nav-button nav-button-prev"
+                  onClick={prevSlide}
+                  disabled={trendingShows.length <= 1}
                 >
-                  Watch Now
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  className="nav-button nav-button-next"
+                  onClick={nextSlide}
+                  disabled={trendingShows.length <= 1}
+                >
+                  <ChevronRight size={24} />
                 </button>
               </div>
-            </div>
-            <div className="hero-image">
-              <img
-                src={getImagePath(trending.THUMBNAIL)}
-                alt={trending.TITLE}
-                className="hero-img"
-                loading="lazy"
-                onError={(e) => handleImageError(e, trending.TITLE, trending.THUMBNAIL)}
-              />
+
+              {/* Dot Indicators */}
+              <div className="hero-indicators">
+                {trendingShows.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`indicator ${index === currentTrendingIndex ? 'active' : ''}`}
+                    onClick={() => goToSlide(index)}
+                  />
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -344,28 +430,6 @@ function FrontPage() {
           }
         }
 
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(60px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
         @keyframes cardStagger {
           from {
             opacity: 0;
@@ -414,119 +478,219 @@ function FrontPage() {
           animation: cardStagger 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) both;
         }
 
+        /* Netflix-style Hero Section */
         .hero-section {
-          display: flex;
-          width: 100vw;
-          height: 380px;
-          background: rgba(255, 255, 255, 0.02);
-          border: none;
-          border-radius: 0;
-          margin: 0;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(10px);
+          position: relative;
+          width: 100%;
+          height: 56.25vw;
+          max-height: 500px;
+          min-height: 400px;
+          background: #000;
           overflow: hidden;
         }
 
+        .hero-carousel {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .hero-slide {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .hero-background {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1;
+        }
+
+        .hero-bg-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .hero-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0.8) 0%,
+            rgba(0, 0, 0, 0.4) 50%,
+            transparent 100%
+          ),
+          linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.8) 0%,
+            transparent 60%
+          );
+        }
+
         .hero-content {
-          flex: 0 0 40%;
-          padding: 30px;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
           display: flex;
-          flex-direction: column;
-          justify-content: center;
-          color: #ddd;
-          background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
-          transform: translateX(-100px);
-          opacity: 0;
-          animation: slideInLeft 1s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
+          align-items: center;
+          z-index: 2;
+          padding: 0 60px;
+        }
+
+        .hero-text {
+          max-width: 500px;
+          color: white;
         }
 
         .hero-title {
-          font-size: 2.2rem;
-          margin-bottom: 15px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          font-size: 3rem;
           font-weight: 700;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          transform: translateY(30px);
-          opacity: 0;
-          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.6s both;
+          margin-bottom: 20px;
+          line-height: 1.1;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .hero-description {
-          flex-grow: 1;
-          font-size: 1rem;
-          line-height: 1.6;
-          overflow-y: auto;
-          max-height: 140px;
-          margin-bottom: 15px;
-          color: #ccc;
-          transform: translateY(30px);
-          opacity: 0;
-          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.8s both;
+          font-size: 1.2rem;
+          line-height: 1.4;
+          margin-bottom: 30px;
+          color: rgba(255, 255, 255, 0.9);
+          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .hero-actions {
           display: flex;
-          align-items: center;
           gap: 15px;
-          transform: translateY(30px);
-          opacity: 0;
-          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 1s both;
-        }
-
-        .hero-rating {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-size: 1rem;
-          font-weight: bold;
-          color: white;
-          transition: all 0.3s ease;
-        }
-
-        .hero-rating:hover {
-          transform: scale(1.05);
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+          align-items: center;
         }
 
         .hero-button {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 4px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .play-button {
+          background: rgba(255, 255, 255, 1);
+          color: black;
+        }
+
+        .play-button:hover {
+          background: rgba(255, 255, 255, 0.8);
+        }
+
+        .info-button {
+          background: rgba(109, 109, 110, 0.7);
+          color: white;
+        }
+
+        .info-button:hover {
+          background: rgba(109, 109, 110, 0.4);
+        }
+
+        /* Navigation Controls */
+        .hero-controls {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          transform: translateY(-50%);
+          display: flex;
+          justify-content: space-between;
+          padding: 0 20px;
+          z-index: 3;
+          pointer-events: none;
+        }
+
+        .nav-button {
+          background: rgba(0, 0, 0, 0.5);
           border: none;
           color: white;
-          padding: 12px 24px;
-          border-radius: 25px;
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
           cursor: pointer;
-          font-size: 1rem;
-          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+          pointer-events: auto;
+          opacity: 0.8;
         }
 
-        .hero-button:hover {
-          transform: translateY(-2px) scale(1.05);
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        .nav-button:hover {
+          background: rgba(0, 0, 0, 0.8);
+          opacity: 1;
+          transform: scale(1.1);
         }
 
-        .hero-image {
-          flex: 1 1 60%;
-          transform: translateX(100px);
-          opacity: 0;
-          animation: slideInRight 1s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
+        .nav-button:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
         }
 
-        .hero-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          filter: brightness(0.85);
+        .nav-button:disabled:hover {
+          transform: none;
+          background: rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-button-prev {
+          left: 20px;
+        }
+
+        .nav-button-next {
+          right: 20px;
+        }
+
+        /* Dot Indicators */
+        .hero-indicators {
+          position: absolute;
+          bottom: 20px;
+          right: 60px;
+          display: flex;
+          gap: 8px;
+          z-index: 3;
+        }
+
+        .indicator {
+          width: 12px;
+          height: 2px;
+          background: rgba(255, 255, 255, 0.5);
+          border: none;
+          cursor: pointer;
           transition: all 0.3s ease;
         }
 
-        .hero-img:hover {
-          filter: brightness(1);
-          transform: scale(1.02);
+        .indicator.active {
+          background: rgba(255, 255, 255, 1);
+        }
+
+        .indicator:hover {
+          background: rgba(255, 255, 255, 0.8);
         }
 
         .section-title {
@@ -736,24 +900,46 @@ function FrontPage() {
           }
 
           .hero-section {
-            flex-direction: column;
-            height: auto;
+            height: 70vw;
+            max-height: 400px;
+            min-height: 300px;
           }
 
           .hero-content {
-            flex: none;
-            padding: 20px;
-            animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
+            padding: 0 30px;
           }
 
           .hero-title {
-            font-size: 1.8rem;
+            font-size: 2rem;
           }
 
-          .hero-image {
-            flex: none;
-            height: 200px;
-            animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.5s both;
+          .hero-description {
+            font-size: 1rem;
+            -webkit-line-clamp: 2;
+          }
+
+          .hero-actions {
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+
+          .hero-button {
+            font-size: 0.9rem;
+            padding: 10px 20px;
+          }
+
+          .nav-button {
+            width: 40px;
+            height: 40px;
+          }
+
+          .hero-controls {
+            padding: 0 10px;
+          }
+
+          .hero-indicators {
+            bottom: 10px;
+            right: 30px;
           }
 
           .shows-grid {
@@ -761,34 +947,407 @@ function FrontPage() {
             gap: 20px;
           }
 
-          .card-image-container {
-            height: 300px;
+          .show-card {
+            max-width: 100%;
           }
 
-          .card-content {
-            padding: 20px;
+          .card-image-container {
+            height: 300px;
           }
 
           .section-title {
             font-size: 1.5rem;
           }
+        }
 
-          .show-card:hover {
-            transform: translateY(-8px) scale(1.01);
+        @media (max-width: 480px) {
+          .hero-wrapper {
+            width: calc(100vw - 20px);
+            margin-left: calc(-50vw + 50% + 10px);
+          }
+
+          .hero-content {
+            padding: 0 20px;
+          }
+
+          .hero-title {
+            font-size: 1.8rem;
+          }
+
+          .hero-description {
+            font-size: 0.9rem;
+          }
+
+          .hero-button {
+            font-size: 0.8rem;
+            padding: 8px 16px;
+          }
+
+          .shows-grid {
+            grid-template-columns: 1fr;
           }
         }
 
-        /* Reduce motion for accessibility */
-        @media (prefers-reduced-motion: reduce) {
-          * {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
+        /* Enhanced Netflix-style carousel improvements */
+        .hero-carousel {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          border-radius: 0;
+          overflow: hidden;
         }
-      `}</style>
-    </Layout>
-  );
+
+        .hero-slide {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          transition: opacity 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .hero-background {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1;
+        }
+
+        .hero-bg-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center top;
+          filter: brightness(0.7);
+          transition: filter 0.3s ease;
+        }
+
+        .hero-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: 
+            linear-gradient(
+              90deg,
+              rgba(0, 0, 0, 0.9) 0%,
+              rgba(0, 0, 0, 0.7) 40%,
+              rgba(0, 0, 0, 0.4) 60%,
+              transparent 100%
+            ),
+            linear-gradient(
+              180deg,
+              transparent 0%,
+              rgba(0, 0, 0, 0.2) 50%,
+              rgba(0, 0, 0, 0.8) 100%
+            );
+          z-index: 2;
+        }
+
+        /* Enhanced navigation buttons */
+        .hero-controls {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 20px;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        .nav-button {
+          background: rgba(42, 42, 42, 0.8);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          color: white;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          pointer-events: auto;
+          opacity: 0.8;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-button:hover {
+          background: rgba(255, 255, 255, 0.9);
+          color: #000;
+          opacity: 1;
+          transform: scale(1.1);
+          border-color: rgba(255, 255, 255, 0.3);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-button:active {
+          transform: scale(1.05);
+        }
+
+        .nav-button:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          background: rgba(42, 42, 42, 0.4);
+        }
+
+        .nav-button:disabled:hover {
+          transform: none;
+          background: rgba(42, 42, 42, 0.4);
+          color: white;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-button svg {
+          width: 28px;
+          height: 28px;
+        }
+
+        /* Enhanced dot indicators */
+        .hero-indicators {
+          position: absolute;
+          bottom: 30px;
+          right: 60px;
+          display: flex;
+          gap: 12px;
+          z-index: 10;
+        }
+
+        .indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.4);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .indicator::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(255, 255, 255, 0.8);
+          border-radius: 50%;
+          transform: scale(0);
+          transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .indicator.active {
+          background: rgba(255, 255, 255, 0.9);
+          border-color: rgba(255, 255, 255, 0.4);
+          transform: scale(1.2);
+        }
+
+        .indicator.active::before {
+          transform: scale(1);
+        }
+
+        .indicator:hover {
+          background: rgba(255, 255, 255, 0.7);
+          border-color: rgba(255, 255, 255, 0.3);
+          transform: scale(1.1);
+        }
+
+        /* Auto-play progress indicator */
+        .hero-indicators::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
 }
 
-export default FrontPage;
+.hero-indicators::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  animation: progress 5s linear infinite;  /* ✅ Fixed - remove template literal */
+}
+
+.hero-indicators.paused::after {
+  animation-play-state: paused;
+}
+
+@keyframes progress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+
+        /* Enhanced hero content */
+        .hero-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          z-index: 3;
+          padding: 0 60px;
+        }
+
+        .hero-text {
+          max-width: 600px;
+          color: white;
+          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .hero-title {
+          font-size: clamp(2rem, 5vw, 4rem);
+          font-weight: 800;
+          margin-bottom: 20px;
+          line-height: 1.1;
+          text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.8);
+          background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .hero-description {
+          font-size: clamp(1rem, 2vw, 1.3rem);
+          line-height: 1.5;
+          margin-bottom: 30px;
+          color: rgba(255, 255, 255, 0.9);
+          text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.8);
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .hero-actions {
+          display: flex;
+          gap: 15px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .hero-button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 15px 30px;
+          border: none;
+          border-radius: 6px;
+          font-size: 1.1rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .hero-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .hero-button:hover::before {
+          left: 100%;
+        }
+
+        .play-button {
+          background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+          color: #000;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-button:hover {
+          background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .info-button {
+          background: rgba(109, 109, 110, 0.8);
+          color: white;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          backdrop-filter: blur(10px);
+        }
+
+        .info-button:hover {
+          background: rgba(109, 109, 110, 0.6);
+          border-color: rgba(255, 255, 255, 0.5);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Mobile responsiveness for navigation */
+        @media (max-width: 768px) {
+          .nav-button {
+            width: 50px;
+            height: 50px;
+          }
+
+          .nav-button svg {
+            width: 24px;
+            height: 24px;
+          }
+
+          .hero-indicators {
+            bottom: 20px;
+            right: 30px;
+            gap: 8px;
+          }
+
+          .indicator {
+            width: 6px;
+            height: 6px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero-controls {
+            padding: 0 10px;
+          }
+
+          .nav-button {
+            width: 40px;
+            height: 40px;
+          }
+
+          .nav-button svg {
+            width: 20px;
+            height: 20px;
+          }
+
+          .hero-indicators {
+            bottom: 15px;
+            right: 20px;
+            gap: 6px;
+          }
+
+          .indicator {
+            width: 5px;
+            height: 5px;
+          }
+        }
+          
