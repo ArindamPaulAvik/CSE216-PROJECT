@@ -204,14 +204,7 @@ function FrontPage() {
           loading="lazy"
           onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
         />
-        <div className="card-overlay">
-          <button
-            className="view-button"
-            onClick={() => navigate(`/show/${show.SHOW_ID}`)}
-          >
-            View Details
-          </button>
-        </div>
+        
       </div>
 
       <div className="card-content">
@@ -386,7 +379,7 @@ function FrontPage() {
         }
 
         .show-card:hover {
-          transform: translateY(-12px) scale(1.02);
+          transform: translateY(-12px) scale(1.15);
           box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
           border-color: rgba(255, 255, 255, 0.1);
         }
@@ -431,30 +424,9 @@ function FrontPage() {
           opacity: 1;
         }
 
-        .view-button {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          backdrop-filter: blur(10px);
-          transform: translateY(20px);
-        }
+       
 
-        .show-card:hover .view-button {
-          transform: translateY(0);
-        }
-
-        .view-button:hover {
-          background: rgba(255, 255, 255, 0.3);
-          border-color: rgba(255, 255, 255, 0.5);
-          transform: translateY(-2px) scale(1.05);
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-        }
+     
 
         .card-content {
           padding: 25px;
