@@ -3,7 +3,9 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import TrendingCarousel from './TrendingCarousel';
-import WatchAgainCard from './WatchAgainCard';
+import ShowCard from './ShowCard';
+
+
 
 function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
@@ -249,7 +251,9 @@ function FrontPage() {
             Recommended for You
           </h2>
           <div className="shows-grid">
-            {recommendedShows.map((show, index) => renderShowBox(show, index))}
+            {recommendedShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
           </div>
         </section>
       )}
@@ -261,7 +265,7 @@ function FrontPage() {
         </h2>
         <div className="shows-grid">
           {watchAgainShows.map((show, index) => (
-            <WatchAgainCard key={show.SHOW_ID} show={show} index={index} />
+            <ShowCard key={show.SHOW_ID} show={show} index={index} />
           ))}
         </div>
         {watchAgainShows.length === 0 && (
