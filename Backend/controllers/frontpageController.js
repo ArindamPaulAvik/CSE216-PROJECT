@@ -20,15 +20,29 @@ exports.getFrontpage = async (req, res) => {
     const userName = userRows[0].USER_FIRSTNAME;
 
     const [trendingshows] = await pool.query(`
-      SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, s.BANNER, s.TEASER,
-             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
-      FROM \`SHOW\` s
-      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
-      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-      GROUP BY s.SHOW_ID
-      ORDER BY s.WATCH_COUNT DESC
-      LIMIT 4
-    `);
+  SELECT 
+    s.SHOW_ID, 
+    s.TITLE, 
+    s.DESCRIPTION, 
+    s.THUMBNAIL, 
+    s.RATING, 
+    s.TEASER, 
+    s.BANNER, 
+    GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES,
+    CASE 
+      WHEN fls.USER_ID IS NOT NULL THEN 1 
+      ELSE 0 
+    END AS IS_FAVORITE
+  FROM \`SHOW\` s
+  LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+  LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+  LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+  GROUP BY 
+    s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, s.BANNER, IS_FAVORITE
+  ORDER BY s.WATCH_COUNT DESC
+  LIMIT 4
+`, [userId]);
+
 
     const [allshows] = await pool.query(`
       SELECT SHOW_ID, TITLE, THUMBNAIL, RATING FROM \`SHOW\`

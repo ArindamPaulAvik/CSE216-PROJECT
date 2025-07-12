@@ -24,7 +24,7 @@ const ShowCard = ({ show, index = 0 }) => {
   const handleMouseEnter = () => {
     timerRef.current = setTimeout(() => {
       if (show.TEASER) setShowVideo(true);
-    }, 3000);
+    }, 700);
   };
 
   const handleMouseLeave = () => {

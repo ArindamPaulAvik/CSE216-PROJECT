@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Info, Plus, ThumbsUp, Share2, Volume2, VolumeX, Star, Clock, Users, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import axios from 'axios';
+import { motion } from 'framer-motion';
 
 const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -11,6 +13,8 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 4 });
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   const [watchProgress, setWatchProgress] = useState({});
+  const [isFavorite, setIsFavorite] = useState(shows[currentIndex]?.IS_FAVORITE || false);
+
 
   const carouselRef = useRef(null);
   const previewTimeoutRef = useRef(null);
@@ -21,6 +25,13 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
     if (!banner) return 'http://localhost:5000/banners/placeholder.jpg';
     return `http://localhost:5000/banners/${banner}`;
   };
+
+  useEffect(() => {
+  const show = shows[currentIndex];
+  if (show) {
+    setIsFavorite(show.IS_FAVORITE === 1);
+  }
+}, [currentIndex, shows]);
 
   // Autoplay functionality
   useEffect(() => {
@@ -40,6 +51,21 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
       setShowPreview(true);
     }, 800);
   }, []);
+
+  const toggleFavorite = () => {
+    const token = localStorage.getItem('token');
+    if (!token || !currentShow?.SHOW_ID) return;
+
+    axios.post(`http://localhost:5000/favorite/${currentShow.SHOW_ID}`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => {
+      setIsFavorite(res.data.favorite);
+    })
+    .catch((err) => {
+      console.error('Failed to toggle favorite:', err);
+    });
+  };
 
   const handleMouseLeave = useCallback(() => {
     setHoveredIndex(null);
@@ -169,27 +195,43 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
               <span>Play</span>
             </button>
 
-            <button className="info-button">
-              <Info size={20} />
-              <span>More Info</span>
-            </button>
-
             <div className="secondary-actions">
-              <button className="action-btn">
-                <Plus size={20} />
-              </button>
-              <button className="action-btn">
-                <ThumbsUp size={20} />
-              </button>
-              <button className="action-btn">
-                <Share2 size={20} />
-              </button>
-              <button
-                className="action-btn"
-                onClick={() => setIsMuted(!isMuted)}
+              <motion.button
+                onClick={toggleFavorite}
+                style={{
+                  background: 'rgba(22, 33, 62, 0.85)',
+                  color: '#fff',
+                  border: '2px solid #533483',
+                  padding: '13px 30px',
+                  borderRadius: '8px',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease',
+                  backdropFilter: 'blur(10px)',
+                }}
+                whileHover={{ background: 'rgba(255,255,255,0.1)', scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
               >
-                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-              </button>
+                <motion.span
+                  style={{ fontSize: '1.2rem' }}
+                  animate={{
+                    scale: isFavorite ? [1, 1.2, 1] : 1,
+                    rotate: isFavorite ? [0, 10, -10, 0] : 0,
+                  }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {isFavorite ? '💙' : '🤍'}
+                </motion.span>
+                {isFavorite ? 'Remove from List' : 'Add to List'}
+              </motion.button>
             </div>
           </div>
         </div>
