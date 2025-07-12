@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import TrendingCarousel from './TrendingCarousel';
-
+import WatchAgainCard from './WatchAgainCard';
 
 function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
@@ -91,7 +91,7 @@ function FrontPage() {
     if (watchAgainRef.current) {
       // Reset animation class and re-trigger if needed
       watchAgainRef.current.classList.remove('animate-in');
-      
+
       const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -106,7 +106,7 @@ function FrontPage() {
       }, observerOptions);
 
       observer.observe(watchAgainRef.current);
-      
+
       return () => observer.disconnect();
     }
   }, [watchAgainShows]); // Only re-observe when watchAgainShows changes
@@ -116,7 +116,7 @@ function FrontPage() {
     if (recommendedRef.current) {
       // Reset animation class and re-trigger if needed
       recommendedRef.current.classList.remove('animate-in');
-      
+
       const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -131,7 +131,7 @@ function FrontPage() {
       }, observerOptions);
 
       observer.observe(recommendedRef.current);
-      
+
       return () => observer.disconnect();
     }
   }, [recommendedShows]); // Only re-observe when recommendedShows changes
@@ -182,6 +182,8 @@ function FrontPage() {
     e.target.src = '/placeholder.jpg';
   };
 
+
+
   const renderShowBox = useCallback((show, index) => (
     <div
       className="show-card"
@@ -193,15 +195,15 @@ function FrontPage() {
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/show/${show.SHOW_ID}`)}
     >
       <div className="card-image-container">
-        <img 
-          src={getImagePath(show.THUMBNAIL)} 
+        <img
+          src={getImagePath(show.THUMBNAIL)}
           alt={show.TITLE}
           className="card-image"
           loading="lazy"
           onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
         />
         <div className="card-overlay">
-          <button 
+          <button
             className="view-button"
             onClick={() => navigate(`/show/${show.SHOW_ID}`)}
           >
@@ -209,7 +211,7 @@ function FrontPage() {
           </button>
         </div>
       </div>
-      
+
       <div className="card-content">
         <h3 className="card-title">{show.TITLE}</h3>
         <div className="card-rating">
@@ -217,8 +219,8 @@ function FrontPage() {
           <span className="rating-value">{show.RATING}</span>
         </div>
         <p className="card-description">
-          {show.DESCRIPTION && show.DESCRIPTION.length > 120 
-            ? show.DESCRIPTION.substring(0, 120) + '...' 
+          {show.DESCRIPTION && show.DESCRIPTION.length > 120
+            ? show.DESCRIPTION.substring(0, 120) + '...'
             : show.DESCRIPTION || 'No description available'
           }
         </p>
@@ -232,13 +234,13 @@ function FrontPage() {
   return (
     <Layout activeSection={activeSection}>
       {/* Trending Now Section */}
-     <section id="trending" className="shows-section" ref={trendingRef}>
-  <h2 className="section-title trending-title">Trending Now</h2>
-  <TrendingCarousel 
-    shows={trendingShows} 
-    onShowClick={(showId) => navigate(`/show/${showId}`)}
-  />
-</section>
+      <section id="trending" className="shows-section" ref={trendingRef}>
+        <h2 className="section-title trending-title">Trending Now</h2>
+        <TrendingCarousel
+          shows={trendingShows}
+          onShowClick={(showId) => navigate(`/show/${showId}`)}
+        />
+      </section>
 
       {/* Recommended Shows Section */}
       {recommendedShows.length > 0 && (
@@ -258,7 +260,9 @@ function FrontPage() {
           Watch Again
         </h2>
         <div className="shows-grid">
-          {watchAgainShows.map((show, index) => renderShowBox(show, index))}
+          {watchAgainShows.map((show, index) => (
+            <WatchAgainCard key={show.SHOW_ID} show={show} index={index} />
+          ))}
         </div>
         {watchAgainShows.length === 0 && (
           <p className="empty-message">

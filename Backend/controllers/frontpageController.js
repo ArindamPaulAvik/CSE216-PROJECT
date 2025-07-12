@@ -35,7 +35,7 @@ exports.getFrontpage = async (req, res) => {
     `);
 
     const [watchagainshows] = await pool.query(`
-      SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING
+      SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER
       FROM PERSON p
       JOIN USER u ON p.PERSON_ID = u.PERSON_ID
       JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
