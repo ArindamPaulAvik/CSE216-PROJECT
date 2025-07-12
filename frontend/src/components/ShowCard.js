@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const WatchAgainCard = ({ show, index }) => {
+const ShowCard = ({ show, index = 0 }) => {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
   const timerRef = useRef(null);
@@ -24,7 +24,7 @@ const WatchAgainCard = ({ show, index }) => {
   const handleMouseEnter = () => {
     timerRef.current = setTimeout(() => {
       if (show.TEASER) setShowVideo(true);
-    }, 3000); // 3 seconds hover
+    }, 3000);
   };
 
   const handleMouseLeave = () => {
@@ -95,4 +95,4 @@ const WatchAgainCard = ({ show, index }) => {
   );
 };
 
-export default WatchAgainCard;
+export default ShowCard;
