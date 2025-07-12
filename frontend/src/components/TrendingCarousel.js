@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Info, Plus, ThumbsUp, Share2, Volume2, VolumeX, Star, Clock, Users, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import BannerPlayerVideo from './BannerPlayerVideo';
 
 const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -12,40 +11,11 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 4 });
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   const [watchProgress, setWatchProgress] = useState({});
-  const [showVideoPreview, setShowVideoPreview] = useState(false);
-const [videoPreviewIndex, setVideoPreviewIndex] = useState(null);
 
   const carouselRef = useRef(null);
   const previewTimeoutRef = useRef(null);
   const autoplayRef = useRef(null);
   const progressRef = useRef(null);
-
-  const handleMouseEnter = useCallback((index) => {
-  setHoveredIndex(index);
-  clearTimeout(previewTimeoutRef.current);
-  previewTimeoutRef.current = setTimeout(() => {
-    setShowPreview(true);
-    setShowVideoPreview(true);
-    setVideoPreviewIndex(index);
-  }, 800);
-}, []);
-
-const handleMouseLeave = useCallback(() => {
-  setHoveredIndex(null);
-  setShowPreview(false);
-  setShowVideoPreview(false);
-  setVideoPreviewIndex(null);
-  clearTimeout(previewTimeoutRef.current);
-}, []);
-
-const handleVideoLoad = (showId) => {
-  console.log('Video loaded for show:', showId);
-};
-
-const handleVideoError = (showId, error) => {
-  console.error('Video error for show:', showId, error);
-};
-
 
   const getBannerPath = (banner) => {
     if (!banner) return 'http://localhost:5000/banners/placeholder.jpg';
@@ -62,9 +32,20 @@ const handleVideoError = (showId, error) => {
     return () => clearInterval(autoplayRef.current);
   }, [autoplayEnabled, shows.length]);
 
- 
+  // Preview functionality
+  const handleMouseEnter = useCallback((index) => {
+    setHoveredIndex(index);
+    clearTimeout(previewTimeoutRef.current);
+    previewTimeoutRef.current = setTimeout(() => {
+      setShowPreview(true);
+    }, 800);
+  }, []);
 
-
+  const handleMouseLeave = useCallback(() => {
+    setHoveredIndex(null);
+    setShowPreview(false);
+    clearTimeout(previewTimeoutRef.current);
+  }, []);
 
   // Touch/drag functionality
   const handleTouchStart = (e) => {
@@ -112,21 +93,18 @@ const handleVideoError = (showId, error) => {
   return (
     <div className="trending-carousel">
       {/* Main Featured Section */}
-      <div className="featured-section"
-      onMouseEnter={() => handleMouseEnter(currentIndex )}
-        onMouseLeave={handleMouseLeave} >
+      <div className="featured-section">
         <div className="featured-background">
           <div className="gradient-overlay" />
           <div className="noise-overlay" />
-          <BannerPlayerVideo
-  show={currentShow}
-  isVisible={showVideoPreview && videoPreviewIndex === currentIndex}
-  isMuted={isMuted}
-  onToggleMute={() => setIsMuted(!isMuted)}
-  onVideoLoad={handleVideoLoad}
-  onVideoError={handleVideoError}
-  className="background-image"
-/>
+          <div
+            className="background-image"
+            style={{
+              backgroundImage: `url(${getBannerPath(currentShow.BANNER)})`,
+              transform: `scale(${1 + currentIndex * 0.02})`,
+              filter: `hue-rotate(${currentIndex * 30}deg)`
+            }}
+          />
         </div>
 
         <div className="featured-content">
@@ -276,13 +254,15 @@ const handleVideoError = (showId, error) => {
         }
 
         .background-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
         .gradient-overlay {
           position: absolute;
