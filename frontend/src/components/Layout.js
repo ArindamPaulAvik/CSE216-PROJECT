@@ -10,12 +10,15 @@ export default function Layout({ children, activeSection }) {
   const [isSearching, setIsSearching] = useState(false);
   const [userName, setUserName] = useState('');
   const [error, setError] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
   // Get user data on mount
   const [userImage, setUserImage] = useState(null);
+
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -39,6 +42,14 @@ export default function Layout({ children, activeSection }) {
     }
   }, []);
 
+  const [filters, setFilters] = useState({
+    category: {
+      movie: true,
+      series: true
+    },
+    genre: {}
+  });
+
   // Search functionality
   // Search functionality
   useEffect(() => {
@@ -54,7 +65,10 @@ export default function Layout({ children, activeSection }) {
 
     const handler = setTimeout(() => {
       const token = localStorage.getItem('token');
-      fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}`, {
+      const { movie, series } = filters.category;
+
+      fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}&movie=${movie}&series=${series}`, {
+
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -77,7 +91,7 @@ export default function Layout({ children, activeSection }) {
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [searchTerm, searchOpen]); // Add searchOpen to dependency array
+  }, [searchTerm, searchOpen, filters]); // Add searchOpen to dependency array
 
   const renderShowBox = useCallback((show) => {
     // Safely access properties with fallbacks
@@ -141,6 +155,20 @@ export default function Layout({ children, activeSection }) {
     );
   }, [navigate]);
 
+  const handleFilterToggle = () => {
+    setFilterOpen(prev => !prev);
+  };
+
+  const handleCategoryFilterChange = (category) => {
+    setFilters(prev => ({
+      ...prev,
+      category: {
+        ...prev.category,
+        [category]: !prev.category[category]
+      }
+    }));
+  };
+
   const handleSearchToggle = () => {
     setSearchOpen(prev => !prev);
     if (!searchOpen) {
@@ -149,7 +177,9 @@ export default function Layout({ children, activeSection }) {
       setError('');
       // Immediately fetch all shows with empty string search
       const token = localStorage.getItem('token');
-      fetch('http://localhost:5000/search?query=', {
+      const { movie, series } = filters.category;
+      fetch(`http://localhost:5000/search?query=&movie=${movie}&series=${series}`, {
+
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -344,25 +374,61 @@ export default function Layout({ children, activeSection }) {
         {/* Scrollable Content Area */}
         <div className="content-area">
           {searchOpen ? (
-  <>
-    <div className="search-results-header" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-      <button className="filter-button">
-        <FiFilter style={{ marginRight: '6px' }} />
-        Filter
-      </button>
-    </div>
-    <h2 className="search-results-title">
-      Search Results {isSearching && '(Searching...)'}
-    </h2>
-    <div className="movie-grid">
-      {searchResults.length > 0
-        ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
-        : !isSearching && <p className="no-results">No results found</p>}
-    </div>
-  </>
-) : (
-  children
-)}
+            <>
+              <div className="search-results-header" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="filter-button" onClick={handleFilterToggle}>
+                  <FiFilter style={{ marginRight: '6px' }} />
+                  Filter
+                </button>
+              </div>
+
+              {filterOpen && (
+                <div className="filter-section">
+                  <div className="filter-group">
+                    <h3 className="filter-title">Category</h3>
+                    <div className="filter-options">
+                      <label className="filter-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={filters.category.movie}
+                          onChange={() => handleCategoryFilterChange('movie')}
+                        />
+                        <span className="checkmark"></span>
+                        Movie
+                      </label>
+                      <label className="filter-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={filters.category.series}
+                          onChange={() => handleCategoryFilterChange('series')}
+                        />
+                        <span className="checkmark"></span>
+                        Series
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="filter-group">
+                    <h3 className="filter-title">Genre</h3>
+                    <div className="filter-options">
+                      {/* Genre options will be added here */}
+                      <p className="coming-soon">Coming soon...</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <h2 className="search-results-title">
+                Search Results {isSearching && '(Searching...)'}
+              </h2>
+              <div className="movie-grid">
+                {searchResults.length > 0
+                  ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
+                  : !isSearching && <p className="no-results">No results found</p>}
+              </div>
+            </>
+          ) : (
+            children
+          )}
         </div>
       </div>
 
@@ -387,6 +453,98 @@ rgb(42, 19, 213)
           z-index: 999;
           display: none;
         }
+
+        .filter-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-group:last-child {
+  margin-bottom: 0;
+}
+
+.filter-title {
+  color: #d0d0d0;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #b0b0b0;
+  font-size: 14px;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.filter-checkbox:hover {
+  color: #d0d0d0;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  margin-right: 8px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.filter-checkbox input[type="checkbox"]:checked + .checkmark {
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  border-color: #4f46e5;
+}
+
+.filter-checkbox input[type="checkbox"]:checked + .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.coming-soon {
+  color: #666;
+  font-style: italic;
+  font-size: 14px;
+}
 
         .header-button {
           font-weight: 700;
