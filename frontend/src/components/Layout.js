@@ -344,25 +344,25 @@ export default function Layout({ children, activeSection }) {
         {/* Scrollable Content Area */}
         <div className="content-area">
           {searchOpen ? (
-            <>
-              <div className="search-results-header">
-                <button className="filter-button">
-                  <FiFilter style={{ marginRight: '6px' }} />
-                  Filter
-                </button>
-                <h2 className="search-results-title">
-                  Search Results {isSearching && '(Searching...)'}
-                </h2>
-              </div>
-              <div className="movie-grid">
-                {searchResults.length > 0
-                  ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
-                  : !isSearching && <p className="no-results">No results found</p>}
-              </div>
-            </>
-          ) : (
-            children
-          )}
+  <>
+    <div className="search-results-header" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <button className="filter-button">
+        <FiFilter style={{ marginRight: '6px' }} />
+        Filter
+      </button>
+    </div>
+    <h2 className="search-results-title">
+      Search Results {isSearching && '(Searching...)'}
+    </h2>
+    <div className="movie-grid">
+      {searchResults.length > 0
+        ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
+        : !isSearching && <p className="no-results">No results found</p>}
+    </div>
+  </>
+) : (
+  children
+)}
         </div>
       </div>
 
@@ -704,33 +704,34 @@ rgb(42, 19, 213)
           z-index: 10;
         }
 
-        .search-results-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
+        
+.search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
 
         .filter-button {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 8px 16px;
-          font-size: 14px;
-          font-weight: 500;
-          border: none;
-          border-radius: 20px;
-          cursor: pointer;
-          background: linear-gradient(135deg, #4f46e5, #9333ea);
-          color: #fff;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 10px rgba(147, 51, 234, 0.4);
-        }
+  display: flex;
+  align-items: right;
+  gap: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  color: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(147, 51, 234, 0.4);
+}
 
         .filter-button:hover {
-          transform: scale(1.05);
-          box-shadow: 0 4px 15px rgba(147, 51, 234, 0.6);
-        }
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(147, 51, 234, 0.6);
+}
 
         .user-avatar {
           width: 32px;
