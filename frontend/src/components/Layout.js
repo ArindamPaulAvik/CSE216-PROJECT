@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX, FiFilter } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children, activeSection }) {
@@ -40,8 +40,9 @@ export default function Layout({ children, activeSection }) {
   }, []);
 
   // Search functionality
+  // Search functionality
   useEffect(() => {
-    if (searchTerm.trim() === '') {
+    if (!searchOpen) {
       setSearchResults([]);
       setIsSearching(false);
       setError('');
@@ -76,7 +77,7 @@ export default function Layout({ children, activeSection }) {
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, searchOpen]); // Add searchOpen to dependency array
 
   const renderShowBox = useCallback((show) => {
     // Safely access properties with fallbacks
@@ -212,8 +213,13 @@ export default function Layout({ children, activeSection }) {
             <span
               className="logo-text logo-clickable"
               onClick={() => {
-                navigate('/frontpage');
+                window.location.href = '/frontpage';
                 setMenuOpen(false);
+                // Add these lines to reset search state
+                setSearchOpen(false);
+                setSearchTerm('');
+                setSearchResults([]);
+                setError('');
               }}
               title="Go to frontpage"
             >
@@ -303,16 +309,16 @@ export default function Layout({ children, activeSection }) {
         <div className="header">
           {location.pathname === '/frontpage' && (
             <div className="button-group">
-              <button 
-                onClick={() => scrollToSection('trending')} 
+              <button
+                onClick={() => scrollToSection('trending')}
                 className={`header-button${activeSection === 'trending' ? ' active-glow' : ''}`}
               >Trending</button>
-              <button 
-                onClick={() => scrollToSection('recommended')} 
+              <button
+                onClick={() => scrollToSection('recommended')}
                 className={`header-button${activeSection === 'recommended' ? ' active-glow' : ''}`}
               >Recommended</button>
-              <button 
-                onClick={() => scrollToSection('watchagain')} 
+              <button
+                onClick={() => scrollToSection('watchagain')}
                 className={`header-button${activeSection === 'watchagain' ? ' active-glow' : ''}`}
               >Watch Again</button>
             </div>
@@ -337,11 +343,17 @@ export default function Layout({ children, activeSection }) {
 
         {/* Scrollable Content Area */}
         <div className="content-area">
-          {searchTerm.trim() !== '' ? (
+          {searchOpen ? (
             <>
-              <h2 className="search-results-title">
-                Search Results {isSearching && '(Searching...)'}
-              </h2>
+              <div className="search-results-header">
+                <button className="filter-button">
+                  <FiFilter style={{ marginRight: '6px' }} />
+                  Filter
+                </button>
+                <h2 className="search-results-title">
+                  Search Results {isSearching && '(Searching...)'}
+                </h2>
+              </div>
               <div className="movie-grid">
                 {searchResults.length > 0
                   ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
@@ -690,6 +702,34 @@ rgb(42, 19, 213)
           transform: scale(1.3);
           box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
           z-index: 10;
+        }
+
+        .search-results-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .filter-button {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 8px 16px;
+          font-size: 14px;
+          font-weight: 500;
+          border: none;
+          border-radius: 20px;
+          cursor: pointer;
+          background: linear-gradient(135deg, #4f46e5, #9333ea);
+          color: #fff;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 10px rgba(147, 51, 234, 0.4);
+        }
+
+        .filter-button:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 15px rgba(147, 51, 234, 0.6);
         }
 
         .user-avatar {
