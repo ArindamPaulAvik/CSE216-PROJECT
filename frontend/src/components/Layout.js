@@ -18,7 +18,31 @@ export default function Layout({ children, activeSection }) {
   // Get user data on mount
   const [userImage, setUserImage] = useState(null);
 
+  useEffect(() => {
+    fetch('http://localhost:5000/search/genres')
+      .then(res => res.json())
+      .then(data => {
+        const genreState = {};
+        (data.genres || []).forEach(g => {
+          genreState[g] = false;
+        });
+        setFilters(prev => ({
+          ...prev,
+          genre: genreState
+        }));
+      })
+      .catch(err => console.error('Error loading genres:', err));
+  }, []);
 
+  const handleGenreChange = (genreName) => {
+    setFilters(prev => ({
+      ...prev,
+      genre: {
+        ...prev.genre,
+        [genreName]: !prev.genre[genreName]
+      }
+    }));
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -51,7 +75,6 @@ export default function Layout({ children, activeSection }) {
   });
 
   // Search functionality
-  // Search functionality
   useEffect(() => {
     if (!searchOpen) {
       setSearchResults([]);
@@ -66,9 +89,9 @@ export default function Layout({ children, activeSection }) {
     const handler = setTimeout(() => {
       const token = localStorage.getItem('token');
       const { movie, series } = filters.category;
-
-      fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}&movie=${movie}&series=${series}`, {
-
+      const selectedGenres = Object.keys(filters.genre).filter(g => filters.genre[g]);
+      const genreParam = selectedGenres.map(encodeURIComponent).join(',');
+      fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}&movie=${movie}&series=${series}&genres=${genreParam}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -384,6 +407,7 @@ export default function Layout({ children, activeSection }) {
 
               {filterOpen && (
                 <div className="filter-section">
+                  {/* Category Filter */}
                   <div className="filter-group">
                     <h3 className="filter-title">Category</h3>
                     <div className="filter-options">
@@ -408,11 +432,25 @@ export default function Layout({ children, activeSection }) {
                     </div>
                   </div>
 
+                  {/* Genre Filter */}
                   <div className="filter-group">
                     <h3 className="filter-title">Genre</h3>
                     <div className="filter-options">
-                      {/* Genre options will be added here */}
-                      <p className="coming-soon">Coming soon...</p>
+                      {Object.keys(filters.genre).length > 0 ? (
+                        Object.keys(filters.genre).map((genreName) => (
+                          <label className="filter-checkbox" key={genreName}>
+                            <input
+                              type="checkbox"
+                              checked={filters.genre[genreName]}
+                              onChange={() => handleGenreChange(genreName)}
+                            />
+                            <span className="checkmark"></span>
+                            {genreName}
+                          </label>
+                        ))
+                      ) : (
+                        <p className="coming-soon">Loading genres...</p>
+                      )}
                     </div>
                   </div>
                 </div>

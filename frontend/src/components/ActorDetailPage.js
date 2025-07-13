@@ -16,7 +16,7 @@ function ActorDetailPage() {
       return;
     }
 
-    axios.get(`http://localhost:5000/actor/${id}`, {
+    axios.get(`http://localhost:5000/actors/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setActor(res.data))

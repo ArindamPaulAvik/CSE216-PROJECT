@@ -25,14 +25,10 @@ app.use(require('./routes/shows'));
 app.use(require('./routes/users'));
 app.use(require('./routes/favorites'));
 //app.use(require('./routes/search'));
-app.use(require('./routes/actors'));
 app.use('/search', require('./routes/search'));
 app.use('/comments', require('./routes/comments'));
 app.use('/directors', require('./routes/directors'));
-
-
-
-
+app.use('/actors', require('./routes/actors'));
 
 app.use(require('./routes/episodes'));
 
