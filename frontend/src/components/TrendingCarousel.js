@@ -8,7 +8,7 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
-  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   const [watchProgress, setWatchProgress] = useState({});
   const [isFavorite, setIsFavorite] = useState(false);
@@ -18,6 +18,8 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
 
   const autoplayRef = useRef(null);
   const previewTimeoutRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
+  const stopVideoTimeoutRef = useRef(null);
 
   // Initialize favorites state
   useEffect(() => {
@@ -28,26 +30,19 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
       setVideoReady(false);
       setIsVideoPlaying(false);
       
-      // Auto-start video preview after image loads
-      if (show.TEASER) {
-        const timer = setTimeout(() => {
-          setIsVideoPlaying(true);
-          setTimeout(() => setVideoReady(true), 800);
-        }, 2000);
-        return () => clearTimeout(timer);
-      }
+      // Don't auto-start video - only on hover
     }
   }, [currentIndex, shows]);
 
-  // Enhanced autoplay with smooth transitions
+  // Enhanced autoplay with smooth transitions - pause when hovered
   useEffect(() => {
-    if (autoplayEnabled && shows.length > 1 && !hoveredIndex && !showPreview) {
+    if (autoplayEnabled && shows.length > 1 && !isHovered && !showPreview) {
       autoplayRef.current = setInterval(() => {
         setCurrentIndex(prev => (prev + 1) % shows.length);
       }, 12000); // Optimal 12-second duration per UX research
     }
     return () => clearInterval(autoplayRef.current);
-  }, [autoplayEnabled, shows.length, hoveredIndex, showPreview]);
+  }, [autoplayEnabled, shows.length, isHovered, showPreview]);
 
   // Utility functions
   const getBannerPath = (banner) => {
@@ -88,13 +83,23 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
     if (!shows[currentIndex]) return;
     
     try {
-      const response = await axios.post(`http://localhost:5000/api/favorite/${shows[currentIndex].ID}`, {}, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await axios.post(`http://localhost:5000/favorite/${shows[currentIndex].SHOW_ID}`, {}, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.status === 200) {
-        setIsFavorite(!isFavorite);
-        shows[currentIndex].IS_FAVORITE = isFavorite ? 0 : 1;
+        setIsFavorite(response.data.favorite);
+        shows[currentIndex].IS_FAVORITE = response.data.favorite ? 1 : 0;
+        console.log('Favorite status updated successfully:', response.data);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
@@ -117,6 +122,45 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const toggleMute = useCallback(() => {
     setIsMuted(!isMuted);
   }, [isMuted]);
+
+  // Enhanced hover functionality
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    
+    // Clear any existing timeouts
+    clearTimeout(hoverTimeoutRef.current);
+    clearTimeout(stopVideoTimeoutRef.current);
+    
+    // Start playing trailer after a brief delay
+    if (shows[currentIndex]?.TEASER) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setIsVideoPlaying(true);
+        setTimeout(() => setVideoReady(true), 500);
+      }, 1500); // Start after 1.5s
+    }
+  }, [shows, currentIndex]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+    
+    // Clear hover timeout
+    clearTimeout(hoverTimeoutRef.current);
+    
+    // Stop video after 1 second delay
+    stopVideoTimeoutRef.current = setTimeout(() => {
+      setIsVideoPlaying(false);
+      setVideoReady(false);
+    }, 1000); // Stop after 1 second
+  }, []);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(hoverTimeoutRef.current);
+      clearTimeout(stopVideoTimeoutRef.current);
+      clearTimeout(previewTimeoutRef.current);
+    };
+  }, []);
 
   // Enhanced keyboard navigation
   useEffect(() => {
@@ -192,7 +236,11 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
   const progress = calculateProgress(currentShow);
 
   return (
-    <div className="trending-carousel">
+    <div 
+      className="trending-carousel"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Main Featured Section */}
       <div className="featured-section">
         <div className="featured-background">
@@ -340,7 +388,7 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
           >
             <motion.button
               className="play-button"
-              onClick={() => onShowClick?.(currentShow.ID)}
+              onClick={() => onShowClick?.(currentShow.SHOW_ID)}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, scale: 0.8 }}
@@ -353,29 +401,13 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
 
             <div className="secondary-actions">
               <motion.button
+                className="favorites-button"
                 onClick={toggleFavorite}
-                style={{
-                  background: 'linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(45, 45, 45, 0.8))',
-                  color: '#fff',
-                  border: '2px solid rgba(255, 255, 255, 0.15)',
-                  padding: '14px 32px',
-                  borderRadius: '50px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  transition: 'all 0.3s ease',
-                  backdropFilter: 'blur(15px)',
-                }}
                 whileHover={{ 
-                  background: 'linear-gradient(135deg, rgba(83, 52, 131, 0.8), rgba(147, 51, 234, 0.6))',
-                  scale: 1.05,
-                  y: -2,
-                  borderColor: 'rgba(255, 255, 255, 0.3)'
+                  scale: 1.02,
+                  y: -2
                 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4, delay: 1.2 }}
@@ -407,16 +439,22 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
             <motion.button
               className="video-control-btn"
               onClick={handleVideoToggle}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
             >
               {isVideoPlaying ? <Pause size={18} /> : <Play size={18} />}
             </motion.button>
             <motion.button
               className="video-control-btn"
               onClick={toggleMute}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.7 }}
             >
               {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </motion.button>
@@ -434,8 +472,11 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
             className="nav-btn prev"
             onClick={goToPrevious}
             disabled={shows.length <= 1}
-            whileHover={{ scale: 1.1, x: -2 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.02, x: -2, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 1.6 }}
           >
             <ChevronLeft size={24} />
           </motion.button>
@@ -446,11 +487,11 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
                 key={index}
                 className={`indicator ${index === currentIndex ? 'active' : ''}`}
                 onClick={() => navigateToSlide(index)}
-                whileHover={{ scale: 1.2 }}
+                whileHover={{ scale: 1.2, y: -2 }}
                 whileTap={{ scale: 0.9 }}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.3, delay: 1.6 + index * 0.05 }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 1.7 + index * 0.05 }}
               >
                 <div className="indicator-fill" />
               </motion.button>
@@ -461,8 +502,11 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
             className="nav-btn next"
             onClick={goToNext}
             disabled={shows.length <= 1}
-            whileHover={{ scale: 1.1, x: 2 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.02, x: 2, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 1.6 }}
           >
             <ChevronRight size={24} />
           </motion.button>
