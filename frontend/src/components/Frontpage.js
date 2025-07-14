@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import TrendingCarousel from './TrendingCarousel';
 import ShowCard from './ShowCard';
+import './ShowCard.css';
 
 
 
@@ -187,44 +188,12 @@ function FrontPage() {
 
 
   const renderShowBox = useCallback((show, index) => (
-    <div
-      className="show-card"
-      key={show.SHOW_ID}
-      role="button"
-      tabIndex={0}
-      style={{ animationDelay: `${index * 0.1}s` }}
-      onClick={() => navigate(`/show/${show.SHOW_ID}`)}
-      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/show/${show.SHOW_ID}`)}
-    >
-      <div className="card-image-container">
-        <img
-          src={getImagePath(show.THUMBNAIL)}
-          alt={show.TITLE}
-          className="card-image"
-          loading="lazy"
-          onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
-        />
-        
-      </div>
-
-      <div className="card-content">
-        <h3 className="card-title">{show.TITLE}</h3>
-        <div className="card-rating">
-          <span className="rating-star">⭐</span>
-          <span className="rating-value">{show.RATING}</span>
-        </div>
-        <p className="card-description">
-          {show.DESCRIPTION && show.DESCRIPTION.length > 120
-            ? show.DESCRIPTION.substring(0, 120) + '...'
-            : show.DESCRIPTION || 'No description available'
-          }
-        </p>
-        <div className="card-genres">
-          {show.GENRES || 'No genres available'}
-        </div>
-      </div>
-    </div>
-  ), [navigate]);
+    <ShowCard 
+      key={show.SHOW_ID} 
+      show={show} 
+      index={index} 
+    />
+  ), []);
 
   return (
     <Layout activeSection={activeSection}>
