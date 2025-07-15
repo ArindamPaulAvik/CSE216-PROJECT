@@ -49,13 +49,23 @@ exports.getFrontpage = async (req, res) => {
     `);
 
     const [watchagainshows] = await pool.query(`
-      SELECT DISTINCT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER
+      SELECT DISTINCT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        GROUP_CONCAT(DISTINCT g.GENRE_NAME ORDER BY g.GENRE_NAME SEPARATOR ', ') AS GENRES
       FROM PERSON p
       JOIN USER u ON p.PERSON_ID = u.PERSON_ID
       JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
       JOIN SHOW_EPISODE se ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE p.EMAIL = ? AND ue.WATCHED = 1
+      GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER
     `, [userEmail]);
 
     const [recommendedShows] = await pool.query(`
