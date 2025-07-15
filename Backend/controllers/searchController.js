@@ -28,7 +28,7 @@ exports.searchShows = async (req, res) => {
     let whereClauses = [];
     let params = [];
 
-    // Category filter logic
+    // Category filter logic - FIXED: Default to showing both if neither is explicitly false
     if (movie && !series) {
       whereClauses.push('s.CATEGORY_ID = 1');
     } else if (!movie && series) {
@@ -37,12 +37,13 @@ exports.searchShows = async (req, res) => {
       // Return empty array if no category selected
       return res.json({ results: [] });
     }
-    // if both are true, skip category filter
+    // if both are true, skip category filter to show both movies and series
 
-    // Search query logic
-    if (query.trim() !== '') {
+    // Search query logic - Handle empty query and special characters
+    const cleanQuery = query.trim();
+    if (cleanQuery !== '' && cleanQuery !== '*') {
       whereClauses.push('(s.TITLE LIKE ? OR s.DESCRIPTION LIKE ?)');
-      params.push(`%${query}%`, `%${query}%`);
+      params.push(`%${cleanQuery}%`, `%${cleanQuery}%`);
     }
 
     // Genre filter logic - Shows must have ALL selected genres
@@ -69,6 +70,10 @@ exports.searchShows = async (req, res) => {
     // Construct full query
     const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     
+    // Determine limit based on search type
+    const isEmptySearch = cleanQuery === '' || cleanQuery === '*';
+    const limit = isEmptySearch ? 50 : 20;
+    
     // Use DISTINCT to avoid duplicates when joining with genres
     const sql = `
       SELECT DISTINCT s.*, 
@@ -80,19 +85,36 @@ exports.searchShows = async (req, res) => {
       ${whereSQL}
       GROUP BY s.SHOW_ID
       ${genreHaving}
-      ORDER BY s.TITLE
-      LIMIT ${query.trim() === '' ? 50 : 20}
+      ORDER BY ${isEmptySearch ? 's.TITLE' : 'CASE WHEN s.TITLE LIKE ? THEN 0 ELSE 1 END, s.TITLE'}
+      LIMIT ${limit}
     `;
 
+    // Add search term for ORDER BY if not empty search
+    let finalParams = params;
+    if (!isEmptySearch) {
+      finalParams = [...params, `%${cleanQuery}%`];
+    }
+
     console.log('📄 Executing SQL:', sql);
-    console.log('🔧 Parameters:', params);
+    console.log('🔧 Parameters:', finalParams);
     
-    [results] = await pool.query(sql, params);
+    [results] = await pool.query(sql, finalParams);
 
     console.log('✅ Results found:', results.length);
+    
+    // Add some debugging info
+    if (results.length === 0) {
+      console.log('⚠️  No results found with current filters');
+      console.log('🔍 Query:', cleanQuery);
+      console.log('🎬 Movie filter:', movie);
+      console.log('📺 Series filter:', series);
+      console.log('🎭 Genre filter:', genres);
+    }
+
     res.json({ results });
   } catch (error) {
     console.error('❌ Search failed:', error.message);
+    console.error('Full error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

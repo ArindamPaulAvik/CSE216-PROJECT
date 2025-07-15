@@ -122,68 +122,79 @@ export default function Layout({ children, activeSection }) {
     genre: {}
   });
 
-  // Enhanced search with suggestions
-  useEffect(() => {
-    if (!searchOpen) {
-      setSearchResults([]);
-      setIsSearching(false);
-      setError('');
-      setSearchSuggestions([]);
-      return;
-    }
-
-    if (!searchTerm.trim()) {
-      // Show recent searches and trending when no search term
-      setSearchSuggestions([
-        ...recentSearches.map(search => ({ type: 'recent', value: search })),
-        { type: 'trending', value: 'Breaking Bad' },
-        { type: 'trending', value: 'Stranger Things' },
-        { type: 'trending', value: 'The Office' }
-      ]);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
+  // Enhanced search with suggestions - Updated to show all movies when search opens
+// Enhanced search with suggestions - Updated to show all movies when search opens
+useEffect(() => {
+  if (!searchOpen) {
+    setSearchResults([]);
+    setIsSearching(false);
     setError('');
+    setSearchSuggestions([]);
+    return;
+  }
 
-    const handler = setTimeout(() => {
-      const token = localStorage.getItem('token');
-      const { movie, series } = filters.category;
-      const selectedGenres = Object.keys(filters.genre).filter(g => filters.genre[g]);
-      const genreParam = selectedGenres.map(encodeURIComponent).join(',');
-      
-      fetch(`http://localhost:5000/search?query=${encodeURIComponent(searchTerm)}&movie=${movie}&series=${series}&genres=${genreParam}`, {
-        headers: { Authorization: `Bearer ${token}` }
+  setIsSearching(true);
+  setError('');
+
+  const handler = setTimeout(() => {
+    const token = localStorage.getItem('token');
+    const { movie, series } = filters.category;
+    const selectedGenres = Object.keys(filters.genre).filter(g => filters.genre[g]);
+    const genreParam = selectedGenres.map(encodeURIComponent).join(',');
+    
+    // Use '*' for empty search to get all results
+    const queryParam = searchTerm.trim() || '*';
+    
+    console.log('🔍 Frontend search params:', {
+      query: queryParam,
+      movie,
+      series,
+      genres: genreParam
+    });
+    
+    fetch(`http://localhost:5000/search?query=${encodeURIComponent(queryParam)}&movie=${movie}&series=${series}&genres=${genreParam}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Search failed');
+        }
+        return res.json();
       })
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('Search failed');
-          }
-          return res.json();
-        })
-        .then(data => {
-          // Handle different possible response structures
-          setSearchResults(data.results || data.shows || data || []);
-          setIsSearching(false);
-          
-          // Save to recent searches
-          if (searchTerm.trim()) {
-            const updatedSearches = [searchTerm, ...recentSearches.filter(s => s !== searchTerm)].slice(0, 5);
-            setRecentSearches(updatedSearches);
-            localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
-          }
-        })
-        .catch(err => {
-          console.error('Search error:', err);
-          setSearchResults([]);
-          setIsSearching(false);
-          setError('Search failed. Please try again.');
-        });
-    }, 300);
+      .then(data => {
+        console.log('✅ Frontend received results:', data.results?.length || 0);
+        
+        // Handle different possible response structures
+        setSearchResults(data.results || data.shows || data || []);
+        setIsSearching(false);
+        
+        // Save to recent searches - ONLY if searchTerm is not empty and not already in recent searches
+        if (searchTerm.trim() && !recentSearches.includes(searchTerm)) {
+          const updatedSearches = [searchTerm, ...recentSearches].slice(0, 5);
+          setRecentSearches(updatedSearches);
+          localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
+        }
 
-    return () => clearTimeout(handler);
-  }, [searchTerm, searchOpen, filters, recentSearches]);
+        // Show suggestions for empty search
+        if (!searchTerm.trim()) {
+          setSearchSuggestions([
+            ...recentSearches.map(search => ({ type: 'recent', value: search })),
+            { type: 'trending', value: 'Breaking Bad' },
+            { type: 'trending', value: 'Stranger Things' },
+            { type: 'trending', value: 'The Office' }
+          ]);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Frontend search error:', err);
+        setSearchResults([]);
+        setIsSearching(false);
+        setError('Search failed. Please try again.');
+      });
+  }, 300);
+
+  return () => clearTimeout(handler);
+}, [searchTerm, searchOpen, filters]);
 
   const renderShowBox = useCallback((show) => {
     // Safely access properties with fallbacks

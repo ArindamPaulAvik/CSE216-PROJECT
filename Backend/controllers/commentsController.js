@@ -242,8 +242,11 @@ exports.deleteComment = async (req, res) => {
       }
     };
 
-    // Soft delete the comment
-    await pool.query('UPDATE COMMENT SET DELETED = 1 WHERE COMMENT_ID = ?', [commentId]);
+    // Soft delete the comment and clear IMG_LINK
+    await pool.query('UPDATE COMMENT SET DELETED = 1, IMG_LINK = NULL WHERE COMMENT_ID = ?', [commentId]);
+    
+    // Delete the image file immediately
+    deleteImageFile(imgLink);
 
     // Function to hard delete comment and its deleted children if no undeleted children remain
     async function tryHardDelete(commentId) {
@@ -260,7 +263,7 @@ exports.deleteComment = async (req, res) => {
           [commentId, commentId]
         );
 
-        // Delete image files
+        // Delete image files (though they should already be null for soft-deleted comments)
         imagesToDelete.forEach(row => {
           if (row.IMG_LINK) {
             deleteImageFile(row.IMG_LINK);
@@ -272,9 +275,6 @@ exports.deleteComment = async (req, res) => {
           'DELETE FROM COMMENT WHERE COMMENT_ID = ? OR (PARENT_ID = ? AND DELETED = 1)',
           [commentId, commentId]
         );
-      } else {
-        // Only soft delete - delete the image immediately since comment is marked as deleted
-        deleteImageFile(imgLink);
       }
     }
 
