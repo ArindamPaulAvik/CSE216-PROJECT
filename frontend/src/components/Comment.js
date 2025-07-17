@@ -83,6 +83,9 @@ function CommentSection({ episodeId }) {
   const [editingComment, setEditingComment] = useState(null); // { commentId, text, isReply }
   const [editText, setEditText] = useState('');
   const [reportTarget, setReportTarget] = useState(null); // { commentId, isReply, parentId }
+  const [reportModal, setReportModal] = useState({ isOpen: false, commentId: null, commentText: '', commentUser: '' });
+  const [violations, setViolations] = useState([]);
+  const [selectedViolations, setSelectedViolations] = useState(new Set());
 
 
   // Add state for reply image and preview (per reply box)
@@ -241,11 +244,24 @@ function CommentSection({ episodeId }) {
   };
 
   useEffect(() => {
-    if (episodeId) {
-      fetchComments();
-      fetchUserInteractions();
-    }
-  }, [episodeId, fetchComments, fetchUserInteractions]);
+  if (episodeId) {
+    fetchComments();
+    fetchUserInteractions();
+
+    // Fetch violations for report modal
+    const fetchViolations = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/violations', { headers });
+        setViolations(res.data);
+      } catch (err) {
+        console.error('Error fetching violations:', err);
+      }
+    };
+
+    fetchViolations();
+  }
+}, [episodeId, fetchComments, fetchUserInteractions]);
+
 
   // Handle image selection
   const handleImageChange = (e) => {
@@ -261,6 +277,14 @@ function CommentSection({ episodeId }) {
     setSelectedImage(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const toggleViolation = (id) => {
+    setSelectedViolations(prev => {
+      const newSet = new Set(prev);
+      newSet.has(id) ? newSet.delete(id) : newSet.add(id);
+      return newSet;
+    });
   };
 
   // Add parent comment
@@ -397,24 +421,29 @@ function CommentSection({ episodeId }) {
   };
 
   const confirmReport = async () => {
-    if (!reportTarget) return;
+  if (!reportTarget || selectedViolations.size === 0) {
+    alert('Please select at least one violation.');
+    return;
+  }
 
-    const { commentId, isReply, parentId } = reportTarget;
+  const { commentId } = reportTarget;
 
-    try {
-      await axios.post(
-        `http://localhost:5000/comments/${commentId}/report`,
-        {},
-        { headers }
-      );
-      alert('Comment reported successfully.');
-    } catch (err) {
-      console.error('Error reporting comment:', err);
-      alert('Failed to report comment. Try again later.');
-    } finally {
-      setReportTarget(null);
-    }
-  };
+  try {
+    await axios.post(
+      `http://localhost:5000/comments/${commentId}/report`,
+      { violation_ids: Array.from(selectedViolations) },
+      { headers }
+    );
+    alert('Comment reported successfully.');
+  } catch (err) {
+    console.error('Error reporting comment:', err);
+    alert('Failed to report comment.');
+  } finally {
+    setReportTarget(null);
+    setSelectedViolations(new Set());
+  }
+};
+
 
   const cancelReport = () => setReportTarget(null);
 
@@ -1596,30 +1625,45 @@ function CommentSection({ episodeId }) {
         document.body
       )}
       {reportTarget && ReactDOM.createPortal(
-        <div style={modalOverlayStyle}>
-          <div style={modalBoxStyle}>
-            <h3>Report this comment?</h3>
-            <p style={{ fontSize: '14px', marginTop: '10px' }}>
-              Are you sure you want to report this comment? It will be sent to our moderators for review.
-            </p>
-            <div style={modalButtonRow}>
-              <button
-                style={{ ...modalButton, backgroundColor: '#ffb300', color: '#1a1a1a' }}
-                onClick={confirmReport}
-              >
-                Report
-              </button>
-              <button
-                style={{ ...modalButton, backgroundColor: '#444', color: '#fff' }}
-                onClick={cancelReport}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+  <div style={modalOverlayStyle}>
+    <div style={modalBoxStyle}>
+      <h3>Report this comment?</h3>
+      <p style={{ fontSize: '14px', marginTop: '10px' }}>
+        Select the violations that apply:
+      </p>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
+        {violations.map((v, idx) => (
+          <label key={v.VIOLATION_ID} style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={selectedViolations.has(v.VIOLATION_ID)}
+              onChange={() => toggleViolation(v.VIOLATION_ID)}
+              style={{ marginRight: '8px' }}
+            />
+            {v.VIOLATION_TEXT}
+          </label>
+        ))}
+      </div>
+
+      <div style={modalButtonRow}>
+        <button
+          style={{ ...modalButton, backgroundColor: '#ffb300', color: '#1a1a1a' }}
+          onClick={confirmReport}
+        >
+          Report
+        </button>
+        <button
+          style={{ ...modalButton, backgroundColor: '#444', color: '#fff' }}
+          onClick={cancelReport}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>,
+  document.body
+)}
     </div>
   );
 }

@@ -31,6 +31,8 @@ app.use('/directors', require('./routes/directors'));
 app.use('/actors', require('./routes/actors'));
 
 app.use(require('./routes/episodes'));
+app.use('/violations', require('./routes/violations'));
+
 
 // Start server
 app.listen(port, () => {
