@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Flag, AlertTriangle } from 'lucide-react';
+import { X, Flag, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
-const ReportModal = ({ isOpen, onClose, commentId, commentText, commentUser }) => {
+const ReportModal = ({ isOpen, onClose, onSubmit }) => {
     const [violations, setViolations] = useState([]);
     const [selectedViolations, setSelectedViolations] = useState([]);
     const [reportText, setReportText] = useState('');
@@ -11,42 +11,46 @@ const ReportModal = ({ isOpen, onClose, commentId, commentText, commentUser }) =
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
 
-    // Mock violations data for demonstration
+    // Fetch violations from backend
     useEffect(() => {
         if (isOpen) {
-            // Simulate fetching violations
-            const mockViolations = [
-                { VIOLATION_ID: 1, VIOLATION_TEXT: 'Harassment' },
-                { VIOLATION_ID: 2, VIOLATION_TEXT: 'Spam' },
-                { VIOLATION_ID: 3, VIOLATION_TEXT: 'Hate Speech' },
-                { VIOLATION_ID: 4, VIOLATION_TEXT: 'Misinformation' },
-                { VIOLATION_ID: 5, VIOLATION_TEXT: 'Violence' },
-                { VIOLATION_ID: 6, VIOLATION_TEXT: 'Adult Content' }
-            ];
-            setViolations(mockViolations);
+            setLoading(true);
             setSelectedViolations([]);
             setReportText('');
             setError('');
             setSuccess(false);
+            fetch('http://localhost:5000/violations')
+                .then(res => res.json())
+                .then(data => {
+                    setViolations(data);
+                    setLoading(false);
+                })
+                .catch(() => {
+                    setViolations([]);
+                    setLoading(false);
+                });
         }
     }, [isOpen]);
 
     const handleViolationToggle = (violationId) => {
-        if (selectedViolations.includes(violationId)) {
-            // Unselect violation
-            setSelectedViolations(prev => prev.filter(id => id !== violationId));
-            setError(''); // Clear error on unselect
-        } else {
-            if (selectedViolations.length < 3) {
-                setSelectedViolations(prev => [...prev, violationId]);
-                setError('');
+        setSelectedViolations(prev => {
+            if (prev.includes(violationId)) {
+                // Unselect violation
+                setError(''); // Clear error on unselect
+                return prev.filter(id => id !== violationId);
             } else {
-                // Show error when trying to select more than 3
-                setError('You can select up to 3 violations only.');
-                // Auto-clear error after 3 seconds
-                setTimeout(() => setError(''), 3000);
+                if (prev.length < 3) {
+                    setError('');
+                    return [...prev, violationId];
+                } else {
+                    // Show error when trying to select more than 3
+                    setError('You can select up to 3 violations only.');
+                    // Auto-clear error after 3 seconds
+                    setTimeout(() => setError(''), 3000);
+                    return prev; // Don't add the violation
+                }
             }
-        }
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -58,15 +62,19 @@ const ReportModal = ({ isOpen, onClose, commentId, commentText, commentUser }) =
         }
 
         setSubmitLoading(true);
-        
-        // Simulate API call
-        setTimeout(() => {
+
+        // Call the onSubmit prop with selected violations and report text
+        try {
+            await onSubmit(selectedViolations, reportText);
             setSuccess(true);
             setSubmitLoading(false);
             setTimeout(() => {
                 onClose();
             }, 2000);
-        }, 1000);
+        } catch (err) {
+            setError('Failed to submit report');
+            setSubmitLoading(false);
+        }
     };
 
     return (
@@ -148,20 +156,7 @@ const ReportModal = ({ isOpen, onClose, commentId, commentText, commentUser }) =
                         ) : (
                             <div>
                                 {/* Comment Preview */}
-                                <div style={{
-                                    background: 'rgba(83, 52, 131, 0.1)',
-                                    borderRadius: '8px',
-                                    padding: '15px',
-                                    marginBottom: '20px',
-                                    border: '1px solid #533483'
-                                }}>
-                                    <p style={{ color: '#999', fontSize: '0.9rem', marginBottom: '5px' }}>
-                                        Reporting comment by {commentUser || 'User'}:
-                                    </p>
-                                    <p style={{ color: '#fff', fontSize: '0.95rem', lineHeight: '1.4' }}>
-                                        "{commentText || 'This is a sample comment that needs to be reported.'}"
-                                    </p>
-                                </div>
+                                {/* Removed warning and comment preview for a cleaner modal, only tickboxes below */}
 
                                 {/* Violation Types */}
                                 <div style={{ marginBottom: '20px' }}>
@@ -169,84 +164,88 @@ const ReportModal = ({ isOpen, onClose, commentId, commentText, commentUser }) =
                                         <h3 style={{ color: '#fff', fontSize: '1.1rem', margin: 0 }}>
                                             Select violation type(s):
                                         </h3>
-                                        <span style={{ 
-                                            color: selectedViolations.length === 3 ? '#e50914' : '#999', 
+                                        <span style={{
+                                            color: selectedViolations.length === 3 ? '#e50914' : '#999',
                                             fontSize: '0.9rem',
                                             fontWeight: selectedViolations.length === 3 ? '600' : '400'
                                         }}>
                                             {selectedViolations.length}/3
                                         </span>
                                     </div>
-
-                                    <div
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '1fr 1fr',
-                                            gap: '12px 20px',
-                                        }}
-                                    >
-                                        {violations.map((violation) => {
-                                            const isSelected = selectedViolations.includes(violation.VIOLATION_ID);
-                                            const isDisabled = !isSelected && selectedViolations.length >= 3;
-                                            
-                                            return (
-                                                <label
-                                                    key={violation.VIOLATION_ID}
-                                                    onClick={(e) => {
-                                                        if (!isDisabled) {
-                                                            handleViolationToggle(violation.VIOLATION_ID);
-                                                        }
-                                                    }}
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '10px',
-                                                        padding: '10px',
-                                                        borderRadius: '8px',
-                                                        cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                                        transition: 'background-color 0.2s, opacity 0.2s',
-                                                        backgroundColor: isSelected
-                                                            ? 'rgba(83, 52, 131, 0.2)'
-                                                            : 'rgba(255, 255, 255, 0.05)',
-                                                        opacity: isDisabled ? 0.5 : 1,
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        if (!isDisabled && !isSelected) {
-                                                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                                                        }
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        if (!isDisabled && !isSelected) {
-                                                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                                                        }
-                                                    }}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        disabled={isDisabled}
-                                                        onChange={() => {
+                                    {loading ? (
+                                        <div style={{ color: '#aaa', textAlign: 'center', padding: '20px 0' }}>Loading violations...</div>
+                                    ) : (
+                                        <div
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: '1fr 1fr',
+                                                gap: '12px 20px',
+                                            }}
+                                        >
+                                            {violations.map((violation) => {
+                                                const isSelected = selectedViolations.includes(violation.VIOLATION_ID);
+                                                const isDisabled = !isSelected && selectedViolations.length >= 3;
+                                                return (
+                                                    <label
+                                                        key={violation.VIOLATION_ID}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
                                                             if (!isDisabled) {
                                                                 handleViolationToggle(violation.VIOLATION_ID);
                                                             }
                                                         }}
                                                         style={{
-                                                            width: '16px',
-                                                            height: '16px',
-                                                            accentColor: '#e50914',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '10px',
+                                                            padding: '10px',
+                                                            borderRadius: '8px',
                                                             cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                            transition: 'background-color 0.2s, opacity 0.2s',
+                                                            backgroundColor: isSelected
+                                                                ? 'rgba(83, 52, 131, 0.2)'
+                                                                : 'rgba(255, 255, 255, 0.05)',
+                                                            opacity: isDisabled ? 0.5 : 1,
                                                         }}
-                                                    />
-                                                    <span style={{ 
-                                                        color: isDisabled ? '#666' : '#fff', 
-                                                        fontSize: '0.95rem' 
-                                                    }}>
-                                                        {violation.VIOLATION_TEXT}
-                                                    </span>
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
+                                                        onMouseEnter={(e) => {
+                                                            if (!isDisabled && !isSelected) {
+                                                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                                                            }
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            if (!isDisabled && !isSelected) {
+                                                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                                                            }
+                                                        }}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            disabled={isDisabled}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!isDisabled) {
+                                                                    handleViolationToggle(violation.VIOLATION_ID);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                width: '16px',
+                                                                height: '16px',
+                                                                accentColor: '#e50914',
+                                                                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                            }}
+                                                        />
+                                                        <span style={{
+                                                            color: isDisabled ? '#666' : '#fff',
+                                                            fontSize: '0.95rem'
+                                                        }}>
+                                                            {violation.VIOLATION_TEXT}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Additional Comments */}
@@ -343,3 +342,152 @@ const ReportModal = ({ isOpen, onClose, commentId, commentText, commentUser }) =
         </AnimatePresence>
     );
 };
+
+// Success Modal Component
+const SuccessModal = ({ isOpen, onClose }) => {
+    useEffect(() => {
+        if (isOpen) {
+            const timer = setTimeout(() => {
+                onClose();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, onClose]);
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        style={{
+                            background: 'linear-gradient(135deg, #16213e 0%, #1a1a40 100%)',
+                            borderRadius: '15px',
+                            padding: '40px',
+                            maxWidth: '400px',
+                            width: '100%',
+                            textAlign: 'center',
+                            border: '1px solid #4ade80',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <CheckCircle size={64} color="#4ade80" style={{ marginBottom: '20px' }} />
+                        <h2 style={{ color: '#4ade80', fontSize: '1.5rem', fontWeight: '600', marginBottom: '15px' }}>
+                            Report Submitted!
+                        </h2>
+                        <p style={{ color: '#ccc', fontSize: '1rem', marginBottom: '20px' }}>
+                            Thank you for helping keep our community safe. We'll review your report shortly.
+                        </p>
+                        <button
+                            onClick={onClose}
+                            style={{
+                                background: 'linear-gradient(45deg, #4ade80, #22c55e)',
+                                border: 'none',
+                                color: '#fff',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Close
+                        </button>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+// Already Reported Modal Component
+const AlreadyReportedModal = ({ isOpen, onClose }) => {
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        style={{
+                            background: 'linear-gradient(135deg, #16213e 0%, #1a1a40 100%)',
+                            borderRadius: '15px',
+                            padding: '40px',
+                            maxWidth: '400px',
+                            width: '100%',
+                            textAlign: 'center',
+                            border: '1px solid #f59e0b',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Info size={64} color="#f59e0b" style={{ marginBottom: '20px' }} />
+                        <h2 style={{ color: '#f59e0b', fontSize: '1.5rem', fontWeight: '600', marginBottom: '15px' }}>
+                            Already Reported
+                        </h2>
+                        <p style={{ color: '#ccc', fontSize: '1rem', marginBottom: '20px' }}>
+                            You have already reported this comment. Thank you for helping keep our community safe.
+                        </p>
+                        <button
+                            onClick={onClose}
+                            style={{
+                                background: 'linear-gradient(45deg, #f59e0b, #d97706)',
+                                border: 'none',
+                                color: '#fff',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Close
+                        </button>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+export { ReportModal, SuccessModal, AlreadyReportedModal };

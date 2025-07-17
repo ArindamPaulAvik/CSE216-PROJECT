@@ -6,6 +6,7 @@ import { FaFilter } from 'react-icons/fa';
 import { FaComments } from 'react-icons/fa';
 import { FaImage } from 'react-icons/fa';
 import ReactDOM from 'react-dom';
+import { ReportModal, SuccessModal, AlreadyReportedModal } from './Violation';
 
 // Modal styles
 const modalOverlayStyle = {
@@ -83,10 +84,8 @@ function CommentSection({ episodeId }) {
   const [editingComment, setEditingComment] = useState(null); // { commentId, text, isReply }
   const [editText, setEditText] = useState('');
   const [reportTarget, setReportTarget] = useState(null); // { commentId, isReply, parentId }
-  const [reportModal, setReportModal] = useState({ isOpen: false, commentId: null, commentText: '', commentUser: '' });
-  const [violations, setViolations] = useState([]);
-  const [selectedViolations, setSelectedViolations] = useState(new Set());
-
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showAlreadyReportedModal, setShowAlreadyReportedModal] = useState(false);
 
   // Add state for reply image and preview (per reply box)
   const [replyImage, setReplyImage] = useState(null);
@@ -118,7 +117,7 @@ function CommentSection({ episodeId }) {
 
     // Patch localStorage.setItem to dispatch a custom event for same-tab updates
     const originalSetItem = localStorage.setItem;
-    localStorage.setItem = function (key, value) {
+    localStorage.setItem = function(key, value) {
       originalSetItem.apply(this, arguments);
       if (key === 'user_id') {
         window.dispatchEvent(new Event('user_id_changed'));
@@ -137,8 +136,29 @@ function CommentSection({ episodeId }) {
     };
   }, []);
 
-  const handleReport = (commentId, isReply = false, parentId = null) => {
-    setReportTarget({ commentId, isReply, parentId });
+  const handleReport = async (commentId, isReply = false, parentId = null) => {
+    if (!currentUserId) {
+      alert('Please log in to report comments.');
+      return;
+    }
+
+    try {
+      // Check if user has already reported this comment
+      const response = await axios.get(
+        `http://localhost:5000/violations/check/${currentUserId}/${commentId}`,
+        { headers }
+      );
+
+      if (response.data.hasReported) {
+        setShowAlreadyReportedModal(true);
+      } else {
+        setReportTarget({ commentId, isReply, parentId });
+      }
+    } catch (err) {
+      console.error('Error checking report status:', err);
+      // If check fails, still allow reporting
+      setReportTarget({ commentId, isReply, parentId });
+    }
   };
 
   const fetchComments = useCallback(async () => {
@@ -161,7 +181,7 @@ function CommentSection({ episodeId }) {
         `http://localhost:5000/comments/episode/${episodeId}/user-interactions`,
         { headers }
       );
-
+      
       const { likes = [], dislikes = [] } = res.data;
       setUserLikes(new Set(likes));
       setUserDislikes(new Set(dislikes));
@@ -205,38 +225,38 @@ function CommentSection({ episodeId }) {
       }
 
       const updatedComment = await response.json();
-
+      
       // Update the comments state
       setComments(prev => prev.map(comment => {
-        if (!isReply && comment.COMMENT_ID === commentId) {
-          // Editing parent comment
-          return {
-            ...comment,
-            COMMENT_TEXT: updatedComment.COMMENT_TEXT || editText.trim(),
-            EDITED: updatedComment.EDITED !== undefined ? updatedComment.EDITED : 1
-          };
-        } else if (isReply && comment.replies && comment.replies.some(reply => reply.COMMENT_ID === commentId)) {
-          // Editing reply
-          return {
-            ...comment,
-            replies: comment.replies.map(reply =>
-              reply.COMMENT_ID === commentId
-                ? {
-                  ...reply,
-                  COMMENT_TEXT: updatedComment.COMMENT_TEXT || editText.trim(),
-                  EDITED: updatedComment.EDITED !== undefined ? updatedComment.EDITED : 1
-                }
-                : reply
-            )
-          };
-        }
-        return comment;
-      }));
+  if (!isReply && comment.COMMENT_ID === commentId) {
+    // Editing parent comment
+    return { 
+      ...comment, 
+      COMMENT_TEXT: updatedComment.COMMENT_TEXT || editText.trim(), 
+      EDITED: updatedComment.EDITED !== undefined ? updatedComment.EDITED : 1
+    };
+  } else if (isReply && comment.replies && comment.replies.some(reply => reply.COMMENT_ID === commentId)) {
+    // Editing reply
+    return {
+      ...comment,
+      replies: comment.replies.map(reply => 
+        reply.COMMENT_ID === commentId 
+          ? { 
+              ...reply, 
+              COMMENT_TEXT: updatedComment.COMMENT_TEXT || editText.trim(), 
+              EDITED: updatedComment.EDITED !== undefined ? updatedComment.EDITED : 1
+            }
+          : reply
+      )
+    };
+  }
+  return comment;
+}));
 
       // Clear edit state
       setEditingComment(null);
       setEditText('');
-
+      
     } catch (error) {
       console.error('Error editing comment:', error);
       alert(`Failed to edit comment: ${error.message}`);
@@ -244,24 +264,11 @@ function CommentSection({ episodeId }) {
   };
 
   useEffect(() => {
-  if (episodeId) {
-    fetchComments();
-    fetchUserInteractions();
-
-    // Fetch violations for report modal
-    const fetchViolations = async () => {
-      try {
-        const res = await axios.get('http://localhost:5000/violations', { headers });
-        setViolations(res.data);
-      } catch (err) {
-        console.error('Error fetching violations:', err);
-      }
-    };
-
-    fetchViolations();
-  }
-}, [episodeId, fetchComments, fetchUserInteractions]);
-
+    if (episodeId) {
+      fetchComments();
+      fetchUserInteractions();
+    }
+  }, [episodeId, fetchComments, fetchUserInteractions]);
 
   // Handle image selection
   const handleImageChange = (e) => {
@@ -277,14 +284,6 @@ function CommentSection({ episodeId }) {
     setSelectedImage(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const toggleViolation = (id) => {
-    setSelectedViolations(prev => {
-      const newSet = new Set(prev);
-      newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-      return newSet;
-    });
   };
 
   // Add parent comment
@@ -402,11 +401,9 @@ function CommentSection({ episodeId }) {
       );
       setComments(prev => prev.map(parent =>
         parent.COMMENT_ID === parentId
-          ? {
-            ...parent, replies: parent.replies.map(r =>
+          ? { ...parent, replies: parent.replies.map(r =>
               r.COMMENT_ID === tempReply.COMMENT_ID ? { ...res.data, isTemp: false } : r
-            )
-          }
+            ) }
           : parent
       ));
     } catch (err) {
@@ -420,42 +417,14 @@ function CommentSection({ episodeId }) {
     }
   };
 
-  const confirmReport = async () => {
-  if (!reportTarget || selectedViolations.size === 0) {
-    alert('Please select at least one violation.');
-    return;
-  }
-
-  const { commentId } = reportTarget;
-
-  try {
-    await axios.post(
-      `http://localhost:5000/comments/${commentId}/report`,
-      { violation_ids: Array.from(selectedViolations) },
-      { headers }
-    );
-    alert('Comment reported successfully.');
-  } catch (err) {
-    console.error('Error reporting comment:', err);
-    alert('Failed to report comment.');
-  } finally {
-    setReportTarget(null);
-    setSelectedViolations(new Set());
-  }
-};
-
-
-  const cancelReport = () => setReportTarget(null);
-
-
   const handleLike = async (commentId) => {
     if (actionLoading.has(commentId)) return;
-
+    
     setActionLoading(prev => new Set([...prev, commentId]));
-
+    
     const wasLiked = userLikes.has(commentId);
     const wasDisliked = userDislikes.has(commentId);
-
+    
     // Optimistic UI updates
     setComments(prev => prev.map(comment => {
       if (comment.COMMENT_ID === commentId) {
@@ -491,7 +460,7 @@ function CommentSection({ episodeId }) {
       }
       return comment;
     }));
-
+    
     // Update user interactions
     if (wasLiked) {
       setUserLikes(prev => {
@@ -509,7 +478,7 @@ function CommentSection({ episodeId }) {
         });
       }
     }
-
+    
     try {
       await axios.put(
         `http://localhost:5000/comments/${commentId}/like`,
@@ -534,12 +503,12 @@ function CommentSection({ episodeId }) {
 
   const handleDislike = async (commentId) => {
     if (actionLoading.has(commentId)) return;
-
+    
     setActionLoading(prev => new Set([...prev, commentId]));
-
+    
     const wasLiked = userLikes.has(commentId);
     const wasDisliked = userDislikes.has(commentId);
-
+    
     // Optimistic UI updates
     setComments(prev => prev.map(comment => {
       if (comment.COMMENT_ID === commentId) {
@@ -575,7 +544,7 @@ function CommentSection({ episodeId }) {
       }
       return comment;
     }));
-
+    
     // Update user interactions
     if (wasDisliked) {
       setUserDislikes(prev => {
@@ -593,7 +562,7 @@ function CommentSection({ episodeId }) {
         });
       }
     }
-
+    
     try {
       await axios.put(
         `http://localhost:5000/comments/${commentId}/dislike`,
@@ -648,7 +617,42 @@ function CommentSection({ episodeId }) {
   // Cancel delete
   const cancelDelete = () => setDeleteTarget(null);
 
+  const confirmReport = async (selectedViolations, reportText = '') => {
+    if (!reportTarget) return;
 
+    const { commentId, isReply, parentId } = reportTarget;
+
+    if (!currentUserId) {
+      alert('Please log in to report comments.');
+      setReportTarget(null);
+      return;
+    }
+
+    try {
+      await axios.post('http://localhost:5000/violations/report', {
+        userId: parseInt(currentUserId),
+        commentId: commentId,
+        reportText: reportText,
+        violationIds: selectedViolations
+      }, { headers });
+      
+      setReportTarget(null);
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error('Error reporting comment:', err);
+      
+      // Check if it's a duplicate report error
+      if (err.response && err.response.status === 400 && err.response.data && err.response.data.error === 'You have already reported this comment') {
+        setReportTarget(null);
+        setShowAlreadyReportedModal(true);
+      } else {
+        alert('Failed to report comment. Try again later.');
+        setReportTarget(null);
+      }
+    }
+  };
+
+  const cancelReport = () => setReportTarget(null);
 
   // Add a ref for the menu to handle outside click
   const menuRef = useRef();
@@ -871,8 +875,8 @@ function CommentSection({ episodeId }) {
                     src={
                       !comment.DELETED
                         ? (comment.PROFILE_PICTURE
-                          ? `http://localhost:5000/images/user/${comment.PROFILE_PICTURE}`
-                          : 'http://localhost:5000/images/user/default-user.jpg')
+                            ? `http://localhost:5000/images/user/${comment.PROFILE_PICTURE}`
+                            : 'http://localhost:5000/images/user/default-user.jpg')
                         : undefined
                     }
                     alt="Profile"
@@ -900,97 +904,73 @@ function CommentSection({ episodeId }) {
                 </div>
                 {/* Three dots menu button for comment */}
                 {!comment.DELETED && (
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      type="button"
-                      aria-label="More options"
-                      onClick={() => setOpenMenu(openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? null : { type: 'comment', id: comment.COMMENT_ID })}
-                      style={{
-                        background: openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? 'rgba(127,90,240,0.15)' : 'none',
-                        border: 'none',
-                        color: '#aaa',
-                        fontSize: '20px',
-                        cursor: 'pointer',
-                        padding: '2px 6px',
-                        borderRadius: '50%',
-                        transition: 'background 0.2s, box-shadow 0.2s',
-                        outline: 'none',
-                        boxShadow: openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 8px 2px #7f5af0'}
-                      onMouseLeave={e => e.currentTarget.style.boxShadow = openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000'}
-                    >
-                      &#8942;
-                    </button>
-                    {openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID && (
-                      <div ref={menuRef} style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 'calc(100% + 8px)',
-                        background: '#22224a',
-                        border: '1.5px solid #7f5af0',
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 12px rgba(127,90,240,0.15)',
-                        zIndex: 10,
-                        minWidth: '110px',
-                        padding: '6px 0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'stretch',
-                      }}>
-                        {String(comment.USER_ID) === String(currentUserId) && !comment.isTemp ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => { setOpenMenu(null); handleStartEdit(comment.COMMENT_ID, comment.COMMENT_TEXT, false); }}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#7f5af0',
-                                fontWeight: 600,
-                                width: '100%',
-                                padding: '10px 16px',
-                                cursor: 'pointer',
-                                fontSize: '15px',
-                                textAlign: 'left',
-                                borderRadius: '6px',
-                                transition: 'background 0.2s',
-                                marginBottom: '2px',
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setOpenMenu(null); handleDelete(comment.COMMENT_ID, false, null); }}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#e50914',
-                                fontWeight: 600,
-                                width: '100%',
-                                padding: '10px 16px',
-                                cursor: 'pointer',
-                                fontSize: '15px',
-                                textAlign: 'left',
-                                borderRadius: '6px',
-                                transition: 'background 0.2s',
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </>
-                        ) : (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    aria-label="More options"
+                    onClick={() => setOpenMenu(openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? null : { type: 'comment', id: comment.COMMENT_ID })}
+                    style={{
+                      background: openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? 'rgba(127,90,240,0.15)' : 'none',
+                      border: 'none',
+                      color: '#aaa',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: '50%',
+                      transition: 'background 0.2s, box-shadow 0.2s',
+                      outline: 'none',
+                      boxShadow: openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 8px 2px #7f5af0'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000'}
+                  >
+                    &#8942;
+                  </button>
+                  {openMenu && openMenu.type === 'comment' && openMenu.id === comment.COMMENT_ID && (
+                    <div ref={menuRef} style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 'calc(100% + 8px)',
+                      background: '#22224a',
+                      border: '1.5px solid #7f5af0',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 12px rgba(127,90,240,0.15)',
+                      zIndex: 10,
+                      minWidth: '110px',
+                      padding: '6px 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                    }}>
+                      {String(comment.USER_ID) === String(currentUserId) && !comment.isTemp ? (
+                        <>
                           <button
                             type="button"
-                            onClick={() => {
-                              setOpenMenu(null);
-                              handleReport(comment.COMMENT_ID, false, null);
-                            }}
+                            onClick={() => { setOpenMenu(null); handleStartEdit(comment.COMMENT_ID, comment.COMMENT_TEXT, false); }}
                             style={{
                               background: 'none',
                               border: 'none',
-                              color: '#ffb300',
+                              color: '#7f5af0',
+                              fontWeight: 600,
+                              width: '100%',
+                              padding: '10px 16px',
+                              cursor: 'pointer',
+                              fontSize: '15px',
+                              textAlign: 'left',
+                              borderRadius: '6px',
+                              transition: 'background 0.2s',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setOpenMenu(null); handleDelete(comment.COMMENT_ID, false, null); }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#e50914',
                               fontWeight: 600,
                               width: '100%',
                               padding: '10px 16px',
@@ -1001,75 +981,99 @@ function CommentSection({ episodeId }) {
                               transition: 'background 0.2s',
                             }}
                           >
-                            Report
+                            Delete
                           </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenu(null);
+                            handleReport(comment.COMMENT_ID, false, null);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ffb300',
+                            fontWeight: 600,
+                            width: '100%',
+                            padding: '10px 16px',
+                            cursor: 'pointer',
+                            fontSize: '15px',
+                            textAlign: 'left',
+                            borderRadius: '6px',
+                            transition: 'background 0.2s',
+                          }}
+                        >
+                          Report
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 )}
               </div>
               {/* Comment Content */}
               {editingComment && editingComment.commentId === comment.COMMENT_ID && !editingComment.isReply ? (
-                <div style={{ margin: '10px 0' }}>
-                  <textarea
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
+              <div style={{ margin: '10px 0' }}>
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: '#1a1a40',
+                    color: '#fff',
+                    border: '1.5px solid #7f5af0',
+                    borderRadius: '8px',
+                    resize: 'none',
+                    minHeight: '60px',
+                    fontFamily: 'inherit',
+                    fontSize: '14px'
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button
+                    onClick={() => handleSaveEdit(comment.COMMENT_ID, false)}
                     style={{
-                      width: '100%',
-                      padding: '8px',
-                      backgroundColor: '#1a1a40',
+                      padding: '6px 12px',
+                      background: 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
                       color: '#fff',
-                      border: '1.5px solid #7f5af0',
-                      borderRadius: '8px',
-                      resize: 'none',
-                      minHeight: '60px',
-                      fontFamily: 'inherit',
-                      fontSize: '14px'
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
                     }}
-                  />
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <button
-                      onClick={() => handleSaveEdit(comment.COMMENT_ID, false)}
-                      style={{
-                        padding: '6px 12px',
-                        background: 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#222',
-                        color: '#fff',
-                        border: '1px solid #666',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#222',
+                      color: '#fff',
+                      border: '1px solid #666',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
-              ) : (
-                <p style={{
-                  margin: '10px 0',
-                  lineHeight: '1.5',
-                  wordBreak: 'break-word',
-                  color: '#fff'
-                }}>
-                  {comment.DELETED ? '[DELETED]' : comment.COMMENT_TEXT}
-                </p>
-              )}
+              </div>
+            ) : (
+              <p style={{
+                margin: '10px 0',
+                lineHeight: '1.5',
+                wordBreak: 'break-word',
+                color: '#fff'
+              }}>
+                {comment.DELETED ? '[DELETED]' : comment.COMMENT_TEXT}
+              </p>
+            )}
               {/* Show image in comment if exists */}
               {comment.IMG_LINK && (
                 <div style={{ margin: '10px 0' }}>
@@ -1279,10 +1283,10 @@ function CommentSection({ episodeId }) {
                             src={
                               !reply.DELETED
                                 ? (reply.PROFILE_PICTURE
-                                  ? (reply.PROFILE_PICTURE.startsWith('/images/user/')
-                                    ? `http://localhost:5000${reply.PROFILE_PICTURE}`
-                                    : `http://localhost:5000/images/user/${reply.PROFILE_PICTURE}`)
-                                  : 'http://localhost:5000/images/user/default-user.jpg')
+                                    ? (reply.PROFILE_PICTURE.startsWith('/images/user/')
+                                        ? `http://localhost:5000${reply.PROFILE_PICTURE}`
+                                        : `http://localhost:5000/images/user/${reply.PROFILE_PICTURE}`)
+                                    : 'http://localhost:5000/images/user/default-user.jpg')
                                 : undefined
                             }
                             alt="Profile"
@@ -1309,97 +1313,73 @@ function CommentSection({ episodeId }) {
                         </div>
                         {/* Three dots menu button for reply */}
                         {!reply.DELETED && (
-                          <div style={{ position: 'relative' }}>
-                            <button
-                              type="button"
-                              aria-label="More options"
-                              onClick={() => setOpenMenu(openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? null : { type: 'reply', id: reply.COMMENT_ID })}
-                              style={{
-                                background: openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? 'rgba(127,90,240,0.15)' : 'none',
-                                border: 'none',
-                                color: '#aaa',
-                                fontSize: '18px',
-                                cursor: 'pointer',
-                                padding: '2px 6px',
-                                borderRadius: '50%',
-                                transition: 'background 0.2s, box-shadow 0.2s',
-                                outline: 'none',
-                                boxShadow: openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000',
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 8px 2px #7f5af0'}
-                              onMouseLeave={e => e.currentTarget.style.boxShadow = openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000'}
-                            >
-                              &#8942;
-                            </button>
-                            {openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID && (
-                              <div ref={menuRef} style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 'calc(100% + 8px)',
-                                background: '#22224a',
-                                border: '1.5px solid #7f5af0',
-                                borderRadius: '8px',
-                                boxShadow: '0 2px 12px rgba(127,90,240,0.15)',
-                                zIndex: 10,
-                                minWidth: '110px',
-                                padding: '6px 0',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'stretch',
-                              }}>
-                                {String(reply.USER_ID) === String(currentUserId) && !reply.isTemp ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => { setOpenMenu(null); handleStartEdit(reply.COMMENT_ID, reply.COMMENT_TEXT, true); }}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: '#7f5af0',
-                                        fontWeight: 600,
-                                        width: '100%',
-                                        padding: '10px 16px',
-                                        cursor: 'pointer',
-                                        fontSize: '15px',
-                                        textAlign: 'left',
-                                        borderRadius: '6px',
-                                        transition: 'background 0.2s',
-                                        marginBottom: '2px',
-                                      }}
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDelete(reply.COMMENT_ID, true, null)}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: '#e50914',
-                                        fontWeight: 600,
-                                        width: '100%',
-                                        padding: '10px 16px',
-                                        cursor: 'pointer',
-                                        fontSize: '15px',
-                                        textAlign: 'left',
-                                        borderRadius: '6px',
-                                        transition: 'background 0.2s',
-                                      }}
-                                    >
-                                      Delete
-                                    </button>
-                                  </>
-                                ) : (
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            type="button"
+                            aria-label="More options"
+                            onClick={() => setOpenMenu(openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? null : { type: 'reply', id: reply.COMMENT_ID })}
+                            style={{
+                              background: openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? 'rgba(127,90,240,0.15)' : 'none',
+                              border: 'none',
+                              color: '#aaa',
+                              fontSize: '18px',
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                              borderRadius: '50%',
+                              transition: 'background 0.2s, box-shadow 0.2s',
+                              outline: 'none',
+                              boxShadow: openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 8px 2px #7f5af0'}
+                            onMouseLeave={e => e.currentTarget.style.boxShadow = openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID ? '0 0 8px 2px #7f5af0' : '0 0 0 0 #000'}
+                          >
+                            &#8942;
+                          </button>
+                          {openMenu && openMenu.type === 'reply' && openMenu.id === reply.COMMENT_ID && (
+                            <div ref={menuRef} style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 'calc(100% + 8px)',
+                              background: '#22224a',
+                              border: '1.5px solid #7f5af0',
+                              borderRadius: '8px',
+                              boxShadow: '0 2px 12px rgba(127,90,240,0.15)',
+                              zIndex: 10,
+                              minWidth: '110px',
+                              padding: '6px 0',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'stretch',
+                            }}>
+                              {String(reply.USER_ID) === String(currentUserId) && !reply.isTemp ? (
+                                <>
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setOpenMenu(null);
-                                      handleReport(comment.COMMENT_ID, false, null); // adjust isReply/parentId if needed
-                                    }}
+                                    onClick={() => { setOpenMenu(null); handleStartEdit(reply.COMMENT_ID, reply.COMMENT_TEXT, true); }}
                                     style={{
                                       background: 'none',
                                       border: 'none',
-                                      color: '#ffb300',
+                                      color: '#7f5af0',
+                                      fontWeight: 600,
+                                      width: '100%',
+                                      padding: '10px 16px',
+                                      cursor: 'pointer',
+                                      fontSize: '15px',
+                                      textAlign: 'left',
+                                      borderRadius: '6px',
+                                      transition: 'background 0.2s',
+                                      marginBottom: '2px',
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(reply.COMMENT_ID, true, null)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#e50914',
                                       fontWeight: 600,
                                       width: '100%',
                                       padding: '10px 16px',
@@ -1410,69 +1390,93 @@ function CommentSection({ episodeId }) {
                                       transition: 'background 0.2s',
                                     }}
                                   >
-                                    Report
+                                    Delete
                                   </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenMenu(null);
+                                    handleReport(reply.COMMENT_ID, true, comment.COMMENT_ID);
+                                  }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#ffb300',
+                                    fontWeight: 600,
+                                    width: '100%',
+                                    padding: '10px 16px',
+                                    cursor: 'pointer',
+                                    fontSize: '15px',
+                                    textAlign: 'left',
+                                    borderRadius: '6px',
+                                    transition: 'background 0.2s',
+                                  }}
+                                >
+                                  Report
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         )}
                       </div>
                       {editingComment && editingComment.commentId === reply.COMMENT_ID && editingComment.isReply ? (
-                        <div style={{ marginBottom: '6px' }}>
-                          <textarea
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '8px',
-                              backgroundColor: '#1a1a40',
-                              color: '#fff',
-                              border: '1.5px solid #7f5af0',
-                              borderRadius: '8px',
-                              resize: 'none',
-                              minHeight: '50px',
-                              fontFamily: 'inherit',
-                              fontSize: '13px'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                            <button
-                              onClick={() => handleSaveEdit(reply.COMMENT_ID, true)}
-                              style={{
-                                padding: '5px 10px',
-                                background: 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold'
-                              }}
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              style={{
-                                padding: '5px 10px',
-                                background: '#222',
-                                color: '#fff',
-                                border: '1px solid #666',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ color: reply.DELETED ? '#888' : '#fff', marginBottom: '6px' }}>
-                          {reply.DELETED ? '[DELETED]' : reply.COMMENT_TEXT}
-                        </div>
-                      )}
+  <div style={{ marginBottom: '6px' }}>
+    <textarea
+      value={editText}
+      onChange={(e) => setEditText(e.target.value)}
+      style={{
+        width: '100%',
+        padding: '8px',
+        backgroundColor: '#1a1a40',
+        color: '#fff',
+        border: '1.5px solid #7f5af0',
+        borderRadius: '8px',
+        resize: 'none',
+        minHeight: '50px',
+        fontFamily: 'inherit',
+        fontSize: '13px'
+      }}
+    />
+    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+      <button
+        onClick={() => handleSaveEdit(reply.COMMENT_ID, true)}
+        style={{
+          padding: '5px 10px',
+          background: 'linear-gradient(45deg, #7f5af0 0%, #533483 100%)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '12px',
+          cursor: 'pointer',
+          fontWeight: 'bold'
+        }}
+      >
+        Save
+      </button>
+      <button
+        onClick={handleCancelEdit}
+        style={{
+          padding: '5px 10px',
+          background: '#222',
+          color: '#fff',
+          border: '1px solid #666',
+          borderRadius: '6px',
+          fontSize: '12px',
+          cursor: 'pointer'
+        }}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+) : (
+  <div style={{ color: reply.DELETED ? '#888' : '#fff', marginBottom: '6px' }}>
+    {reply.DELETED ? '[DELETED]' : reply.COMMENT_TEXT}
+  </div>
+)}
                       {/* Like/Dislike/Reply for reply - all in one row below the reply content */}
                       {!reply.isTemp && !reply.DELETED && (
                         <div style={{
@@ -1547,123 +1551,105 @@ function CommentSection({ episodeId }) {
           ))}
         </div>
       )}
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && ReactDOM.createPortal(
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(22, 33, 62, 0.65)',
-            backdropFilter: 'blur(4px)',
-          }}
-          onClick={cancelDelete} // Click outside to close
-        >
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking modal
-            style={{
-              ...modalBoxStyle,
-              position: 'relative',
-              margin: 0,
-              zIndex: 2100,
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-            }}
-          >
-            <h3 style={{
-              color: '#e50914',
-              marginBottom: '18px',
-              fontWeight: 'bold',
-              fontSize: '1.25rem'
-            }}>
-              Delete Confirmation
-            </h3>
-            <div style={{
-              color: '#fff',
-              marginBottom: '10px',
-              fontSize: '1.08rem'
-            }}>
-              Are you sure you want to delete this {deleteTarget.isReply ? 'reply' : 'comment'}?
-            </div>
-            <div style={modalButtonRow}>
-              <button
-                onClick={confirmDelete}
-                style={{
-                  ...modalButton,
-                  background: 'linear-gradient(45deg, #e50914 0%, #7f5af0 100%)',
-                  color: '#fff',
-                  border: 'none'
-                }}
-                disabled={actionLoading.has(deleteTarget.commentId)}
-              >
-                {actionLoading.has(deleteTarget.commentId) ? 'Deleting...' : 'Delete'}
-              </button>
-              <button
-                onClick={cancelDelete}
-                style={{
-                  ...modalButton,
-                  background: '#222',
-                  color: '#fff',
-                  border: '1.5px solid #7f5af0'
-                }}
-                disabled={actionLoading.has(deleteTarget.commentId)}
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        </div>,
-        document.body
-      )}
-      {reportTarget && ReactDOM.createPortal(
-  <div style={modalOverlayStyle}>
-    <div style={modalBoxStyle}>
-      <h3>Report this comment?</h3>
-      <p style={{ fontSize: '14px', marginTop: '10px' }}>
-        Select the violations that apply:
-      </p>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-        {violations.map((v, idx) => (
-          <label key={v.VIOLATION_ID} style={{ width: '45%', display: 'flex', alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              checked={selectedViolations.has(v.VIOLATION_ID)}
-              onChange={() => toggleViolation(v.VIOLATION_ID)}
-              style={{ marginRight: '8px' }}
-            />
-            {v.VIOLATION_TEXT}
-          </label>
-        ))}
+    {/* Delete Confirmation Modal */}
+   {deleteTarget && ReactDOM.createPortal(
+  <div 
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(22, 33, 62, 0.65)',
+      backdropFilter: 'blur(4px)',
+    }}
+    onClick={cancelDelete} // Click outside to close
+  >
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.8, opacity: 0 }}
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking modal
+      style={{
+        ...modalBoxStyle,
+        position: 'relative',
+        margin: 0,
+        zIndex: 2100,
+        maxWidth: '90vw',
+        maxHeight: '90vh',
+      }}
+    >
+      <h3 style={{ 
+        color: '#e50914', 
+        marginBottom: '18px', 
+        fontWeight: 'bold', 
+        fontSize: '1.25rem' 
+      }}>
+        Delete Confirmation
+      </h3>
+      <div style={{ 
+        color: '#fff', 
+        marginBottom: '10px', 
+        fontSize: '1.08rem' 
+      }}>
+        Are you sure you want to delete this {deleteTarget.isReply ? 'reply' : 'comment'}?
       </div>
-
       <div style={modalButtonRow}>
         <button
-          style={{ ...modalButton, backgroundColor: '#ffb300', color: '#1a1a1a' }}
-          onClick={confirmReport}
+          onClick={confirmDelete}
+          style={{ 
+            ...modalButton, 
+            background: 'linear-gradient(45deg, #e50914 0%, #7f5af0 100%)', 
+            color: '#fff', 
+            border: 'none' 
+          }}
+          disabled={actionLoading.has(deleteTarget.commentId)}
         >
-          Report
+          {actionLoading.has(deleteTarget.commentId) ? 'Deleting...' : 'Delete'}
         </button>
         <button
-          style={{ ...modalButton, backgroundColor: '#444', color: '#fff' }}
-          onClick={cancelReport}
+          onClick={cancelDelete}
+          style={{ 
+            ...modalButton, 
+            background: '#222', 
+            color: '#fff', 
+            border: '1.5px solid #7f5af0' 
+          }}
+          disabled={actionLoading.has(deleteTarget.commentId)}
         >
           Cancel
         </button>
       </div>
-    </div>
+    </motion.div>
   </div>,
   document.body
 )}
+      {reportTarget && ReactDOM.createPortal(
+        <ReportModal
+          isOpen={!!reportTarget}
+          onClose={cancelReport}
+          onSubmit={confirmReport}
+        />,
+        document.body
+      )}
+      {showSuccessModal && ReactDOM.createPortal(
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+        />,
+        document.body
+      )}
+      {showAlreadyReportedModal && ReactDOM.createPortal(
+        <AlreadyReportedModal
+          isOpen={showAlreadyReportedModal}
+          onClose={() => setShowAlreadyReportedModal(false)}
+        />,
+        document.body
+      )}
     </div>
   );
 }

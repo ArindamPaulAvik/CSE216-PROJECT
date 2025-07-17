@@ -29,10 +29,9 @@ app.use('/search', require('./routes/search'));
 app.use('/comments', require('./routes/comments'));
 app.use('/directors', require('./routes/directors'));
 app.use('/actors', require('./routes/actors'));
-
-app.use(require('./routes/episodes'));
 app.use('/violations', require('./routes/violations'));
 
+app.use(require('./routes/episodes'));
 
 // Start server
 app.listen(port, () => {

@@ -78,11 +78,43 @@ export default function Layout({ children, activeSection }) {
           ...prev,
           genre: genreState
         }));
+        
+        console.log('📚 Genres loaded:', data.genres);
+        
+        // Check for pending genre selection after genres are loaded
+        const selectedGenre = sessionStorage.getItem('selectedGenre');
+        const shouldOpenSearch = sessionStorage.getItem('openSearch');
+        
+        if (selectedGenre && shouldOpenSearch === 'true') {
+          console.log('🎯 Processing pending genre selection:', selectedGenre);
+          
+          // Clear the session storage
+          sessionStorage.removeItem('selectedGenre');
+          sessionStorage.removeItem('openSearch');
+          
+          // Set the filter after genres are loaded
+          setTimeout(() => {
+            setSearchOpen(true);
+            setSearchTerm('');
+            setFilters(prev => ({
+              ...prev,
+              genre: {
+                ...Object.keys(prev.genre).reduce((acc, key) => {
+                  acc[key] = false;
+                  return acc;
+                }, {}),
+                [selectedGenre]: true
+              }
+            }));
+            console.log('✅ Genre filter set for:', selectedGenre);
+          }, 100);
+        }
       })
       .catch(err => console.error('Error loading genres:', err));
   }, []);
 
   const handleGenreChange = (genreName) => {
+    console.log('🔧 Manual genre change:', genreName);
     setFilters(prev => ({
       ...prev,
       genre: {
@@ -195,6 +227,45 @@ useEffect(() => {
 
   return () => clearTimeout(handler);
 }, [searchTerm, searchOpen, filters]);
+
+  // Handle genre search from ShowDetails page
+  useEffect(() => {
+    const handleGenreSearch = (event) => {
+      const genreName = event.detail.genre;
+      
+      console.log('🎯 Genre search triggered for:', genreName);
+      
+      // Open search
+      setSearchOpen(true);
+      
+      // Clear search term to show all results
+      setSearchTerm('');
+      
+      // Reset all genre filters first, then set the selected one
+      setFilters(prev => {
+        console.log('🔧 Current filters before update:', prev);
+        const newFilters = {
+          ...prev,
+          genre: {
+            ...Object.keys(prev.genre).reduce((acc, key) => {
+              acc[key] = false;
+              return acc;
+            }, {}),
+            [genreName]: true
+          }
+        };
+        console.log('🔧 New filters after update:', newFilters);
+        return newFilters;
+      });
+    };
+
+    // Listen for custom event
+    window.addEventListener('genreSearch', handleGenreSearch);
+
+    return () => {
+      window.removeEventListener('genreSearch', handleGenreSearch);
+    };
+  }, []);
 
   const renderShowBox = useCallback((show) => {
     // Safely access properties with fallbacks

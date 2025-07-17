@@ -187,6 +187,56 @@ function ShowDetails() {
     });
   };
 
+  // Handle genre click navigation - avoid auth issues by staying on current domain
+  const handleGenreClick = (genreName) => {
+    const trimmedGenre = genreName.trim();
+    console.log('🎬 Genre clicked in ShowDetails:', trimmedGenre);
+    
+    // Store the genre selection in sessionStorage to persist across navigation
+    sessionStorage.setItem('selectedGenre', trimmedGenre);
+    sessionStorage.setItem('openSearch', 'true');
+    
+    // Navigate to frontpage (where Layout.js is used)
+    navigate('/frontpage');
+    
+    // Trigger a custom event to notify Layout component
+    window.dispatchEvent(new CustomEvent('genreSearch', { 
+      detail: { genre: trimmedGenre } 
+    }));
+  };
+
+  // Parse genres and render as clickable text buttons
+  const renderGenres = () => {
+    if (!show.GENRES || show.GENRES === 'N/A') {
+      return 'N/A';
+    }
+
+    const genres = show.GENRES.split(',').map(g => g.trim());
+    
+    return genres.map((genre, index) => (
+      <span key={index}>
+        <span
+          onClick={() => handleGenreClick(genre)}
+          style={{
+            color: '#7f5af0',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            fontSize: '0.95rem'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.color = '#533483';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.color = '#7f5af0';
+          }}
+        >
+          {genre}
+        </span>
+        {index < genres.length - 1 && ', '}
+      </span>
+    ));
+  };
+
   // Scroll-based transforms
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -100]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.8]);
@@ -1106,7 +1156,7 @@ function ShowDetails() {
                     Genre
                   </h3>
                   <p style={{ fontSize: '0.95rem', color: '#ccc' }}>
-                    {show.GENRES || 'N/A'}
+                    {renderGenres()}
                   </p>
                 </motion.div>
               </motion.div>
