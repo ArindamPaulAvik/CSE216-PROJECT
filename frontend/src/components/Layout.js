@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiMoon, FiSun, FiWifi, FiWifiOff, FiChevronRight } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiMoon, FiSun, FiWifi, FiWifiOff, FiChevronRight, FiAward } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children, activeSection }) {
@@ -736,6 +736,12 @@ useEffect(() => {
               <div className="menu-item" onClick={() => handleMenuItemClick('/directors')}>
                 <FiUsers size={18} style={{ transform: 'scaleX(-1)' }} />
                 <span>Directors</span>
+                <div className="nav-indicator" />
+              </div>
+
+              <div className="menu-item" onClick={() => handleMenuItemClick('/awards')}>
+                <FiAward size={18} />
+                <span>Awards</span>
                 <div className="nav-indicator" />
               </div>
 

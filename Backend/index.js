@@ -29,6 +29,7 @@ app.use('/search', require('./routes/search'));
 app.use('/comments', require('./routes/comments'));
 app.use('/directors', require('./routes/directors'));
 app.use('/actors', require('./routes/actors'));
+app.use('/awards', require('./routes/awards'));
 app.use('/violations', require('./routes/violations'));
 app.use(require('./routes/notifications'));
 

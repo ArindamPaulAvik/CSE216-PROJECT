@@ -5,6 +5,8 @@ import FrontPage from './components/Frontpage';
 import ShowDetails from './components/ShowDetails';
 import ActorDetailPage from './components/ActorDetailPage';
 import ActorsPage from './components/ActorsPage';
+import AwardDetailPage from './components/AwardDetailPage';
+import AwardsPage from './components/AwardsPage';
 import UserProfile from './components/UserProfile';
 import Auth from './components/Auth';
 import Favourites from './components/Favourites';  // Import the new favorites page
@@ -20,6 +22,8 @@ function App() {
           <Route path="/show/:id" element={<ShowDetails />} />
           <Route path="/actors" element={<ActorsPage />} />
           <Route path="/actor/:id" element={<ActorDetailPage />} />
+          <Route path="/awards" element={<AwardsPage />} />
+          <Route path="/award/:id" element={<AwardDetailPage />} />
           <Route path="/directors" element={React.createElement(require('./components/DirectorsPage').default)} />
           <Route path="/director/:id" element={React.createElement(require('./components/DirectorDetailPage').default)} />
           <Route path="/profile" element={<UserProfile />} />
