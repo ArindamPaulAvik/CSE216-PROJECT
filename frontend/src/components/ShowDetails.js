@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import Layout from './Layout';
@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 function ShowDetails() {
   const { id } = useParams();
+  const location = useLocation();
   const [show, setShow] = useState(null);
   const [episodes, setEpisodes] = useState([]);
   const [selectedEpisode, setSelectedEpisode] = useState(null);
@@ -47,6 +48,78 @@ function ShowDetails() {
         setIsFavorite(false);
       });
   }, [id]);
+
+  // Handle episode parameter from URL (for notifications)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const episodeId = params.get('episode');
+    const commentId = params.get('comment');
+    
+    if (episodeId && episodes.length > 0) {
+      console.log('📺 Switching to episode from notification:', episodeId);
+      
+      // Find the episode with matching SHOW_EPISODE_ID
+      const targetEpisode = episodes.find(ep => ep.SHOW_EPISODE_ID === parseInt(episodeId));
+      
+      if (targetEpisode) {
+        console.log('✅ Found episode:', targetEpisode);
+        setSelectedEpisode(targetEpisode);
+        
+        // Directly locate and scroll to the specific comment
+        setTimeout(() => {
+          if (commentId) {
+            // Try to find the specific comment first
+            const specificComment = document.querySelector(`[data-comment-id="${commentId}"]`) ||
+                                   document.querySelector(`#comment-${commentId}`) ||
+                                   document.querySelector(`.comment-${commentId}`);
+            
+            if (specificComment) {
+              console.log('🎯 Found specific comment, scrolling directly to:', commentId);
+              specificComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              
+              // Add a temporary highlight effect
+              specificComment.style.background = 'rgba(127, 90, 240, 0.2)';
+              specificComment.style.border = '2px solid #7f5af0';
+              specificComment.style.borderRadius = '8px';
+              specificComment.style.transition = 'all 0.3s ease';
+              
+              // Remove highlight after 3 seconds
+              setTimeout(() => {
+                specificComment.style.background = '';
+                specificComment.style.border = '';
+                specificComment.style.borderRadius = '';
+              }, 3000);
+            } else {
+              console.log('💬 Comment not found, falling back to comments section');
+              // Fallback: scroll to comments section
+              const commentsSection = document.querySelector('[data-testid="comment-section"]') || 
+                                     document.querySelector('.comment-section');
+              
+              if (commentsSection) {
+                console.log('� Scrolling to comments section as fallback');
+                commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else {
+                // Final fallback: scroll to bottom of page
+                console.log('📝 Comments section not found, scrolling to bottom');
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              }
+            }
+          } else {
+            // No specific comment, just scroll to comments section
+            const commentsSection = document.querySelector('[data-testid="comment-section"]') || 
+                                   document.querySelector('.comment-section');
+            
+            if (commentsSection) {
+              console.log('📍 Scrolling to comments section');
+              commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        }, 1000); // Delay to ensure episode is selected and comments are loaded
+      } else {
+        console.warn('❌ Episode not found:', episodeId);
+      }
+    }
+  }, [location.search, episodes]);
 
   // Fetch show details and episodes
   useEffect(() => {

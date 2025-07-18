@@ -678,7 +678,11 @@ function CommentSection({ episodeId }) {
   });
 
   return (
-    <div style={{ padding: '20px', color: '#fff', background: 'rgba(22, 33, 62, 0.85)', borderRadius: '15px', border: '1px solid #533483', boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)', maxWidth: '1000px', margin: '0 auto' }}>
+    <div 
+      data-testid="comment-section" 
+      className="comment-section"
+      style={{ padding: '20px', color: '#fff', background: 'rgba(22, 33, 62, 0.85)', borderRadius: '15px', border: '1px solid #533483', boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)', maxWidth: '1000px', margin: '0 auto' }}
+    >
       <h2 style={{ color: '#fff', textAlign: 'center', textShadow: '1px 1px 2px #533483', fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '30px' }}>Comments</h2>
       {/* Add Comment Section */}
       <div style={{ marginBottom: '20px' }}>
@@ -848,6 +852,9 @@ function CommentSection({ episodeId }) {
           {sortedComments.map((comment) => (
             <motion.div
               key={comment.COMMENT_ID}
+              data-comment-id={comment.COMMENT_ID}
+              id={`comment-${comment.COMMENT_ID}`}
+              className={`comment-${comment.COMMENT_ID}`}
               initial={comment.isTemp ? { opacity: 0, y: -20 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
@@ -1262,6 +1269,9 @@ function CommentSection({ episodeId }) {
                   {comment.replies.map(reply => (
                     <motion.div
                       key={reply.COMMENT_ID}
+                      data-comment-id={reply.COMMENT_ID}
+                      id={`comment-${reply.COMMENT_ID}`}
+                      className={`comment-${reply.COMMENT_ID} reply-comment`}
                       initial={reply.isTemp ? { opacity: 0, y: -10 } : false}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}

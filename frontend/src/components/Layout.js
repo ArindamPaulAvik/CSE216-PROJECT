@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiMoon, FiSun, FiWifi, FiWifiOff } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiMoon, FiSun, FiWifi, FiWifiOff, FiChevronRight } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children, activeSection }) {
@@ -57,14 +57,97 @@ export default function Layout({ children, activeSection }) {
       { icon: FiStar, label: 'Top Rated', action: () => navigate('/top-rated') },
       { icon: FiHeart, label: 'My List', action: () => navigate('/favourites') }
     ]);
-
-    // Simulate notifications
-    setNotifications([
-      { id: 1, type: 'new_content', message: 'New episodes of Breaking Bad are available!', time: '2 hours ago', unread: true },
-      { id: 2, type: 'recommendation', message: 'Based on your watching history, you might like The Wire', time: '1 day ago', unread: true },
-      { id: 3, type: 'reminder', message: 'Continue watching Stranger Things S4E3', time: '2 days ago', unread: false }
-    ]);
   }, []);
+
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('❌ No auth token found');
+      return;
+    }
+
+    console.log('🔔 Fetching notifications...');
+    try {
+      const response = await fetch('http://localhost:5000/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
+      if (response.ok) {
+        const notifications = await response.json();
+        console.log('📬 Raw notifications from API:', notifications);
+        
+        // Transform API response to match frontend format
+        const formattedNotifications = notifications.map(notif => {
+          let parsedData = null;
+          
+          // Safely parse JSON data
+          if (notif.DATA) {
+            try {
+              // If DATA is already an object, use it directly
+              if (typeof notif.DATA === 'object') {
+                parsedData = notif.DATA;
+              } else {
+                // If it's a string, try to parse it
+                parsedData = JSON.parse(notif.DATA);
+              }
+            } catch (error) {
+              console.warn('Failed to parse notification data:', notif.DATA, error);
+              parsedData = null;
+            }
+          }
+          
+          return {
+            id: notif.NOTIF_ID,
+            type: notif.TYPE,
+            message: notif.MESSAGE,
+            time: formatTimeAgo(notif.CREATED_AT),
+            unread: !notif.IS_READ,
+            data: parsedData
+          };
+        });
+        
+        console.log('✨ Formatted notifications:', formattedNotifications);
+        setNotifications(formattedNotifications);
+      } else {
+        const errorData = await response.text();
+        console.error('❌ API error:', response.status, errorData);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Test the notification routes
+    fetch('http://localhost:5000/notifications/test')
+      .then(res => res.json())
+      .then(data => console.log('🧪 Test endpoint response:', data))
+      .catch(err => console.error('❌ Test endpoint error:', err));
+  }, []);
+
+  // Helper function to format time ago
+  const formatTimeAgo = (timestamp) => {
+    const now = new Date();
+    const created = new Date(timestamp);
+    const diffMs = now - created;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      return `${diffMins} minutes ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hours ago`;
+    } else {
+      return `${diffDays} days ago`;
+    }
+  };
 
   useEffect(() => {
     fetch('http://localhost:5000/search/genres')
@@ -365,15 +448,101 @@ useEffect(() => {
   };
 
   const handleNotificationToggle = () => {
-    setNotificationOpen(prev => !prev);
+    setNotificationOpen(prev => {
+      const newState = !prev;
+      // Refresh notifications when opening the panel
+      if (newState) {
+        fetchNotifications();
+      }
+      return newState;
+    });
   };
 
-  const markNotificationAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, unread: false } : notif
-      )
-    );
+  const markNotificationAsRead = async (id) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        // Update local state
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif.id === id ? { ...notif, unread: false } : notif
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/notifications/read-all', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        // Update local state
+        setNotifications(prev => 
+          prev.map(notif => ({ ...notif, unread: false }))
+        );
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    console.log('🔔 Notification clicked:', notification);
+    
+    // Mark as read first
+    await markNotificationAsRead(notification.id);
+    
+    // Close notification panel
+    setNotificationOpen(false);
+    
+    // Navigate based on notification type and data
+    if (notification.data) {
+      const { movie_id, comment_id, show_episode_id } = notification.data;
+      
+      if (notification.type === 'movie_update' && (movie_id)) {
+        // Navigate to show details page
+        const showId = movie_id;
+        console.log('🎬 Navigating to show:', showId);
+        navigate(`/show/${showId}`);
+      } else if (notification.type === 'comment_reply' && comment_id) {
+        // Navigate to the show where the comment was made
+        if (notification.data.show_id || notification.data.movie_id) {
+          const showId = notification.data.show_id || notification.data.movie_id;
+          console.log('💬 Navigating to show with comment:', showId, 'comment:', comment_id);
+          
+          if (show_episode_id) {
+            // Navigate to show with specific episode and comment
+            console.log('📺 Switching to episode:', show_episode_id, 'and comment:', comment_id);
+            navigate(`/show/${showId}?episode=${show_episode_id}&comment=${comment_id}`);
+          } else {
+            // Navigate to show without specific episode but with comment
+            navigate(`/show/${showId}?comment=${comment_id}`);
+          }
+        }
+      } else if (notification.type === 'admin_notice') {
+        // Navigate to profile or admin section
+        console.log('📢 Admin notice - navigating to profile');
+        navigate('/profile');
+      }
+    } else {
+      console.log('⚠️ No navigation data available for notification');
+    }
   };
 
   const handleSuggestionClick = (suggestion) => {
@@ -653,12 +822,24 @@ useEffect(() => {
                 <div className="notifications-dropdown">
                   <div className="notifications-header">
                     <h3>Notifications</h3>
-                    <button 
-                      className="close-notifications"
-                      onClick={() => setNotificationOpen(false)}
-                    >
-                      <FiX size={16} />
-                    </button>
+                    <div className="notifications-actions">
+                      {notifications.some(n => n.unread) && (
+                        <button 
+                          className="mark-all-read"
+                          onClick={markAllNotificationsAsRead}
+                          title="Mark all as read"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button 
+                        className="close-notifications"
+                        onClick={() => setNotificationOpen(false)}
+                        title="Close notifications"
+                      >
+                        <FiChevronRight size={18} />
+                      </button>
+                    </div>
                   </div>
                   <div className="notifications-list">
                     {notifications.length > 0 ? (
@@ -666,16 +847,21 @@ useEffect(() => {
                         <div 
                           key={notification.id}
                           className={`notification-item ${notification.unread ? 'unread' : ''}`}
-                          onClick={() => markNotificationAsRead(notification.id)}
+                          onClick={() => handleNotificationClick(notification)}
                         >
-                          <div className="notification-icon">
-                            {notification.type === 'new_content' && <FiTrendingUp size={16} />}
-                            {notification.type === 'recommendation' && <FiStar size={16} />}
-                            {notification.type === 'reminder' && <FiClock size={16} />}
-                          </div>
                           <div className="notification-content">
-                            <p className="notification-message">{notification.message}</p>
-                            <span className="notification-time">{notification.time}</span>
+                            <div className="notification-icon">
+                              {notification.type === 'movie_update' && <FiTrendingUp size={16} />}
+                              {notification.type === 'admin_notice' && <FiStar size={16} />}
+                              {notification.type === 'comment_reply' && <FiClock size={16} />}
+                            </div>
+                            <div className="notification-text">
+                              <p className="notification-message">{notification.message}</p>
+                              <span className="notification-time">{notification.time}</span>
+                            </div>
+                          </div>
+                          <div className="notification-arrow">
+                            <FiChevronRight size={14} />
                           </div>
                           {notification.unread && <div className="unread-indicator" />}
                         </div>
@@ -1529,6 +1715,28 @@ useEffect(() => {
           justify-content: space-between;
         }
 
+        .notifications-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .mark-all-read {
+          background: rgba(102, 126, 234, 0.1);
+          border: 1px solid rgba(102, 126, 234, 0.3);
+          color: var(--accent-color);
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .mark-all-read:hover {
+          background: rgba(102, 126, 234, 0.2);
+          border-color: var(--accent-color);
+        }
+
         .notifications-title {
           font-size: 18px;
           font-weight: 700;
@@ -1563,20 +1771,48 @@ useEffect(() => {
           cursor: pointer;
           transition: all 0.2s ease;
           position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
 
         .notification-item:hover {
           background: rgba(255, 255, 255, 0.03);
         }
 
+        .notification-item:hover .notification-arrow {
+          opacity: 1;
+          transform: translateX(2px);
+        }
+
         .notification-item.unread {
           border-left: 3px solid var(--accent-color);
           background: rgba(102, 126, 234, 0.03);
+          box-shadow: 0 0 10px rgba(102, 126, 234, 0.3), 
+                      inset 0 0 20px rgba(102, 126, 234, 0.1);
+          border: 1px solid rgba(102, 126, 234, 0.4);
+          animation: glow-pulse 2s infinite;
+        }
+
+        @keyframes glow-pulse {
+          0%, 100% {
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3), 
+                        inset 0 0 20px rgba(102, 126, 234, 0.1);
+          }
+          50% {
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5), 
+                        inset 0 0 30px rgba(102, 126, 234, 0.2);
+          }
         }
 
         .notification-content {
           display: flex;
           gap: 12px;
+          flex: 1;
+        }
+
+        .notification-text {
+          flex: 1;
         }
 
         .notification-icon {
@@ -1605,6 +1841,32 @@ useEffect(() => {
         .notification-time {
           font-size: 12px;
           color: var(--text-muted);
+        }
+
+        .notification-arrow {
+          opacity: 0.4;
+          color: var(--text-muted);
+          transition: all 0.2s ease;
+          margin-left: 8px;
+        }
+
+        .close-notifications {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: var(--text-muted);
+          padding: 8px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .close-notifications:hover {
+          background: rgba(255, 255, 255, 0.2);
+          color: var(--text-primary);
+          transform: translateX(2px);
         }
 
         .no-notifications {
