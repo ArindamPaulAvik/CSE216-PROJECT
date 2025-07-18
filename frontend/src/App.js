@@ -7,6 +7,10 @@ import ActorDetailPage from './components/ActorDetailPage';
 import ActorsPage from './components/ActorsPage';
 import AwardDetailPage from './components/AwardDetailPage';
 import AwardsPage from './components/AwardsPage';
+import PublisherFrontpage from './components/PublisherFrontpage';
+import SupportAdminFrontpage from './components/SupportAdminFrontpage';
+import ContentAdminFrontpage from './components/ContentAdminFrontpage';
+import MarketingAdminFrontpage from './components/MarketingAdminFrontpage';
 import UserProfile from './components/UserProfile';
 import Auth from './components/Auth';
 import Favourites from './components/Favourites';  // Import the new favorites page
@@ -19,6 +23,10 @@ function App() {
           <Route path="/" element={<Auth />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/frontpage" element={<FrontPage />} />
+          <Route path="/publisher-frontpage" element={<PublisherFrontpage />} />
+          <Route path="/support-admin-frontpage" element={<SupportAdminFrontpage />} />
+          <Route path="/content-admin-frontpage" element={<ContentAdminFrontpage />} />
+          <Route path="/marketing-admin-frontpage" element={<MarketingAdminFrontpage />} />
           <Route path="/show/:id" element={<ShowDetails />} />
           <Route path="/actors" element={<ActorsPage />} />
           <Route path="/actor/:id" element={<ActorDetailPage />} />
