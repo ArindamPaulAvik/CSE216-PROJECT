@@ -389,21 +389,41 @@ function UserProfile() {
             <div className="profile-nav">
               <button
                 className={`nav-tab ${activeTab === 'details' ? 'active' : ''}`}
-                onClick={() => setActiveTab('details')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('details');
+                  setError('');
+                  setSuccess('');
+                }}
+                type="button"
               >
                 <FiInfo size={16} />
                 <span>Details</span>
               </button>
               <button
                 className={`nav-tab ${activeTab === 'favourites' ? 'active' : ''}`}
-                onClick={() => setActiveTab('favourites')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('favourites');
+                  setError('');
+                  setSuccess('');
+                  setIsEditing(false);
+                }}
+                type="button"
               >
                 <FiHeart size={16} />
                 <span>Favourites</span>
               </button>
               <button
                 className={`nav-tab ${activeTab === 'posts' ? 'active' : ''}`}
-                onClick={() => setActiveTab('posts')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('posts');
+                  setError('');
+                  setSuccess('');
+                  setIsEditing(false);
+                }}
+                type="button"
               >
                 <FiGrid size={16} />
                 <span>Posts</span>
@@ -515,6 +535,48 @@ function UserProfile() {
   </div>
 )}
 
+{activeTab === 'details' && (
+  <div className="form-actions">
+    {!isEditing ? (
+      <button
+        type="button"
+        onClick={() => setIsEditing(true)}
+        className="btn btn-primary"
+      >
+        Edit Profile
+      </button>
+    ) : (
+      <div className="edit-actions">
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="btn btn-secondary"
+          disabled={isSaving}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="btn btn-success"
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <>
+              <div className="btn-spinner"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <FiSave size={16} />
+              Save Changes
+            </>
+          )}
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
 {activeTab === 'favourites' && (
   <div className="tab-content">
     <p>Your favourite items will appear here.</p>
@@ -527,46 +589,6 @@ function UserProfile() {
   </div>
 )}
 
-            {/* Action Buttons */}
-            <div className="form-actions">
-              {!isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="btn btn-primary"
-                >
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="edit-actions">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="btn btn-secondary"
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-success"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="btn-spinner"></div>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <FiSave size={16} />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
           </form>
         </div>
       </div>
