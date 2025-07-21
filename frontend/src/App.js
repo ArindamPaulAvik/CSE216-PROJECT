@@ -12,8 +12,8 @@ import SupportAdminFrontpage from './components/SupportAdminFrontpage';
 import ContentAdminFrontpage from './components/ContentAdminFrontpage';
 import MarketingAdminFrontpage from './components/MarketingAdminFrontpage';
 import UserProfile from './components/UserProfile';
+import Settings from './components/Settings';
 import Auth from './components/Auth';
-import Favourites from './components/Favourites';  // Import the new favorites page
 
 function App() {
   return (
@@ -35,7 +35,7 @@ function App() {
           <Route path="/directors" element={React.createElement(require('./components/DirectorsPage').default)} />
           <Route path="/director/:id" element={React.createElement(require('./components/DirectorDetailPage').default)} />
           <Route path="/profile" element={<UserProfile />} />
-          <Route path="/favourites" element={<Favourites />} /> {/* Add favorites route */}
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </div>
     </Router>

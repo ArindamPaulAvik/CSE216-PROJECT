@@ -189,3 +189,247 @@ exports.createUser = async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 };
+
+exports.getUserComments = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    
+    // First get the user ID from email
+    const [userRows] = await pool.query(`
+      SELECT u.USER_ID
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Get all comments by this user with show and episode information
+    const [comments] = await pool.query(`
+      SELECT 
+        c.COMMENT_ID,
+        c.TEXT,
+        c.TIME,
+        c.IMG_LINK,
+        c.LIKE_COUNT,
+        c.DISLIKE_COUNT,
+        c.PARENT_ID,
+        c.EDITED,
+        c.PINNED,
+        se.SHOW_EPISODE_ID,
+        se.SHOW_EPISODE_TITLE AS EPISODE_TITLE,
+        s.TITLE AS SHOW_TITLE,
+        s.SHOW_ID,
+        s.THUMBNAIL AS SHOW_THUMBNAIL
+      FROM COMMENT c
+      JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
+      JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
+      WHERE c.USER_ID = ? AND c.DELETED = 0
+      ORDER BY c.TIME DESC
+    `, [userId]);
+
+    res.json({ comments });
+  } catch (err) {
+    console.error('Error fetching user comments:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.updatePersonalDetails = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      dateOfBirth,
+      currentPassword,
+      newPassword
+    } = req.body;
+
+    // Get user details first
+    const [userRows] = await pool.query(`
+      SELECT u.USER_ID, u.PERSON_ID, p.EMAIL, p.PASSWORD
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userRows[0];
+
+    // If password change is requested, verify current password
+    if (newPassword && currentPassword) {
+      const bcrypt = require('bcrypt');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.PASSWORD);
+      
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password in PERSON table
+      await pool.query(`
+        UPDATE PERSON SET PASSWORD = ? WHERE PERSON_ID = ?
+      `, [hashedNewPassword, user.PERSON_ID]);
+    }
+
+    // Update email in PERSON table if changed
+    if (email && email !== userEmail) {
+      await pool.query(`
+        UPDATE PERSON SET EMAIL = ? WHERE PERSON_ID = ?
+      `, [email, user.PERSON_ID]);
+    }
+
+    // Update user details in USER table
+    await pool.query(`
+      UPDATE USER SET 
+        USER_FIRSTNAME = ?,
+        USER_LASTNAME = ?,
+        PHONE_NO = ?,
+        BIRTH_DATE = ?
+      WHERE USER_ID = ?
+    `, [firstName, lastName, phone, dateOfBirth, user.USER_ID]);
+
+    res.json({ message: 'Personal details updated successfully' });
+  } catch (err) {
+    console.error('Error updating personal details:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.updateBillingInfo = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const {
+      cardNumber,
+      expiryDate,
+      cvv,
+      cardholderName,
+      billingAddress,
+      city,
+      postalCode,
+      country
+    } = req.body;
+
+    // Get user ID
+    const [userRows] = await pool.query(`
+      SELECT u.USER_ID
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Check if billing info exists
+    const [existingBilling] = await pool.query(`
+      SELECT * FROM USER_BILLING WHERE USER_ID = ?
+    `, [userId]);
+
+    if (existingBilling.length > 0) {
+      // Update existing billing info
+      await pool.query(`
+        UPDATE USER_BILLING SET 
+          CARD_NUMBER = ?,
+          EXPIRY_DATE = ?,
+          CVV = ?,
+          CARDHOLDER_NAME = ?,
+          BILLING_ADDRESS = ?,
+          CITY = ?,
+          POSTAL_CODE = ?,
+          COUNTRY = ?
+        WHERE USER_ID = ?
+      `, [cardNumber, expiryDate, cvv, cardholderName, billingAddress, city, postalCode, country, userId]);
+    } else {
+      // Create new billing info
+      await pool.query(`
+        INSERT INTO USER_BILLING 
+        (USER_ID, CARD_NUMBER, EXPIRY_DATE, CVV, CARDHOLDER_NAME, BILLING_ADDRESS, CITY, POSTAL_CODE, COUNTRY)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [userId, cardNumber, expiryDate, cvv, cardholderName, billingAddress, city, postalCode, country]);
+    }
+
+    res.json({ message: 'Billing information updated successfully' });
+  } catch (err) {
+    console.error('Error updating billing info:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.updatePreferences = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const {
+      theme,
+      language,
+      emailNotifications,
+      pushNotifications,
+      autoplay,
+      qualityPreference,
+      subtitles,
+      adultContent
+    } = req.body;
+
+    // Get user ID
+    const [userRows] = await pool.query(`
+      SELECT u.USER_ID
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Check if preferences exist
+    const [existingPrefs] = await pool.query(`
+      SELECT * FROM USER_PREFERENCES WHERE USER_ID = ?
+    `, [userId]);
+
+    if (existingPrefs.length > 0) {
+      // Update existing preferences
+      await pool.query(`
+        UPDATE USER_PREFERENCES SET 
+          THEME = ?,
+          LANGUAGE = ?,
+          EMAIL_NOTIFICATIONS = ?,
+          PUSH_NOTIFICATIONS = ?,
+          AUTOPLAY = ?,
+          QUALITY_PREFERENCE = ?,
+          SUBTITLES = ?,
+          ADULT_CONTENT = ?
+        WHERE USER_ID = ?
+      `, [theme, language, emailNotifications, pushNotifications, autoplay, qualityPreference, subtitles, adultContent, userId]);
+    } else {
+      // Create new preferences
+      await pool.query(`
+        INSERT INTO USER_PREFERENCES 
+        (USER_ID, THEME, LANGUAGE, EMAIL_NOTIFICATIONS, PUSH_NOTIFICATIONS, AUTOPLAY, QUALITY_PREFERENCE, SUBTITLES, ADULT_CONTENT)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [userId, theme, language, emailNotifications, pushNotifications, autoplay, qualityPreference, subtitles, adultContent]);
+    }
+
+    res.json({ message: 'Preferences updated successfully' });
+  } catch (err) {
+    console.error('Error updating preferences:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

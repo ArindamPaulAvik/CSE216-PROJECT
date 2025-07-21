@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMenu, FiSearch, FiHeart, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiMoon, FiSun, FiWifi, FiWifiOff, FiChevronRight, FiAward } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiWifi, FiWifiOff, FiChevronRight, FiAward } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children, activeSection }) {
@@ -13,12 +13,11 @@ export default function Layout({ children, activeSection }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [viewingActivity, setViewingActivity] = useState([]);
-  const [quickActions, setQuickActions] = useState([]);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,21 +41,11 @@ export default function Layout({ children, activeSection }) {
 
   // Load personalization data
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
     const savedSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
     const savedActivity = JSON.parse(localStorage.getItem('viewingActivity') || '[]');
     
-    if (savedTheme) setDarkMode(savedTheme === 'dark');
     setRecentSearches(savedSearches.slice(0, 5)); // Last 5 searches
     setViewingActivity(savedActivity.slice(0, 3)); // Last 3 viewed
-
-    // Load quick actions based on user behavior
-    setQuickActions([
-      { icon: FiTrendingUp, label: 'Trending', action: () => scrollToSection('trending') },
-      { icon: FiClock, label: 'Continue Watching', action: () => scrollToSection('watchagain') },
-      { icon: FiStar, label: 'Top Rated', action: () => navigate('/top-rated') },
-      { icon: FiHeart, label: 'My List', action: () => navigate('/favourites') }
-    ]);
   }, []);
 
   // Fetch notifications from API
@@ -441,12 +430,6 @@ useEffect(() => {
     }
   };
 
-  const handleThemeToggle = () => {
-    const newTheme = !darkMode;
-    setDarkMode(newTheme);
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-  };
-
   const handleNotificationToggle = () => {
     setNotificationOpen(prev => {
       const newState = !prev;
@@ -573,7 +556,7 @@ useEffect(() => {
   };
 
   return (
-    <div className={`layout-container ${darkMode ? 'dark-theme' : 'light-theme'}`}>
+    <div className="layout-container dark-theme">
       {/* Network Status Indicator */}
       {!isOnline && (
         <div className="network-status offline">
@@ -621,30 +604,11 @@ useEffect(() => {
 
         {menuOpen && (
           <div className="sidebar-content">
-            {/* Quick Actions Section */}
-            <div className="quick-actions-section">
-              <h4 className="section-title">Quick Actions</h4>
-              <div className="quick-actions-grid">
-                {quickActions.map((action, index) => (
-                  <div
-                    key={index}
-                    className="quick-action-item"
-                    onClick={action.action}
-                    title={action.label}
-                  >
-                    <action.icon size={18} />
-                    <span>{action.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Enhanced Search Section */}
             <div className="search-section">
               <div className="menu-item" onClick={handleSearchToggle}>
                 <FiSearch size={18} />
                 <span>Search</span>
-                {searchOpen && <FiX size={16} className="close-icon" />}
               </div>
 
               {/* Enhanced Search Input */}
@@ -660,13 +624,6 @@ useEffect(() => {
                       className="search-input"
                       autoFocus
                     />
-                    {searchTerm && (
-                      <FiX
-                        size={16}
-                        className="clear-search-icon"
-                        onClick={() => setSearchTerm('')}
-                      />
-                    )}
                   </div>
 
                   {/* Search Suggestions */}
@@ -725,42 +682,31 @@ useEffect(() => {
               </div>
             )}
 
-            {/* Navigation Items */}
-            <div className="nav-section">
-              <div className="menu-item" onClick={() => handleMenuItemClick('/actors')}>
-                <FiUsers size={18} />
-                <span>Actors</span>
-                <div className="nav-indicator" />
+            {/* Wiki Section */}
+            <div className="wiki-section">
+              <div className="wiki-header">
+                <h3 className="wiki-title">Wiki</h3>
+                <div className="wiki-underline"></div>
               </div>
+              
+              <div className="nav-section">
+                <div className="menu-item" onClick={() => handleMenuItemClick('/actors')}>
+                  <FiUsers size={18} />
+                  <span>Actors</span>
+                  <div className="nav-indicator" />
+                </div>
 
-              <div className="menu-item" onClick={() => handleMenuItemClick('/directors')}>
-                <FiUsers size={18} style={{ transform: 'scaleX(-1)' }} />
-                <span>Directors</span>
-                <div className="nav-indicator" />
-              </div>
+                <div className="menu-item" onClick={() => handleMenuItemClick('/directors')}>
+                  <FiUsers size={18} style={{ transform: 'scaleX(-1)' }} />
+                  <span>Directors</span>
+                  <div className="nav-indicator" />
+                </div>
 
-              <div className="menu-item" onClick={() => handleMenuItemClick('/awards')}>
-                <FiAward size={18} />
-                <span>Awards</span>
-                <div className="nav-indicator" />
-              </div>
-
-              <div className="menu-item" onClick={() => handleMenuItemClick('/subscription')}>
-                <FiCreditCard size={18} />
-                <span>Subscription</span>
-                <div className="nav-indicator" />
-              </div>
-
-              <div className="menu-item" onClick={() => handleMenuItemClick('/favourites')}>
-                <FiHeart size={18} />
-                <span>Favourites</span>
-                <div className="nav-indicator" />
-              </div>
-
-              <div className="menu-item" onClick={handleThemeToggle}>
-                {darkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
-                <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                <div className="nav-indicator" />
+                <div className="menu-item" onClick={() => handleMenuItemClick('/awards')}>
+                  <FiAward size={18} />
+                  <span>Awards</span>
+                  <div className="nav-indicator" />
+                </div>
               </div>
             </div>
 
@@ -786,22 +732,36 @@ useEffect(() => {
                   onClick={() => scrollToSection('trending')}
                   className={`section-nav-btn ${activeSection === 'trending' ? 'active' : ''}`}
                 >
-                  <FiTrendingUp size={18} />
+                  <FiTrendingUp size={16} />
                   <span>Trending</span>
                 </button>
                 <button
                   onClick={() => scrollToSection('recommended')}
                   className={`section-nav-btn ${activeSection === 'recommended' ? 'active' : ''}`}
                 >
-                  <FiStar size={18} />
+                  <FiStar size={16} />
                   <span>Recommended</span>
                 </button>
                 <button
                   onClick={() => scrollToSection('watchagain')}
                   className={`section-nav-btn ${activeSection === 'watchagain' ? 'active' : ''}`}
                 >
-                  <FiClock size={18} />
+                  <FiClock size={16} />
                   <span>Watch Again</span>
+                </button>
+                <button
+                  onClick={() => scrollToSection('toprated')}
+                  className={`section-nav-btn ${activeSection === 'toprated' ? 'active' : ''}`}
+                >
+                  <FiAward size={16} />
+                  <span>Top Rated</span>
+                </button>
+                <button
+                  onClick={() => scrollToSection('actionhits')}
+                  className={`section-nav-btn ${['actionhits', 'thriller', 'comedy', 'drama', 'family'].includes(activeSection) ? 'active' : ''}`}
+                >
+                  <FiChevronRight size={16} />
+                  <span>Discover More</span>
                 </button>
               </div>
             )}
@@ -883,25 +843,50 @@ useEffect(() => {
               )}
             </div>
 
-            {/* User Profile */}
-            <div className="user-info" onClick={() => navigate('/profile')} title="Profile Settings">
-              {userImage ? (
-                <img
-                  src={`http://localhost:5000/images/user/${userImage}`}
-                  alt="Profile"
-                  className="user-avatar-img"
-                  onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
-                />
-              ) : (
-                <div className="user-avatar">
-                  {userName ? userName.charAt(0).toUpperCase() : 'U'}
+            {/* User Profile Dropdown */}
+            <div 
+              className="user-info-dropdown" 
+              onMouseEnter={() => setProfileDropdownOpen(true)}
+              onMouseLeave={() => setProfileDropdownOpen(false)}
+            >
+              <div className="user-info" title="Profile Menu">
+                {userImage ? (
+                  <img
+                    src={`http://localhost:5000/images/user/${userImage}`}
+                    alt="Profile"
+                    className="user-avatar-img"
+                    onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
+                  />
+                ) : (
+                  <div className="user-avatar">
+                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <div className="user-details">
+                  <span className="user-name">{userName || 'User'}</span>
+                  <span className="user-status">Premium Member</span>
+                </div>
+                <div className="user-status-indicator online" />
+                <FiChevronRight className={`dropdown-arrow ${profileDropdownOpen ? 'open' : ''}`} />
+              </div>
+              
+              {/* Dropdown Menu */}
+              {profileDropdownOpen && (
+                <div className="profile-dropdown-menu">
+                  <div className="dropdown-item" onClick={() => navigate('/profile')}>
+                    <FiUsers size={16} />
+                    <span>Profile</span>
+                  </div>
+                  <div className="dropdown-item" onClick={() => navigate('/subscription')}>
+                    <FiCreditCard size={16} />
+                    <span>Subscriptions</span>
+                  </div>
+                  <div className="dropdown-item" onClick={() => navigate('/settings')}>
+                    <FiSettings size={16} />
+                    <span>Settings</span>
+                  </div>
                 </div>
               )}
-              <div className="user-details">
-                <span className="user-name">{userName || 'User'}</span>
-                <span className="user-status">Premium Member</span>
-              </div>
-              <div className="user-status-indicator online" />
             </div>
           </div>
         </div>
@@ -1003,21 +988,6 @@ useEffect(() => {
           --transition-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
-        .light-theme {
-          --primary-bg: linear-gradient(135deg, #f7fafc 0%, #edf2f7 50%, #e2e8f0 100%);
-          --secondary-bg: rgba(255, 255, 255, 0.95);
-          --accent-color: #4299e1;
-          --accent-secondary: #9f7aea;
-          --text-primary: #2d3748;
-          --text-secondary: #4a5568;
-          --text-muted: #718096;
-          --border-color: rgba(0, 0, 0, 0.1);
-          --glass-bg: rgba(255, 255, 255, 0.7);
-          --glass-border: rgba(0, 0, 0, 0.1);
-          --shadow-light: 0 4px 16px rgba(0,0,0,0.1);
-          --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
-        }
-
         .layout-container {
           min-height: 100vh;
           background: var(--primary-bg);
@@ -1089,8 +1059,9 @@ useEffect(() => {
           height: 100vh;
           z-index: 1000;
           box-shadow: var(--shadow-heavy);
-          overflow-y: auto;
-          overflow-x: hidden;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
 
         .sidebar-closed {
@@ -1152,68 +1123,14 @@ useEffect(() => {
           animation: fadeInUp 0.4s var(--transition-smooth);
           display: flex;
           flex-direction: column;
-          height: calc(100vh - 120px);
+          flex: 1;
+          min-height: 0;
           gap: 24px;
         }
 
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Quick Actions Section */
-        .quick-actions-section {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
-          border-radius: 16px;
-          padding: 20px;
-        }
-
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-secondary);
-          margin-bottom: 16px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .quick-actions-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-        }
-
-        .quick-action-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          padding: 16px 12px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.3s var(--transition-smooth);
-          text-align: center;
-        }
-
-        .quick-action-item:hover {
-          background: rgba(102, 126, 234, 0.1);
-          border-color: rgba(102, 126, 234, 0.3);
-          transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
-        }
-
-        .quick-action-item span {
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--text-muted);
-          transition: color 0.3s ease;
-        }
-
-        .quick-action-item:hover span {
-          color: var(--text-primary);
         }
 
         /* Enhanced Search Section */
@@ -1402,9 +1319,36 @@ useEffect(() => {
           color: var(--text-muted);
         }
 
+        /* Wiki Section */
+        .wiki-section {
+          margin-top: 32px;
+        }
+
+        .wiki-header {
+          margin-bottom: 16px;
+          padding: 0 20px;
+        }
+
+        .wiki-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin: 0 0 8px 0;
+          text-align: left;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .wiki-underline {
+          width: 120px;
+          height: 2px;
+          background: linear-gradient(90deg, var(--accent-color), var(--accent-secondary));
+          border-radius: 1px;
+        }
+
         /* Navigation Menu */
         .nav-section {
-          margin-top: 24px;
+          margin-top: 8px;
         }
 
         .menu-item {
@@ -1488,7 +1432,8 @@ useEffect(() => {
 
         .logout-section {
           margin-top: auto;
-          padding-top: 24px;
+          margin-bottom: 16px;
+          padding-top: 8px;
           border-top: 1px solid var(--border-color);
         }
 
@@ -1548,27 +1493,29 @@ useEffect(() => {
 
         .section-nav-buttons {
           display: flex;
-          gap: 12px;
+          gap: 8px;
           align-items: center;
+          margin-right: 20px; /* Push buttons slightly to the left */
         }
 
         .section-nav-btn {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.2);
           color: rgba(255, 255, 255, 0.7);
-          padding: 12px 20px;
+          padding: 10px 16px; /* Reduced padding to fit 5 buttons */
           border-radius: 25px;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
           font-weight: 500;
-          font-size: 14px;
+          font-size: 13px; /* Slightly smaller font */
           position: relative;
           overflow: hidden;
           backdrop-filter: blur(10px);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          white-space: nowrap; /* Prevent text wrapping */
         }
 
         .section-nav-btn::before {
@@ -1615,32 +1562,36 @@ useEffect(() => {
           background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
         }
 
-        /* Theme Toggle */
-        .theme-toggle {
-          position: relative;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-color);
-          border-radius: 20px;
-          padding: 8px;
-          cursor: pointer;
-          transition: all 0.3s var(--transition-smooth);
-          display: flex;
-          align-items: center;
-          gap: 8px;
+        /* Responsive styles for section navigation buttons */
+        @media (max-width: 1024px) {
+          .section-nav-buttons {
+            gap: 6px;
+          }
+          
+          .section-nav-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            gap: 4px;
+          }
+          
+          .section-nav-btn span {
+            display: none; /* Hide text on smaller screens */
+          }
         }
 
-        .theme-toggle:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: var(--accent-color);
-          transform: scale(1.05);
-        }
-
-        .theme-icon {
-          transition: all 0.3s var(--transition-smooth);
-        }
-
-        .theme-toggle:hover .theme-icon {
-          transform: rotate(180deg);
+        @media (max-width: 768px) {
+          .section-nav-buttons {
+            gap: 4px;
+            margin-right: 10px;
+          }
+          
+          .section-nav-btn {
+            padding: 8px 10px;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+          }
         }
 
         /* Enhanced Notifications */
@@ -1903,7 +1854,7 @@ useEffect(() => {
         .user-info:hover {
           background: rgba(255, 255, 255, 0.1);
           border-color: var(--accent-color);
-          transform: scale(1.02);
+          transform: scale(1.01);
           box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
         }
 
@@ -1979,6 +1930,73 @@ useEffect(() => {
         .user-status-indicator.online {
           background: #22c55e;
           animation: pulse 2s infinite;
+        }
+
+        /* Profile Dropdown Styles */
+        .user-info-dropdown {
+          position: relative;
+        }
+
+        .dropdown-arrow {
+          transition: transform 0.3s ease;
+          margin-left: 8px;
+          color: var(--text-muted);
+        }
+
+        .dropdown-arrow.open {
+          transform: rotate(90deg);
+        }
+
+        .profile-dropdown-menu {
+          position: absolute;
+          top: calc(100% + 2px);
+          right: 0;
+          background: var(--sidebar-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 8px 0;
+          min-width: 200px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(10px);
+          z-index: 1000;
+          animation: dropdownFadeIn 0.2s ease-out;
+        }
+
+        @keyframes dropdownFadeIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: var(--text-secondary);
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(102, 126, 234, 0.1);
+          color: var(--accent-color);
+        }
+
+        .dropdown-item svg {
+          color: var(--text-muted);
+          transition: color 0.2s ease;
+        }
+
+        .dropdown-item:hover svg {
+          color: var(--accent-color);
         }
 
         /* Content Area */
@@ -2713,7 +2731,7 @@ useEffect(() => {
         .user-info:hover {
           background: rgba(255, 255, 255, 0.06);
           border-color: rgba(255, 255, 255, 0.1);
-          transform: scale(1.3);
+          transform: scale(1.01);
           box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
           z-index: 10;
         }
@@ -2860,7 +2878,8 @@ useEffect(() => {
 
         .logout-section {
           margin-top: auto;
-          padding-top: 20px;
+          margin-bottom: 16px;
+          padding-top: 6px;
           border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 

@@ -12,6 +12,17 @@ function FrontPage() {
   const [trendingShows, setTrendingShows] = useState([]);
   const [watchAgainShows, setWatchAgainShows] = useState([]);
   const [recommendedShows, setRecommendedShows] = useState([]);
+  const [topRatedShows, setTopRatedShows] = useState([]);
+  const [actionHitsShows, setActionHitsShows] = useState([]);
+  const [thrillerShows, setThrillerShows] = useState([]);
+  const [comedyShows, setComedyShows] = useState([]);
+  const [dramaShows, setDramaShows] = useState([]);
+  const [familyShows, setFamilyShows] = useState([]);
+  
+  // Debug effect to monitor comedyShows state
+  useEffect(() => {
+    console.log('Comedy shows state updated:', comedyShows);
+  }, [comedyShows]);
   const [userName, setUserName] = useState('User');
   const [profilePicture, setProfilePicture] = useState('');
   const [activeSection, setActiveSection] = useState('trending');
@@ -22,6 +33,12 @@ function FrontPage() {
   const trendingRef = useRef(null);
   const recommendedRef = useRef(null);
   const watchAgainRef = useRef(null);
+  const topRatedRef = useRef(null);
+  const actionHitsRef = useRef(null);
+  const thrillerRef = useRef(null);
+  const comedyRef = useRef(null);
+  const dramaRef = useRef(null);
+  const familyRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,9 +53,16 @@ function FrontPage() {
     })
       .then(res => {
         const data = res.data;
+        console.log('Comedy shows received:', data.comedyShows); // Debug log
         setTrendingShows(data.trendingshows || []);
         setWatchAgainShows(data.watchagainshows || []);
         setRecommendedShows(data.recommendedShows || []);
+        setTopRatedShows(data.topRatedShows || []);
+        setActionHitsShows(data.actionHitsShows || []);
+        setThrillerShows(data.thrillerShows || []);
+        setComedyShows(data.comedyShows || []);
+        setDramaShows(data.dramaShows || []);
+        setFamilyShows(data.familyShows || []);
         setUserName(data.userName || 'User');
         if (data.profilePicture) {
           setProfilePicture(`http://localhost:5000/images/user/${data.profilePicture}`);
@@ -72,7 +96,7 @@ function FrontPage() {
 
     // Observe all sections - use a small delay to ensure DOM is ready
     const observeSections = () => {
-      const sections = [trendingRef, recommendedRef, watchAgainRef];
+      const sections = [trendingRef, recommendedRef, watchAgainRef, topRatedRef, actionHitsRef, thrillerRef, comedyRef, dramaRef, familyRef];
       sections.forEach(ref => {
         if (ref.current) {
           observer.observe(ref.current);
@@ -139,6 +163,156 @@ function FrontPage() {
     }
   }, [recommendedShows]); // Only re-observe when recommendedShows changes
 
+  // Re-observe top rated section when data changes
+  useEffect(() => {
+    if (topRatedRef.current) {
+      // Reset animation class and re-trigger if needed
+      topRatedRef.current.classList.remove('animate-in');
+
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(topRatedRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [topRatedShows]); // Only re-observe when topRatedShows changes
+
+  // Re-observe action hits section when data changes
+  useEffect(() => {
+    if (actionHitsRef.current) {
+      // Reset animation class and re-trigger if needed
+      actionHitsRef.current.classList.remove('animate-in');
+
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(actionHitsRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [actionHitsShows]); // Only re-observe when actionHitsShows changes
+
+  // Re-observe thriller section when data changes
+  useEffect(() => {
+    if (thrillerRef.current) {
+      // Reset animation class and re-trigger if needed
+      thrillerRef.current.classList.remove('animate-in');
+
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(thrillerRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [thrillerShows]); // Only re-observe when thrillerShows changes
+
+  // Re-observe comedy section when data changes
+  useEffect(() => {
+    if (comedyRef.current) {
+      // Reset animation class and re-trigger if needed
+      comedyRef.current.classList.remove('animate-in');
+
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(comedyRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [comedyShows]); // Only re-observe when comedyShows changes
+
+  // Re-observe drama section when data changes
+  useEffect(() => {
+    if (dramaRef.current) {
+      // Reset animation class and re-trigger if needed
+      dramaRef.current.classList.remove('animate-in');
+
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(dramaRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [dramaShows]); // Only re-observe when dramaShows changes
+
+  // Re-observe family section when data changes
+  useEffect(() => {
+    if (familyRef.current) {
+      // Reset animation class and re-trigger if needed
+      familyRef.current.classList.remove('animate-in');
+
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+          }
+        });
+      }, observerOptions);
+
+      observer.observe(familyRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [familyShows]); // Only re-observe when familyShows changes
+
   // Scroll to section from URL params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -159,14 +333,32 @@ function FrontPage() {
       const trendingTop = trendingRef.current?.getBoundingClientRect().top ?? Infinity;
       const recommendedTop = recommendedRef.current?.getBoundingClientRect().top ?? Infinity;
       const watchAgainTop = watchAgainRef.current?.getBoundingClientRect().top ?? Infinity;
+      const topRatedTop = topRatedRef.current?.getBoundingClientRect().top ?? Infinity;
+      const actionHitsTop = actionHitsRef.current?.getBoundingClientRect().top ?? Infinity;
+      const thrillerTop = thrillerRef.current?.getBoundingClientRect().top ?? Infinity;
+      const comedyTop = comedyRef.current?.getBoundingClientRect().top ?? Infinity;
+      const dramaTop = dramaRef.current?.getBoundingClientRect().top ?? Infinity;
+      const familyTop = familyRef.current?.getBoundingClientRect().top ?? Infinity;
       const offset = 120; // header + some margin
 
       // Find the section closest to the top (but not above)
       let section = 'trending';
       if (recommendedTop - offset < 0 && watchAgainTop - offset > 0) {
         section = 'recommended';
-      } else if (watchAgainTop - offset < 0) {
+      } else if (watchAgainTop - offset < 0 && topRatedTop - offset > 0) {
         section = 'watchagain';
+      } else if (topRatedTop - offset < 0 && actionHitsTop - offset > 0) {
+        section = 'toprated';
+      } else if (actionHitsTop - offset < 0 && thrillerTop - offset > 0) {
+        section = 'actionhits';
+      } else if (thrillerTop - offset < 0 && comedyTop - offset > 0) {
+        section = 'thriller';
+      } else if (comedyTop - offset < 0 && dramaTop - offset > 0) {
+        section = 'comedy';
+      } else if (dramaTop - offset < 0 && familyTop - offset > 0) {
+        section = 'drama';
+      } else if (familyTop - offset < 0) {
+        section = 'family';
       }
       setActiveSection(section);
     };
@@ -236,6 +428,99 @@ function FrontPage() {
           </p>
         )}
       </section>
+
+      {/* Top Rated Section */}
+      {topRatedShows.length > 0 && (
+        <section id="toprated" className="shows-section" ref={topRatedRef}>
+          <h2 className="section-title top-rated-title">
+            Top Rated
+          </h2>
+          <div className="shows-grid">
+            {topRatedShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Famous Action Hits Section */}
+      {actionHitsShows.length > 0 && (
+        <section id="actionhits" className="shows-section" ref={actionHitsRef}>
+          <h2 className="section-title action-hits-title">
+            Famous Action Hits
+          </h2>
+          <div className="shows-grid">
+            {actionHitsShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Edge of Your Seat Thriller Section */}
+      {thrillerShows.length > 0 && (
+        <section id="thriller" className="shows-section" ref={thrillerRef}>
+          <h2 className="section-title thriller-title">
+            Edge of Your Seat
+          </h2>
+          <div className="shows-grid">
+            {thrillerShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Laugh Out Loud Comedy Section */}
+      {comedyShows.length > 0 && (
+        <section id="comedy" className="shows-section" ref={comedyRef}>
+          <h2 className="section-title comedy-title">
+            Laugh Out Loud
+          </h2>
+          <div className="shows-grid">
+            {comedyShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Drama Queens Section */}
+      {dramaShows.length > 0 && (
+        <section id="drama" className="shows-section" ref={dramaRef}>
+          <h2 className="section-title drama-title">
+            Drama Queens
+          </h2>
+          <div className="shows-grid">
+            {dramaShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Watch with Your Family Section */}
+      {familyShows.length > 0 && (
+        <section id="family" className="shows-section" ref={familyRef}>
+          <h2 className="section-title family-title">
+            Watch with Your Family
+          </h2>
+          <div className="shows-grid">
+            {familyShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Debug section - remove after testing */}
+      {comedyShows.length === 0 && (
+        <section id="comedy-debug" className="shows-section">
+          <h2 className="section-title">
+            Comedy Debug: {comedyShows.length} shows found
+          </h2>
+        </section>
+      )}
 
       <style>{`
         /* Scroll Animation Keyframes */
@@ -327,6 +612,30 @@ function FrontPage() {
 
         .watch-again-title::after {
           background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .top-rated-title::after {
+          background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+        }
+
+        .action-hits-title::after {
+          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .thriller-title::after {
+          background: linear-gradient(135deg, #2c2c54 0%, #8b5cf6 100%);
+        }
+
+        .comedy-title::after {
+          background: linear-gradient(135deg, #f9ca24 0%, #f0932b 100%);
+        }
+
+        .drama-title::after {
+          background: linear-gradient(135deg, #eb4d4b 0%, #6c5ce7 100%);
+        }
+
+        .family-title::after {
+          background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
         }
 
         .shows-grid {

@@ -130,13 +130,215 @@ exports.getFrontpage = async (req, res) => {
       LIMIT 4
     `, [userId, userId, userId, userId]);
 
+    // Fetch top rated shows
+    const [topRatedShows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+         FROM SHOW_GENRE sg2 
+         JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+         WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+        CASE 
+          WHEN fls.USER_ID IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS IS_FAVORITE
+      FROM \`SHOW\` s
+      LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      WHERE s.RATING IS NOT NULL AND s.RATING > 0
+      GROUP BY 
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+      ORDER BY s.RATING DESC, s.WATCH_COUNT DESC
+      LIMIT 4
+    `, [userId]);
+
+    // Fetch famous action hits
+    const [actionHitsShows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+         FROM SHOW_GENRE sg2 
+         JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+         WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+        CASE 
+          WHEN fls.USER_ID IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS IS_FAVORITE
+      FROM \`SHOW\` s
+      JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      WHERE LOWER(g.GENRE_NAME) LIKE '%action%'
+      GROUP BY 
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+      ORDER BY RAND()
+      LIMIT 4
+    `, [userId]);
+
+    // Fetch thriller shows (Edge of Your Seat)
+    const [thrillerShows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+         FROM SHOW_GENRE sg2 
+         JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+         WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+        CASE 
+          WHEN fls.USER_ID IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS IS_FAVORITE
+      FROM \`SHOW\` s
+      JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      WHERE LOWER(g.GENRE_NAME) LIKE '%thriller%' OR LOWER(g.GENRE_NAME) LIKE '%suspense%'
+      GROUP BY 
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+      ORDER BY RAND()
+      LIMIT 4
+    `, [userId]);
+
+    // Fetch comedy shows (Laugh Out Loud)
+    let [comedyShows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+         FROM SHOW_GENRE sg2 
+         JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+         WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+        CASE 
+          WHEN fls.USER_ID IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS IS_FAVORITE
+      FROM \`SHOW\` s
+      JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      WHERE LOWER(g.GENRE_NAME) LIKE '%comedy%' OR LOWER(g.GENRE_NAME) LIKE '%humor%' OR LOWER(g.GENRE_NAME) LIKE '%comic%'
+      GROUP BY 
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+      ORDER BY RAND()
+      LIMIT 4
+    `, [userId]);
+    
+    console.log('🎭 Comedy shows found:', comedyShows.length); // Debug log
+    
+    // If no comedy shows found, get some random shows as fallback
+    if (comedyShows.length === 0) {
+      console.log('No comedy shows found, using fallback...');
+      [comedyShows] = await pool.query(`
+        SELECT 
+          s.SHOW_ID, 
+          s.TITLE, 
+          s.DESCRIPTION, 
+          s.THUMBNAIL, 
+          s.RATING, 
+          s.TEASER,
+          (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+           FROM SHOW_GENRE sg2 
+           JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+           WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+          CASE 
+            WHEN fls.USER_ID IS NOT NULL THEN 1 
+            ELSE 0 
+          END AS IS_FAVORITE
+        FROM \`SHOW\` s
+        LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+        GROUP BY 
+          s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        ORDER BY RAND()
+        LIMIT 4
+      `, [userId]);
+    }
+
+    // Fetch drama shows (Drama Queens)
+    const [dramaShows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+         FROM SHOW_GENRE sg2 
+         JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+         WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+        CASE 
+          WHEN fls.USER_ID IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS IS_FAVORITE
+      FROM \`SHOW\` s
+      JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      WHERE LOWER(g.GENRE_NAME) LIKE '%drama%'
+      GROUP BY 
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+      ORDER BY RAND()
+      LIMIT 4
+    `, [userId]);
+
+    // Fetch family shows (Watch with Your Family)
+    const [familyShows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID, 
+        s.TITLE, 
+        s.DESCRIPTION, 
+        s.THUMBNAIL, 
+        s.RATING, 
+        s.TEASER,
+        (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
+         FROM SHOW_GENRE sg2 
+         JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID 
+         WHERE sg2.SHOW_ID = s.SHOW_ID) AS GENRES,
+        CASE 
+          WHEN fls.USER_ID IS NOT NULL THEN 1 
+          ELSE 0 
+        END AS IS_FAVORITE
+      FROM \`SHOW\` s
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      WHERE (LOWER(g.GENRE_NAME) LIKE '%family%' OR s.AGE_RESTRICTION_ID IN (1, 2, 3))
+      GROUP BY 
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+      ORDER BY RAND()
+      LIMIT 4
+    `, [userId]);
+
     res.json({
       userName,
       profilePicture: userRows[0].PROFILE_PICTURE || null,
       trendingshows,
       watchagainshows,
       allshows,
-      recommendedShows
+      recommendedShows,
+      topRatedShows,
+      actionHitsShows,
+      thrillerShows,
+      comedyShows,
+      dramaShows,
+      familyShows
     });
   } catch (err) {
     console.error('Error fetching frontpage:', err.message);
