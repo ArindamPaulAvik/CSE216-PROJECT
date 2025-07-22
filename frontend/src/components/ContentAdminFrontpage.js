@@ -7,7 +7,17 @@ import axios from 'axios';
 function ContentAdminFrontpage() {
   const navigate = useNavigate();
   const [adminData, setAdminData] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [analytics, setAnalytics] = useState({
+    totalShows: 0,
+    pendingSubmissions: 0,
+    approvedSubmissions: 0,
+    rejectedSubmissions: 0,
+    totalSubmissions: 0,
+    totalActors: 0,
+    totalDirectors: 0,
+    totalAwards: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -22,7 +32,22 @@ function ContentAdminFrontpage() {
 
     // Fetch admin data
     fetchAdminData();
+    fetchAnalytics();
   }, [navigate]);
+
+  const fetchAnalytics = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/admin/dashboard-analytics', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setAnalytics(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setLoading(false);
+    }
+  };
 
   const fetchAdminData = async () => {
     try {
@@ -46,10 +71,6 @@ function ContentAdminFrontpage() {
     navigate('/');
   };
 
-  const handleProfile = () => {
-    navigate('/admin-profile');
-  };
-
   const handleManageShows = () => {
     navigate('/shows-management');
   };
@@ -58,7 +79,7 @@ function ContentAdminFrontpage() {
     navigate('/content-admin-frontpage');
   };
 
-  if (!adminData) {
+  if (!adminData || loading) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -98,102 +119,27 @@ function ContentAdminFrontpage() {
           <p style={{ margin: '5px 0 0 0', opacity: 0.7 }}>Content & Media Management</p>
         </div>
         
-        <div style={{ position: 'relative' }}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '50%',
-              width: '50px',
-              height: '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            <FiUser size={20} />
-          </motion.button>
-
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                position: 'absolute',
-                top: '60px',
-                right: '0',
-                background: 'rgba(0, 0, 0, 0.9)',
-                borderRadius: '10px',
-                padding: '15px',
-                minWidth: '200px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <div style={{ marginBottom: '15px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
-                <p style={{ margin: 0, fontWeight: '600' }}>{adminData.name}</p>
-                <p style={{ margin: '5px 0 0 0', fontSize: '14px', opacity: 0.7 }}>{adminData.email}</p>
-                <span style={{ 
-                  background: 'rgba(102, 126, 234, 0.3)', 
-                  color: '#667eea', 
-                  padding: '2px 8px', 
-                  borderRadius: '10px', 
-                  fontSize: '12px',
-                  marginTop: '5px',
-                  display: 'inline-block'
-                }}>
-                  Content Admin
-                </span>
-              </div>
-              
-              <button
-                onClick={handleProfile}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'white',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '10px'
-                }}
-              >
-                <FiSettings size={16} />
-                Profile Settings
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ff4757',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <FiLogOut size={16} />
-                Logout
-              </button>
-            </motion.div>
-          )}
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255, 71, 87, 0.1)',
+            border: '1px solid rgba(255, 71, 87, 0.3)',
+            borderRadius: '8px',
+            padding: '12px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            color: '#ff4757',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          <FiLogOut size={18} />
+          Logout
+        </motion.button>
       </motion.header>
 
       {/* Main Content */}
@@ -235,20 +181,17 @@ function ContentAdminFrontpage() {
               margin: 0, 
               fontSize: '1.8rem', 
               fontWeight: '700',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
+              color: 'white'
             }}>
               Welcome back, {adminData.name}!
             </h2>
-            <p style={{ margin: '8px 0 0 0', opacity: 0.8, fontSize: '1.1rem' }}>
+            <p style={{ margin: '8px 0 0 0', color: 'white', fontSize: '1.1rem', opacity: 0.9 }}>
               Content Administrator | {adminData.email}
             </p>
             <div style={{ marginTop: '15px', display: 'flex', gap: '15px', alignItems: 'center' }}>
               <span style={{ 
                 background: 'rgba(102, 126, 234, 0.3)', 
-                color: '#667eea', 
+                color: 'white', 
                 padding: '6px 12px', 
                 borderRadius: '20px', 
                 fontSize: '14px',
@@ -258,38 +201,19 @@ function ContentAdminFrontpage() {
                 Content Administrator
               </span>
               <span style={{ 
-                background: 'rgba(76, 175, 80, 0.3)', 
-                color: '#4caf50', 
+                background: 'rgba(46, 213, 115, 0.3)', 
+                color: '#2ed573', 
                 padding: '6px 12px', 
                 borderRadius: '20px', 
                 fontSize: '14px',
                 fontWeight: '600',
-                border: '1px solid rgba(76, 175, 80, 0.5)'
+                border: '2px solid #2ed573',
+                boxShadow: '0 0 10px rgba(46, 213, 115, 0.3)'
               }}>
                 ● Active
               </span>
             </div>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleProfile}
-            style={{
-              background: 'linear-gradient(45deg, #667eea, #764ba2)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <FiSettings size={18} />
-            Manage Profile
-          </motion.button>
         </motion.div>
 
         <motion.div
@@ -340,13 +264,8 @@ function ContentAdminFrontpage() {
             <p style={{ opacity: 0.8, marginBottom: '20px', position: 'relative', zIndex: 2 }}>
               Manage TV shows, movies, and episodes. Review content submissions and update show information.
             </p>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              <span style={{ background: 'rgba(102, 126, 234, 0.2)', color: '#667eea', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                245 Shows
-              </span>
-              <span style={{ background: 'rgba(255, 193, 7, 0.2)', color: '#ffc107', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                12 Pending
-              </span>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', position: 'relative', zIndex: 2 }}>
+              
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -407,12 +326,6 @@ function ContentAdminFrontpage() {
               Review and manage new show and episode submissions from publishers. Approve or reject content.
             </p>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              <span style={{ background: 'rgba(255, 152, 0, 0.2)', color: '#ff9800', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                15 Shows
-              </span>
-              <span style={{ background: 'rgba(255, 193, 7, 0.2)', color: '#ffc107', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                32 Episodes
-              </span>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -473,12 +386,6 @@ function ContentAdminFrontpage() {
               Manage actors, directors, and crew information. Update biographies and filmographies.
             </p>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              <span style={{ background: 'rgba(79, 172, 254, 0.2)', color: '#4facfe', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                567 Members
-              </span>
-              <span style={{ background: 'rgba(0, 242, 254, 0.2)', color: '#00f2fe', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                23 New
-              </span>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -539,12 +446,6 @@ function ContentAdminFrontpage() {
               Manage directors and their filmographies. Update director profiles, biographies, and career information.
             </p>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              <span style={{ background: 'rgba(46, 213, 115, 0.2)', color: '#2ed573', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                89 Directors
-              </span>
-              <span style={{ background: 'rgba(0, 184, 148, 0.2)', color: '#00b894', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                5 New
-              </span>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -605,12 +506,6 @@ function ContentAdminFrontpage() {
               Manage awards and recognitions. Add new awards and assign them to shows, actors, and directors.
             </p>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              <span style={{ background: 'rgba(255, 215, 0, 0.2)', color: '#ffd700', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                43 Awards
-              </span>
-              <span style={{ background: 'rgba(255, 179, 71, 0.2)', color: '#ffb347', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                156 Winners
-              </span>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -654,23 +549,23 @@ function ContentAdminFrontpage() {
             gap: '20px'
           }}>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#667eea' }}>245</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#4a90e2' }}>{analytics.totalShows}</p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Total Shows</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ff9800' }}>47</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ff9800' }}>{analytics.pendingSubmissions}</p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Pending Submissions</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#4facfe' }}>567</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#4facfe' }}>{analytics.totalActors}</p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Cast Members</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#2ed573' }}>89</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#2ed573' }}>{analytics.totalDirectors}</p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Directors</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ffd700' }}>43</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ffd700' }}>{analytics.totalAwards}</p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Awards Listed</p>
             </div>
           </div>

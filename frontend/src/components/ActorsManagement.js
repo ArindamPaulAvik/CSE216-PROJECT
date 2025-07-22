@@ -18,7 +18,7 @@ function ActorsManagement() {
 
   useEffect(() => {
     const filtered = actors.filter(actor =>
-      actor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (actor.name && actor.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (actor.biography && actor.biography.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     setFilteredActors(filtered);
@@ -38,20 +38,36 @@ function ActorsManagement() {
   const fetchActors = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching actors with token:', token ? 'Present' : 'Missing');
+      
       const response = await axios.get('http://localhost:5000/actors', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      console.log('API response received:', response.status);
+      console.log('Raw response data:', response.data);
+      
+      if (!response.data || !Array.isArray(response.data)) {
+        throw new Error('Invalid response format');
+      }
+      
       // Transform the data to match the expected format
-      const transformedActors = response.data.map(actor => ({
-        id: actor.ACTOR_ID,
-        name: actor.NAME,
-        picture: actor.PICTURE,
-        biography: actor.BIOGRAPHY || 'No biography available.',
-        showCount: actor.SHOW_COUNT || 0
-      }));
+      const transformedActors = response.data.map(actor => {
+        console.log('Processing actor:', actor);
+        const name = actor.NAME || `${actor.ACTOR_FIRSTNAME || ''} ${actor.ACTOR_LASTNAME || ''}`.trim() || 'Unknown Actor';
+        return {
+          id: actor.ACTOR_ID,
+          name: name,
+          picture: actor.PICTURE,
+          biography: actor.BIOGRAPHY || 'No biography available.',
+          showCount: actor.SHOW_COUNT || 0
+        };
+      });
+      
+      console.log(`Successfully processed ${transformedActors.length} actors`);
+      console.log('First actor sample:', transformedActors[0]);
       
       setActors(transformedActors);
       setFilteredActors(transformedActors);
@@ -59,7 +75,12 @@ function ActorsManagement() {
       setError(null);
     } catch (error) {
       console.error('Error fetching actors:', error);
-      setError('Failed to load actors. Please check your connection and try again.');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      setError(`Failed to load actors: ${error.response?.data?.error || error.message}`);
       setActors([]);
       setFilteredActors([]);
       setLoading(false);
@@ -182,7 +203,29 @@ function ActorsManagement() {
 
         {/* Search Bar and Add Button */}
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', width: '300px' }}>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleAddActor}
+            style={{
+              background: 'linear-gradient(45deg, #2ed573, #00b894)',
+              border: 'none',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexShrink: 0
+            }}
+          >
+            <FiPlus size={18} />
+            Add Actor
+          </motion.button>
+
+          <div style={{ position: 'relative', width: '280px', marginRight: '60px' }}>
             <FiSearch
               size={20}
               style={{
@@ -210,27 +253,6 @@ function ActorsManagement() {
               }}
             />
           </div>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleAddActor}
-            style={{
-              background: 'linear-gradient(45deg, #4facfe, #00f2fe)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 20px',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <FiPlus size={18} />
-            Add Actor
-          </motion.button>
         </div>
       </motion.header>
 
@@ -361,7 +383,7 @@ function ActorsManagement() {
                   color: '#e0e0e0',
                   textAlign: 'center'
                 }}>
-                  {actor.name}
+                  {actor.name || 'Unknown Actor'}
                 </h3>
 
                 <p style={{ 

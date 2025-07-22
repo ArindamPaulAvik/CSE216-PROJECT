@@ -25,8 +25,12 @@ const convertToJpg = async (inputPath, outputPath) => {
 
 exports.getAllActors = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT 
+    console.log('Fetching all actors...');
+    
+    // Try different possible column names for actors
+    const queries = [
+      // Original query with ACTOR_FIRSTNAME and ACTOR_LASTNAME
+      `SELECT 
         a.ACTOR_ID, 
         a.ACTOR_FIRSTNAME, 
         a.ACTOR_LASTNAME, 
@@ -36,20 +40,93 @@ exports.getAllActors = async (req, res) => {
       FROM ACTOR a
       LEFT JOIN SHOW_CAST sc ON a.ACTOR_ID = sc.ACTOR_ID
       GROUP BY a.ACTOR_ID, a.ACTOR_FIRSTNAME, a.ACTOR_LASTNAME, a.PICTURE, a.BIOGRAPHY
-    `);
+      ORDER BY a.ACTOR_ID`,
+      
+      // Alternative query with NAME column
+      `SELECT 
+        a.ACTOR_ID, 
+        a.NAME as ACTOR_FIRSTNAME,
+        '' as ACTOR_LASTNAME,
+        a.PICTURE, 
+        a.BIOGRAPHY,
+        COUNT(sc.SHOW_ID) as SHOW_COUNT
+      FROM ACTOR a
+      LEFT JOIN SHOW_CAST sc ON a.ACTOR_ID = sc.ACTOR_ID
+      GROUP BY a.ACTOR_ID, a.NAME, a.PICTURE, a.BIOGRAPHY
+      ORDER BY a.ACTOR_ID`,
+      
+      // Fallback query - just get all columns
+      `SELECT 
+        a.*,
+        COUNT(sc.SHOW_ID) as SHOW_COUNT
+      FROM ACTOR a
+      LEFT JOIN SHOW_CAST sc ON a.ACTOR_ID = sc.ACTOR_ID
+      GROUP BY a.ACTOR_ID
+      ORDER BY a.ACTOR_ID`
+    ];
 
-    const actors = rows.map(a => ({
-      ACTOR_ID: a.ACTOR_ID,
-      NAME: a.ACTOR_FIRSTNAME + ' ' + a.ACTOR_LASTNAME,
-      PICTURE: a.PICTURE,
-      BIOGRAPHY: a.BIOGRAPHY,
-      SHOW_COUNT: a.SHOW_COUNT
-    }));
+    let rows = [];
+    let queryUsed = 0;
+    
+    for (let i = 0; i < queries.length; i++) {
+      try {
+        console.log(`Trying query ${i + 1}:`, queries[i]);
+        [rows] = await pool.query(queries[i]);
+        queryUsed = i + 1;
+        console.log(`Query ${i + 1} succeeded, found ${rows.length} rows`);
+        break;
+      } catch (queryError) {
+        console.log(`Query ${i + 1} failed:`, queryError.message);
+        if (i === queries.length - 1) {
+          throw queryError;
+        }
+      }
+    }
 
+    console.log('Raw database rows:', JSON.stringify(rows, null, 2));
+    console.log(`Used query ${queryUsed}`);
+
+    if (rows.length === 0) {
+      console.log('No actors found in database');
+      return res.json([]);
+    }
+
+    const actors = rows.map(a => {
+      // Handle different possible column structures
+      let firstName = a.ACTOR_FIRSTNAME || a.NAME || '';
+      let lastName = a.ACTOR_LASTNAME || '';
+      
+      // If we have a single NAME field, try to split it
+      if (!firstName && !lastName && a.NAME) {
+        const nameParts = a.NAME.split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
+      const name = `${firstName} ${lastName}`.trim() || 'Unknown Actor';
+      
+      console.log(`Processing actor ID ${a.ACTOR_ID}:`);
+      console.log(`  - FirstName: "${firstName}"`);
+      console.log(`  - LastName: "${lastName}"`);
+      console.log(`  - Combined Name: "${name}"`);
+      console.log(`  - Picture: "${a.PICTURE}"`);
+      
+      return {
+        ACTOR_ID: a.ACTOR_ID,
+        NAME: name,
+        ACTOR_FIRSTNAME: firstName,
+        ACTOR_LASTNAME: lastName,
+        PICTURE: a.PICTURE,
+        BIOGRAPHY: a.BIOGRAPHY,
+        SHOW_COUNT: a.SHOW_COUNT || 0
+      };
+    });
+
+    console.log('Final actors response:', JSON.stringify(actors, null, 2));
     res.json(actors);
   } catch (err) {
     console.error('Error fetching actors:', err);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error: ' + err.message });
   }
 };
 

@@ -18,7 +18,6 @@ function EditShow() {
     releaseDate: '',
     rating: '',
     duration: '',
-    season: '',
     thumbnail: '',
     banner: '',
     categoryId: '',
@@ -31,6 +30,14 @@ function EditShow() {
   const [publishers, setPublishers] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [ageRestrictions, setAgeRestrictions] = useState([]);
+  const [allGenres, setAllGenres] = useState([]);
+  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [allActors, setAllActors] = useState([]);
+  const [selectedCast, setSelectedCast] = useState([]);
+  const [showActorDropdown, setShowActorDropdown] = useState(false);
+  const [allDirectors, setAllDirectors] = useState([]);
+  const [selectedDirectors, setSelectedDirectors] = useState([]);
+  const [showDirectorDropdown, setShowDirectorDropdown] = useState(false);
   const [episodes, setEpisodes] = useState([]);
   const [selectedEpisodeId, setSelectedEpisodeId] = useState('');
   const [selectedEpisode, setSelectedEpisode] = useState(null);
@@ -52,7 +59,29 @@ function EditShow() {
     fetchShowDetails();
     fetchDropdownData();
     fetchEpisodes();
+    fetchGenres();
+    fetchActors();
+    fetchCast();
+    fetchDirectors();
+    fetchSelectedDirectors();
   }, [id]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showActorDropdown && !event.target.closest('.actor-dropdown-container')) {
+        setShowActorDropdown(false);
+      }
+      if (showDirectorDropdown && !event.target.closest('.director-dropdown-container')) {
+        setShowDirectorDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showActorDropdown, showDirectorDropdown]);
 
   const fetchShowDetails = async () => {
     try {
@@ -70,7 +99,6 @@ function EditShow() {
         releaseDate: show.RELEASE_DATE ? show.RELEASE_DATE.split('T')[0] : '',
         rating: show.RATING || '',
         duration: show.DURATION || '',
-        season: show.SEASON || '',
         thumbnail: show.THUMBNAIL || '',
         banner: show.BANNER || '',
         categoryId: show.CATEGORY_ID || '',
@@ -94,18 +122,20 @@ function EditShow() {
     try {
       const token = localStorage.getItem('token');
       
-      // Fetch categories, publishers, statuses, and age restrictions
-      const [categoriesRes, publishersRes, statusesRes, ageRestrictionsRes] = await Promise.all([
+      // Fetch categories, publishers, statuses, age restrictions, and genres
+      const [categoriesRes, publishersRes, statusesRes, ageRestrictionsRes, genresRes] = await Promise.all([
         axios.get('http://localhost:5000/admin/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get('http://localhost:5000/admin/publishers', { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get('http://localhost:5000/admin/statuses', { headers: { 'Authorization': `Bearer ${token}` } }),
-        axios.get('http://localhost:5000/admin/age-restrictions', { headers: { 'Authorization': `Bearer ${token}` } })
+        axios.get('http://localhost:5000/admin/age-restrictions', { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get('http://localhost:5000/admin/genres', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       setCategories(categoriesRes.data || []);
       setPublishers(publishersRes.data || []);
       setStatuses(statusesRes.data || []);
       setAgeRestrictions(ageRestrictionsRes.data || []);
+      setAllGenres(genresRes.data || []);
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
       // Continue without dropdown data - they'll be empty selects
@@ -160,6 +190,20 @@ function EditShow() {
     }
   };
 
+  const fetchGenres = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/admin/shows/${id}/genres`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      setSelectedGenres(response.data || []);
+    } catch (error) {
+      console.error('Error fetching show genres:', error);
+      setSelectedGenres([]);
+    }
+  };
+
   const handleEpisodeSelect = (episodeId) => {
     setSelectedEpisodeId(episodeId);
     const episode = episodes.find(ep => ep.SHOW_EPISODE_ID.toString() === episodeId);
@@ -199,12 +243,23 @@ function EditShow() {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Save the basic show data
       await axios.put(`http://localhost:5000/admin/shows/${id}`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+
+      // Save the genres
+      await saveGenres();
+
+      // Save the cast
+      await saveCast();
+
+      // Save the directors
+      await saveDirectors();
 
       // Navigate back to show details
       navigate(`/admin-show-details/${id}`);
@@ -251,6 +306,197 @@ function EditShow() {
     const file = e.target.files[0];
     if (file) {
       handleImageUpload(file, type);
+    }
+  };
+
+  // Genre management functions
+  const handleAddGenre = (genreId) => {
+    const genre = allGenres.find(g => g.GENRE_ID === parseInt(genreId));
+    if (genre && !selectedGenres.some(sg => sg.GENRE_ID === genre.GENRE_ID)) {
+      setSelectedGenres([...selectedGenres, genre]);
+    }
+  };
+
+  const handleRemoveGenre = (genreId) => {
+    setSelectedGenres(selectedGenres.filter(g => g.GENRE_ID !== genreId));
+  };
+
+  const saveGenres = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const genreIds = selectedGenres.map(g => g.GENRE_ID);
+      
+      await axios.put(`http://localhost:5000/admin/shows/${id}/genres`, {
+        genreIds: genreIds
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Genres saved successfully');
+    } catch (error) {
+      console.error('Error saving genres:', error);
+      throw error;
+    }
+  };
+
+  const fetchActors = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/actors', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const transformedActors = response.data.map(actor => ({
+        id: actor.ACTOR_ID,
+        name: `${actor.ACTOR_FIRSTNAME} ${actor.ACTOR_LASTNAME}`,
+        picture: actor.PICTURE
+      }));
+      
+      setAllActors(transformedActors);
+    } catch (error) {
+      console.error('Error fetching actors:', error);
+      setAllActors([]);
+    }
+  };
+
+  const fetchCast = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/admin/shows/${id}/cast`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      setSelectedCast(response.data || []);
+    } catch (error) {
+      console.error('Error fetching show cast:', error);
+      setSelectedCast([]);
+    }
+  };
+
+  const handleAddCast = (actorId) => {
+    const actor = allActors.find(a => a.id === parseInt(actorId));
+    if (actor && !selectedCast.find(c => c.ACTOR_ID === actor.id)) {
+      const newCastMember = {
+        ACTOR_ID: actor.id,
+        NAME: actor.name,
+        PICTURE: actor.picture,
+        ROLE_NAME: '',
+        ROLE_DESCRIPTION: ''
+      };
+      setSelectedCast([...selectedCast, newCastMember]);
+    }
+  };
+
+  const handleRemoveCast = (actorId) => {
+    setSelectedCast(selectedCast.filter(c => c.ACTOR_ID !== actorId));
+  };
+
+  const handleCastRoleChange = (actorId, field, value) => {
+    setSelectedCast(selectedCast.map(c => 
+      c.ACTOR_ID === actorId ? { ...c, [field]: value } : c
+    ));
+  };
+
+  const saveCast = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const castData = selectedCast.map(c => ({
+        actorId: c.ACTOR_ID,
+        roleName: c.ROLE_NAME,
+        description: c.ROLE_DESCRIPTION
+      }));
+      
+      await axios.put(`http://localhost:5000/admin/shows/${id}/cast`, {
+        cast: castData
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Cast saved successfully');
+    } catch (error) {
+      console.error('Error saving cast:', error);
+      throw error;
+    }
+  };
+
+  // Director management functions
+  const fetchDirectors = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/directors', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const transformedDirectors = response.data.map(director => ({
+        id: director.DIRECTOR_ID,
+        name: `${director.DIRECTOR_FIRSTNAME} ${director.DIRECTOR_LASTNAME}`,
+        picture: director.PICTURE
+      }));
+      
+      setAllDirectors(transformedDirectors);
+    } catch (error) {
+      console.error('Error fetching directors:', error);
+      setAllDirectors([]);
+    }
+  };
+
+  const fetchSelectedDirectors = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/admin/shows/${id}/directors`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      setSelectedDirectors(response.data || []);
+    } catch (error) {
+      console.error('Error fetching show directors:', error);
+      setSelectedDirectors([]);
+    }
+  };
+
+  const handleAddDirector = (directorId) => {
+    const director = allDirectors.find(d => d.id === parseInt(directorId));
+    if (director && !selectedDirectors.find(d => d.DIRECTOR_ID === director.id)) {
+      const newDirectorMember = {
+        DIRECTOR_ID: director.id,
+        NAME: director.name,
+        PICTURE: director.picture,
+        ROLE_NAME: '',
+        DESCRIPTION: ''
+      };
+      setSelectedDirectors([...selectedDirectors, newDirectorMember]);
+    }
+  };
+
+  const handleRemoveDirector = (directorId) => {
+    setSelectedDirectors(selectedDirectors.filter(d => d.DIRECTOR_ID !== directorId));
+  };
+
+  const handleDirectorRoleChange = (directorId, field, value) => {
+    setSelectedDirectors(selectedDirectors.map(d => 
+      d.DIRECTOR_ID === directorId ? { ...d, [field]: value } : d
+    ));
+  };
+
+  const saveDirectors = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const directorsData = selectedDirectors.map(d => ({
+        directorId: d.DIRECTOR_ID,
+        roleName: d.ROLE_NAME,
+        description: d.DESCRIPTION
+      }));
+      
+      await axios.put(`http://localhost:5000/admin/shows/${id}/directors`, {
+        directors: directorsData
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Directors saved successfully');
+    } catch (error) {
+      console.error('Error saving directors:', error);
+      throw error;
     }
   };
 
@@ -480,27 +726,6 @@ function EditShow() {
                   min="0"
                   max="10"
                   step="0.1"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '8px',
-                    color: 'white',
-                    fontSize: '16px',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: 'white' }}>Season</label>
-                <input
-                  type="number"
-                  name="season"
-                  value={formData.season}
-                  onChange={handleInputChange}
-                  min="1"
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -774,6 +999,564 @@ function EditShow() {
                   ))}
                 </select>
               </div>
+
+              {/* Genres Section */}
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: 'white' }}>Genres</label>
+                
+                {/* Genre Dropdown */}
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleAddGenre(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    fontSize: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    outline: 'none',
+                    marginBottom: '15px'
+                  }}
+                >
+                  <option value="" style={{ background: '#333', color: 'white' }}>Add Genre</option>
+                  {allGenres
+                    .filter(genre => !selectedGenres.some(sg => sg.GENRE_ID === genre.GENRE_ID))
+                    .map(genre => (
+                    <option key={genre.GENRE_ID} value={genre.GENRE_ID} style={{ background: '#333', color: 'white' }}>
+                      {genre.GENRE_NAME}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Selected Genres */}
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: '10px',
+                  minHeight: '50px',
+                  padding: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.05)'
+                }}>
+                  {selectedGenres.length === 0 ? (
+                    <span style={{ color: 'rgba(255, 255, 255, 0.5)', alignSelf: 'center' }}>
+                      No genres selected
+                    </span>
+                  ) : (
+                    selectedGenres.map(genre => (
+                      <span
+                        key={genre.GENRE_ID}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: 'rgba(74, 144, 226, 0.8)',
+                          color: 'white',
+                          padding: '8px 12px',
+                          borderRadius: '20px',
+                          fontSize: '14px',
+                          fontWeight: '500'
+                        }}
+                      >
+                        {genre.GENRE_NAME}
+                        <FiX
+                          style={{ 
+                            cursor: 'pointer', 
+                            fontSize: '16px',
+                            opacity: 0.8
+                          }}
+                          onClick={() => handleRemoveGenre(genre.GENRE_ID)}
+                          onMouseEnter={(e) => e.target.style.opacity = 1}
+                          onMouseLeave={(e) => e.target.style.opacity = 0.8}
+                        />
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cast Management Section */}
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: 'white' }}>Cast Management</h2>
+            
+            {/* Actor Dropdown */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: 'white' }}>Add Actor</label>
+              
+              {/* Custom Dropdown */}
+              <div style={{ position: 'relative' }} className="actor-dropdown-container">
+                <button
+                  type="button"
+                  onClick={() => setShowActorDropdown(!showActorDropdown)}
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    fontSize: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  Select Actor to Add
+                  <span style={{ transform: showActorDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </button>
+
+                {showActorDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    background: 'rgba(51, 51, 51, 0.95)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '10px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    marginTop: '5px',
+                    boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)'
+                  }}>
+                    {allActors
+                      .filter(actor => !selectedCast.some(c => c.ACTOR_ID === actor.id))
+                      .map(actor => (
+                      <div
+                        key={actor.id}
+                        onClick={() => {
+                          handleAddCast(actor.id);
+                          setShowActorDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 15px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      >
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          flexShrink: 0
+                        }}>
+                          <img
+                            src={actor.picture ? `/actors/${actor.picture}` : '/actors/placeholder.jpg'}
+                            alt={actor.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.src = '/actors/placeholder.jpg';
+                            }}
+                          />
+                        </div>
+                        <span style={{ color: 'white', fontSize: '14px' }}>
+                          {actor.name}
+                        </span>
+                      </div>
+                    ))}
+                    
+                    {allActors.filter(actor => !selectedCast.some(c => c.ACTOR_ID === actor.id)).length === 0 && (
+                      <div style={{
+                        padding: '15px',
+                        textAlign: 'center',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: '14px'
+                      }}>
+                        No actors available to add
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Cast List */}
+            <div style={{ 
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              padding: '20px',
+              minHeight: '100px'
+            }}>
+              {selectedCast.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.5)', 
+                  padding: '40px 0' 
+                }}>
+                  No cast members added yet
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: '15px' }}>
+                  {selectedCast.map(castMember => (
+                    <div
+                      key={castMember.ACTOR_ID}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '60px 200px 1fr 1fr 40px',
+                        gap: '15px',
+                        alignItems: 'center',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        padding: '15px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      {/* Actor Photo */}
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        background: 'rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <img
+                          src={castMember.PICTURE ? `/actors/${castMember.PICTURE}` : '/actors/placeholder.jpg'}
+                          alt={castMember.NAME}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            e.target.src = '/actors/placeholder.jpg';
+                          }}
+                        />
+                      </div>
+
+                      {/* Actor Name */}
+                      <div style={{ color: 'white', fontWeight: '600' }}>
+                        {castMember.NAME}
+                      </div>
+
+                      {/* Role Name Input */}
+                      <input
+                        type="text"
+                        placeholder="Role/Character name"
+                        value={castMember.ROLE_NAME}
+                        onChange={(e) => handleCastRoleChange(castMember.ACTOR_ID, 'ROLE_NAME', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          fontSize: '14px',
+                          outline: 'none'
+                        }}
+                      />
+
+                      {/* Role Description Input */}
+                      <input
+                        type="text"
+                        placeholder="Role description (optional)"
+                        value={castMember.ROLE_DESCRIPTION}
+                        onChange={(e) => handleCastRoleChange(castMember.ACTOR_ID, 'ROLE_DESCRIPTION', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          fontSize: '14px',
+                          outline: 'none'
+                        }}
+                      />
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCast(castMember.ACTOR_ID)}
+                        style={{
+                          background: 'rgba(255, 71, 87, 0.8)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(255, 71, 87, 1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'rgba(255, 71, 87, 0.8)'}
+                      >
+                        <FiX size={16} color="white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.form>
+
+        {/* Director Management Section */}
+        <motion.form
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '20px',
+            padding: '40px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            marginTop: '40px'
+          }}
+        >
+          {/* Director Management Section */}
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: 'white' }}>Director Management</h2>
+            
+            {/* Director Dropdown */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: 'white' }}>Add Director</label>
+              
+              {/* Custom Dropdown */}
+              <div style={{ position: 'relative' }} className="director-dropdown-container">
+                <button
+                  type="button"
+                  onClick={() => setShowDirectorDropdown(!showDirectorDropdown)}
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    fontSize: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  Select Director to Add
+                  <span style={{ transform: showDirectorDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </button>
+
+                {showDirectorDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    background: 'rgba(51, 51, 51, 0.95)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '10px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    marginTop: '5px',
+                    boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)'
+                  }}>
+                    {allDirectors
+                      .filter(director => !selectedDirectors.some(d => d.DIRECTOR_ID === director.id))
+                      .map(director => (
+                      <div
+                        key={director.id}
+                        onClick={() => {
+                          handleAddDirector(director.id);
+                          setShowDirectorDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 15px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      >
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          flexShrink: 0
+                        }}>
+                          <img
+                            src={director.picture ? `/directors/${director.picture}` : '/directors/placeholder.jpg'}
+                            alt={director.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.src = '/directors/placeholder.jpg';
+                            }}
+                          />
+                        </div>
+                        <span style={{ color: 'white', fontSize: '14px' }}>
+                          {director.name}
+                        </span>
+                      </div>
+                    ))}
+                    
+                    {allDirectors.filter(director => !selectedDirectors.some(d => d.DIRECTOR_ID === director.id)).length === 0 && (
+                      <div style={{
+                        padding: '15px',
+                        textAlign: 'center',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: '14px'
+                      }}>
+                        No directors available to add
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Selected Directors List */}
+            <div style={{ marginTop: '20px' }}>
+              <h3 style={{ color: 'white', marginBottom: '15px', fontSize: '1.1rem' }}>Selected Directors</h3>
+              
+              {selectedDirectors.length === 0 ? (
+                <div style={{
+                  padding: '20px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px dashed rgba(255, 255, 255, 0.2)',
+                  textAlign: 'center',
+                  color: 'rgba(255, 255, 255, 0.6)'
+                }}>
+                  No directors selected. Add directors using the dropdown above.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {selectedDirectors.map((directorMember, index) => (
+                    <div
+                      key={`${directorMember.DIRECTOR_ID}-${index}`}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '60px 1fr 1fr 1fr auto',
+                        gap: '15px',
+                        alignItems: 'center',
+                        padding: '15px',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      {/* Director Image */}
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        background: 'rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <img
+                          src={directorMember.PICTURE ? `/directors/${directorMember.PICTURE}` : '/directors/placeholder.jpg'}
+                          alt={directorMember.NAME}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            e.target.src = '/directors/placeholder.jpg';
+                          }}
+                        />
+                      </div>
+
+                      {/* Director Name */}
+                      <div style={{ color: 'white', fontWeight: '600' }}>
+                        {directorMember.NAME}
+                      </div>
+
+                      {/* Role Name Input */}
+                      <input
+                        type="text"
+                        placeholder="Role/Position (e.g., Director, Producer)"
+                        value={directorMember.ROLE_NAME}
+                        onChange={(e) => handleDirectorRoleChange(directorMember.DIRECTOR_ID, 'ROLE_NAME', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          fontSize: '14px',
+                          outline: 'none'
+                        }}
+                      />
+
+                      {/* Description Input */}
+                      <input
+                        type="text"
+                        placeholder="Description (optional)"
+                        value={directorMember.DESCRIPTION}
+                        onChange={(e) => handleDirectorRoleChange(directorMember.DIRECTOR_ID, 'DESCRIPTION', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          fontSize: '14px',
+                          outline: 'none'
+                        }}
+                      />
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDirector(directorMember.DIRECTOR_ID)}
+                        style={{
+                          background: 'rgba(255, 71, 87, 0.8)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(255, 71, 87, 1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'rgba(255, 71, 87, 0.8)'}
+                      >
+                        <FiX size={16} color="white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </motion.form>

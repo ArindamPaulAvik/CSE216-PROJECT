@@ -307,3 +307,250 @@ exports.uploadBanner = async (req, res) => {
     res.status(500).json({ error: 'Failed to upload banner' });
   }
 };
+
+// Get all genres with their IDs
+exports.getAllGenres = async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT GENRE_ID, GENRE_NAME FROM GENRE ORDER BY GENRE_NAME');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching genres:', err);
+    res.status(500).json({ error: 'Failed to fetch genres' });
+  }
+};
+
+// Get genres for a specific show
+exports.getShowGenres = async (req, res) => {
+  const showId = req.params.id;
+  
+  try {
+    const [rows] = await pool.query(`
+      SELECT g.GENRE_ID, g.GENRE_NAME
+      FROM SHOW_GENRE sg
+      JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      WHERE sg.SHOW_ID = ?
+      ORDER BY g.GENRE_NAME
+    `, [showId]);
+    
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching show genres:', err);
+    res.status(500).json({ error: 'Failed to fetch show genres' });
+  }
+};
+
+// Update show genres
+exports.updateShowGenres = async (req, res) => {
+  const showId = req.params.id;
+  const { genreIds } = req.body;
+  
+  try {
+    // Start a transaction
+    await pool.query('START TRANSACTION');
+    
+    // Delete all existing genre associations for this show
+    await pool.query('DELETE FROM SHOW_GENRE WHERE SHOW_ID = ?', [showId]);
+    
+    // Insert new genre associations
+    if (genreIds && genreIds.length > 0) {
+      const values = genreIds.map(genreId => [showId, genreId]);
+      await pool.query(
+        'INSERT INTO SHOW_GENRE (SHOW_ID, GENRE_ID) VALUES ?',
+        [values]
+      );
+    }
+    
+    // Commit the transaction
+    await pool.query('COMMIT');
+    
+    res.json({ message: 'Show genres updated successfully' });
+  } catch (err) {
+    // Rollback on error
+    await pool.query('ROLLBACK');
+    console.error('Error updating show genres:', err);
+    res.status(500).json({ error: 'Failed to update show genres' });
+  }
+};
+
+// Get dashboard analytics
+exports.getDashboardAnalytics = async (req, res) => {
+  try {
+    // Get total shows count
+    const [showsCount] = await pool.query('SELECT COUNT(*) as total FROM `SHOW`');
+    
+    // Get pending submissions count
+    const [pendingSubmissions] = await pool.query(`
+      SELECT COUNT(*) as total 
+      FROM SUBMISSION 
+      WHERE VERDICT = 'PENDING' OR VERDICT IS NULL
+    `);
+    
+    // Get total actors count
+    const [actorsCount] = await pool.query('SELECT COUNT(*) as total FROM ACTOR');
+    
+    // Get total directors count
+    const [directorsCount] = await pool.query('SELECT COUNT(*) as total FROM DIRECTOR');
+    
+    // Get total awards count
+    const [awardsCount] = await pool.query('SELECT COUNT(*) as total FROM AWARD');
+    
+    // Get approved submissions count
+    const [approvedSubmissions] = await pool.query(`
+      SELECT COUNT(*) as total 
+      FROM SUBMISSION 
+      WHERE VERDICT = 'APPROVED'
+    `);
+    
+    // Get rejected submissions count
+    const [rejectedSubmissions] = await pool.query(`
+      SELECT COUNT(*) as total 
+      FROM SUBMISSION 
+      WHERE VERDICT = 'REJECTED'
+    `);
+    
+    // Get shows by category for additional stats
+    const [showsByCategory] = await pool.query(`
+      SELECT c.CATEGORY_NAME, COUNT(s.SHOW_ID) as count
+      FROM CATEGORY c
+      LEFT JOIN \`SHOW\` s ON c.CATEGORY_ID = s.CATEGORY_ID
+      GROUP BY c.CATEGORY_ID, c.CATEGORY_NAME
+    `);
+    
+    const analytics = {
+      totalShows: showsCount[0].total,
+      pendingSubmissions: pendingSubmissions[0].total,
+      approvedSubmissions: approvedSubmissions[0].total,
+      rejectedSubmissions: rejectedSubmissions[0].total,
+      totalSubmissions: pendingSubmissions[0].total + approvedSubmissions[0].total + rejectedSubmissions[0].total,
+      totalActors: actorsCount[0].total,
+      totalDirectors: directorsCount[0].total,
+      totalAwards: awardsCount[0].total,
+      showsByCategory: showsByCategory
+    };
+    
+    res.json(analytics);
+  } catch (err) {
+    console.error('Error fetching dashboard analytics:', err);
+    res.status(500).json({ error: 'Failed to fetch dashboard analytics' });
+  }
+};
+
+// Get show cast
+exports.getShowCast = async (req, res) => {
+  const showId = req.params.id;
+  
+  try {
+    const [castRows] = await pool.query(`
+      SELECT a.ACTOR_ID,
+             CONCAT(a.ACTOR_FIRSTNAME, ' ', a.ACTOR_LASTNAME) as NAME,
+             a.PICTURE,
+             sc.ROLE_NAME,
+             sc.DESCRIPTION as ROLE_DESCRIPTION
+      FROM SHOW_CAST sc
+      JOIN ACTOR a ON sc.ACTOR_ID = a.ACTOR_ID
+      WHERE sc.SHOW_ID = ?
+      ORDER BY sc.ROLE_NAME
+    `, [showId]);
+    
+    res.json(castRows);
+  } catch (err) {
+    console.error('Error fetching show cast:', err);
+    res.status(500).json({ error: 'Failed to fetch show cast' });
+  }
+};
+
+// Update show cast
+exports.updateShowCast = async (req, res) => {
+  const showId = req.params.id;
+  const { cast } = req.body; // Expected format: [{ actorId, roleName, description }]
+  
+  try {
+    // Begin transaction
+    await pool.query('START TRANSACTION');
+    
+    // Delete existing cast for this show
+    await pool.query('DELETE FROM SHOW_CAST WHERE SHOW_ID = ?', [showId]);
+    
+    // Insert new cast members
+    if (cast && cast.length > 0) {
+      const values = cast.map(member => [showId, member.actorId, member.roleName || '', member.description || '']);
+      const placeholders = cast.map(() => '(?, ?, ?, ?)').join(', ');
+      
+      await pool.query(
+        `INSERT INTO SHOW_CAST (SHOW_ID, ACTOR_ID, ROLE_NAME, DESCRIPTION) VALUES ${placeholders}`,
+        values.flat()
+      );
+    }
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    res.json({ message: 'Show cast updated successfully' });
+  } catch (err) {
+    // Rollback transaction on error
+    await pool.query('ROLLBACK');
+    console.error('Error updating show cast:', err);
+    res.status(500).json({ error: 'Failed to update show cast' });
+  }
+};
+
+// Get show directors
+exports.getShowDirectors = async (req, res) => {
+  const showId = req.params.id;
+  
+  try {
+    const [directorRows] = await pool.query(`
+      SELECT 
+        sd.DIRECTOR_ID,
+        d.DIRECTOR_FIRSTNAME,
+        d.DIRECTOR_LASTNAME,
+        d.PICTURE,
+        sd.ROLE_NAME,
+        sd.DESCRIPTION
+      FROM SHOW_DIRECTOR sd
+      JOIN DIRECTOR d ON sd.DIRECTOR_ID = d.DIRECTOR_ID
+      WHERE sd.SHOW_ID = ?
+      ORDER BY sd.ROLE_NAME
+    `, [showId]);
+    
+    res.json(directorRows);
+  } catch (err) {
+    console.error('Error fetching show directors:', err);
+    res.status(500).json({ error: 'Failed to fetch show directors' });
+  }
+};
+
+// Update show directors
+exports.updateShowDirectors = async (req, res) => {
+  const showId = req.params.id;
+  const { directors } = req.body; // Expected format: [{ directorId, roleName, description }]
+  
+  try {
+    // Begin transaction
+    await pool.query('START TRANSACTION');
+    
+    // Delete existing directors for this show
+    await pool.query('DELETE FROM SHOW_DIRECTOR WHERE SHOW_ID = ?', [showId]);
+    
+    // Insert new directors
+    if (directors && directors.length > 0) {
+      const values = directors.map(member => [showId, member.directorId, member.roleName || '', member.description || '']);
+      const placeholders = directors.map(() => '(?, ?, ?, ?)').join(', ');
+      
+      await pool.query(
+        `INSERT INTO SHOW_DIRECTOR (SHOW_ID, DIRECTOR_ID, ROLE_NAME, DESCRIPTION) VALUES ${placeholders}`,
+        values.flat()
+      );
+    }
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    res.json({ message: 'Show directors updated successfully' });
+  } catch (err) {
+    // Rollback transaction on error
+    await pool.query('ROLLBACK');
+    console.error('Error updating show directors:', err);
+    res.status(500).json({ error: 'Failed to update show directors' });
+  }
+};
