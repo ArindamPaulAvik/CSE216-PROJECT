@@ -56,3 +56,29 @@ exports.getEpisodesByShow = async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 };
+
+exports.updateEpisode = async (req, res) => {
+  const episodeId = req.params.episodeId;
+  const { title, description, duration, videoUrl } = req.body;
+
+  try {
+    const [result] = await pool.query(`
+      UPDATE SHOW_EPISODE 
+      SET 
+        SHOW_EPISODE_TITLE = ?,
+        SHOW_EPISODE_DESCRIPTION = ?,
+        SHOW_EPISODE_DURATION = ?,
+        VIDEO_URL = ?
+      WHERE SHOW_EPISODE_ID = ?
+    `, [title, description, duration, videoUrl, episodeId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Episode not found' });
+    }
+
+    res.json({ message: 'Episode updated successfully' });
+  } catch (err) {
+    console.error('Error updating episode:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+};

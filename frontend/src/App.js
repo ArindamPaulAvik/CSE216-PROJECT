@@ -14,6 +14,19 @@ import MarketingAdminFrontpage from './components/MarketingAdminFrontpage';
 import UserProfile from './components/UserProfile';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
+import ShowsManagement from './components/ShowsManagement';
+import AdminShowDetails from './components/AdminShowDetails';
+import EditShow from './components/EditShow';
+import ActorsManagement from './components/ActorsManagement';
+import AdminActorDetails from './components/AdminActorDetails';
+import EditActor from './components/EditActor';
+import DirectorsManagement from './components/DirectorsManagement';
+import AdminDirectorDetails from './components/AdminDirectorDetails';
+import EditDirector from './components/EditDirector';
+import AwardsManagement from './components/AwardsManagement';
+import AdminAwardDetails from './components/AdminAwardDetails';
+import EditAward from './components/EditAward';
+import SubmissionsManagement from './components/SubmissionsManagement';
 
 function App() {
   return (
@@ -36,6 +49,21 @@ function App() {
           <Route path="/director/:id" element={React.createElement(require('./components/DirectorDetailPage').default)} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/shows-management" element={<ShowsManagement />} />
+          <Route path="/admin-show-details/:id" element={<AdminShowDetails />} />
+          <Route path="/edit-show/:id" element={<EditShow />} />
+          <Route path="/actors-management" element={<ActorsManagement />} />
+          <Route path="/admin-actor-details/:id" element={<AdminActorDetails />} />
+          <Route path="/edit-actor/:id" element={<EditActor />} />
+          <Route path="/directors-management" element={<DirectorsManagement />} />
+          <Route path="/admin-director-details/:id" element={<AdminDirectorDetails />} />
+          <Route path="/edit-director/:id" element={<EditDirector />} />
+          <Route path="/add-actor" element={<EditActor />} />
+          <Route path="/awards-management" element={<AwardsManagement />} />
+          <Route path="/admin-award-details/:id" element={<AdminAwardDetails />} />
+          <Route path="/edit-award/:id" element={<EditAward />} />
+          <Route path="/add-award" element={<EditAward />} />
+          <Route path="/submissions-management" element={<SubmissionsManagement />} />
         </Routes>
       </div>
     </Router>

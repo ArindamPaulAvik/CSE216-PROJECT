@@ -8,10 +8,18 @@ const fs = require('fs');
 const app = express();
 const port = 5000;
 const { searchShows } = require('./controllers/searchController');
-const { uploadPath } = require('./config/multerConfig');
+const { uploadPath, actorUploadPath, directorUploadPath } = require('./config/multerConfig');
 
-// Ensure upload directory exists
+// Define show image paths
+const showThumbnailPath = path.join(__dirname, '../frontend/public/shows');
+const showBannerPath = path.join(__dirname, '../frontend/public/banners');
+
+// Ensure upload directories exist
 if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+if (!fs.existsSync(actorUploadPath)) fs.mkdirSync(actorUploadPath, { recursive: true });
+if (!fs.existsSync(directorUploadPath)) fs.mkdirSync(directorUploadPath, { recursive: true });
+if (!fs.existsSync(showThumbnailPath)) fs.mkdirSync(showThumbnailPath, { recursive: true });
+if (!fs.existsSync(showBannerPath)) fs.mkdirSync(showBannerPath, { recursive: true });
 
 // Middleware
 app.use(cors());
@@ -29,8 +37,10 @@ app.use('/search', require('./routes/search'));
 app.use('/comments', require('./routes/comments'));
 app.use('/directors', require('./routes/directors'));
 app.use('/actors', require('./routes/actors'));
+app.use('/admin', require('./routes/admin'));
 app.use('/awards', require('./routes/awards'));
 app.use('/violations', require('./routes/violations'));
+app.use('/api/submissions', require('./routes/submissions'));
 app.use(require('./routes/notifications'));
 
 app.use(require('./routes/episodes'));

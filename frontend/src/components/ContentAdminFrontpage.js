@@ -50,6 +50,14 @@ function ContentAdminFrontpage() {
     navigate('/admin-profile');
   };
 
+  const handleManageShows = () => {
+    navigate('/shows-management');
+  };
+
+  const handleContentAdmin = () => {
+    navigate('/content-admin-frontpage');
+  };
+
   if (!adminData) {
     return (
       <div style={{
@@ -290,8 +298,8 @@ function ContentAdminFrontpage() {
           transition={{ delay: 0.2 }}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '30px',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '20px',
             marginBottom: '40px'
           }}
         >
@@ -343,6 +351,7 @@ function ContentAdminFrontpage() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleManageShows}
               style={{
                 background: 'linear-gradient(45deg, #667eea, #764ba2)',
                 border: 'none',
@@ -360,7 +369,7 @@ function ContentAdminFrontpage() {
             </motion.button>
           </motion.div>
 
-          {/* Content Moderation Card */}
+          {/* Submissions Card */}
           <motion.div
             whileHover={{ scale: 1.02, rotateY: 2 }}
             style={{
@@ -379,37 +388,38 @@ function ContentAdminFrontpage() {
               right: 0,
               width: '100px',
               height: '100px',
-              background: 'linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%)',
+              background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%)',
               borderRadius: '50%',
               transform: 'translate(30px, -30px)'
             }} />
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
               <div style={{
-                background: 'linear-gradient(45deg, #f093fb, #f5576c)',
+                background: 'linear-gradient(45deg, #ff9800, #ffc107)',
                 borderRadius: '12px',
                 padding: '12px',
                 marginRight: '15px'
               }}>
                 <FiEdit3 size={24} style={{ color: 'white' }} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Content Moderation</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Submissions</h3>
             </div>
             <p style={{ opacity: 0.8, marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              Review and moderate user-generated content including comments, reviews, and reports.
+              Review and manage new show and episode submissions from publishers. Approve or reject content.
             </p>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-              <span style={{ background: 'rgba(240, 147, 251, 0.2)', color: '#f093fb', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                89 Reviews
+              <span style={{ background: 'rgba(255, 152, 0, 0.2)', color: '#ff9800', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                15 Shows
               </span>
-              <span style={{ background: 'rgba(255, 87, 87, 0.2)', color: '#ff5757', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                7 Reports
+              <span style={{ background: 'rgba(255, 193, 7, 0.2)', color: '#ffc107', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                32 Episodes
               </span>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/submissions-management')}
               style={{
-                background: 'linear-gradient(45deg, #f093fb, #f5576c)',
+                background: 'linear-gradient(45deg, #ff9800, #ffc107)',
                 border: 'none',
                 color: 'white',
                 padding: '12px 24px',
@@ -421,7 +431,7 @@ function ContentAdminFrontpage() {
                 width: '100%'
               }}
             >
-              Moderate Content
+              Review Submissions
             </motion.button>
           </motion.div>
 
@@ -473,7 +483,7 @@ function ContentAdminFrontpage() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/actors')}
+              onClick={() => navigate('/actors-management')}
               style={{
                 background: 'linear-gradient(45deg, #4facfe, #00f2fe)',
                 border: 'none',
@@ -488,6 +498,72 @@ function ContentAdminFrontpage() {
               }}
             >
               Manage Cast
+            </motion.button>
+          </motion.div>
+
+          {/* Directors Management Card */}
+          <motion.div
+            whileHover={{ scale: 1.02, rotateY: 2 }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '15px',
+              padding: '30px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100px',
+              height: '100px',
+              background: 'linear-gradient(135deg, rgba(46, 213, 115, 0.1) 0%, rgba(0, 184, 148, 0.1) 100%)',
+              borderRadius: '50%',
+              transform: 'translate(30px, -30px)'
+            }} />
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
+              <div style={{
+                background: 'linear-gradient(45deg, #2ed573, #00b894)',
+                borderRadius: '12px',
+                padding: '12px',
+                marginRight: '15px'
+              }}>
+                <FiUser size={24} style={{ color: 'white' }} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Directors</h3>
+            </div>
+            <p style={{ opacity: 0.8, marginBottom: '20px', position: 'relative', zIndex: 2 }}>
+              Manage directors and their filmographies. Update director profiles, biographies, and career information.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
+              <span style={{ background: 'rgba(46, 213, 115, 0.2)', color: '#2ed573', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                89 Directors
+              </span>
+              <span style={{ background: 'rgba(0, 184, 148, 0.2)', color: '#00b894', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                5 New
+              </span>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/directors-management')}
+              style={{
+                background: 'linear-gradient(45deg, #2ed573, #00b894)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                position: 'relative',
+                zIndex: 2,
+                width: '100%'
+              }}
+            >
+              Manage Directors
             </motion.button>
           </motion.div>
 
@@ -539,7 +615,7 @@ function ContentAdminFrontpage() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/awards')}
+              onClick={() => navigate('/awards-management')}
               style={{
                 background: 'linear-gradient(45deg, #ffd700, #ffb347)',
                 border: 'none',
@@ -582,12 +658,16 @@ function ContentAdminFrontpage() {
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Total Shows</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#f093fb' }}>89</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Pending Reviews</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ff9800' }}>47</p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Pending Submissions</p>
             </div>
             <div style={{ textAlign: 'center' }}>
               <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#4facfe' }}>567</p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Cast Members</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#2ed573' }}>89</p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Directors</p>
             </div>
             <div style={{ textAlign: 'center' }}>
               <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ffd700' }}>43</p>
