@@ -41,6 +41,10 @@ app.use('/admin', require('./routes/admin'));
 app.use('/awards', require('./routes/awards'));
 app.use('/violations', require('./routes/violations'));
 app.use('/api/submissions', require('./routes/submissions'));
+app.use('/reports', require('./routes/reports'));
+app.use('/faqs', require('./routes/faqs'));
+app.use('/user-management', require('./routes/userManagement'));
+app.use('/customer-care', require('./routes/customerCare'));
 app.use(require('./routes/notifications'));
 
 app.use(require('./routes/episodes'));

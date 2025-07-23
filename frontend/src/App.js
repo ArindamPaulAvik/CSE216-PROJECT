@@ -27,6 +27,12 @@ import AwardsManagement from './components/AwardsManagement';
 import AdminAwardDetails from './components/AdminAwardDetails';
 import EditAward from './components/EditAward';
 import SubmissionsManagement from './components/SubmissionsManagement';
+import ReportsManagement from './components/ReportsManagement';
+import FAQManagement from './components/FAQManagement';
+import SimpleFAQManagement from './components/SimpleFAQManagement';
+import UsersManagement from './components/UsersManagement';
+import UserDetails from './components/UserDetails';
+import CustomerCareRequests from './components/CustomerCareRequests';
 
 function App() {
   return (
@@ -64,6 +70,11 @@ function App() {
           <Route path="/edit-award/:id" element={<EditAward />} />
           <Route path="/add-award" element={<EditAward />} />
           <Route path="/submissions-management" element={<SubmissionsManagement />} />
+          <Route path="/reports-management" element={<ReportsManagement />} />
+          <Route path="/faq-management" element={<FAQManagement />} />
+          <Route path="/users-management" element={<UsersManagement />} />
+          <Route path="/user-details/:id" element={<UserDetails />} />
+          <Route path="/customer-care-requests" element={<CustomerCareRequests />} />
         </Routes>
       </div>
     </Router>

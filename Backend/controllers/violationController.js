@@ -52,7 +52,7 @@ const submitReport = async (req, res) => {
 
     // Insert into REPORT table
     const [reportResult] = await connection.query(
-      'INSERT INTO REPORT (USER_ID, COMMENT_ID, REPORT_TIME, REPORT_TEXT, ADMIN_ID) VALUES (?, ?, NOW(), ?, 3)',
+      'INSERT INTO REPORT (USER_ID, COMMENT_ID, REPORT_TIME, REPORT_TEXT, ADMIN_ID, CHECKED) VALUES (?, ?, NOW(), ?, 3, 0)',
       [userId, commentId, reportText || null]
     );
 

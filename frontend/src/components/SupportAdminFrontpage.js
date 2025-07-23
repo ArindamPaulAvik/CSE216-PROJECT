@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiUser, FiSettings, FiLogOut, FiMessageSquare, FiUsers, FiHelpCircle, FiFlag } from 'react-icons/fi';
+import { FiLogOut, FiMessageSquare, FiUsers, FiHelpCircle, FiFlag } from 'react-icons/fi';
 import axios from 'axios';
 
 function SupportAdminFrontpage() {
   const navigate = useNavigate();
   const [adminData, setAdminData] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [stats, setStats] = useState({
+    openRequests: 0,
+    totalUsers: 0,
+    faqArticles: 0,
+    pendingReports: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -22,7 +28,44 @@ function SupportAdminFrontpage() {
 
     // Fetch admin data
     fetchAdminData();
+    fetchStats();
   }, [navigate]);
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch customer care stats
+      const customerCareResponse = await axios.get('http://localhost:5000/customer-care/admin/stats', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Fetch FAQ count
+      const faqResponse = await axios.get('http://localhost:5000/faqs');
+      
+      // Fetch user count
+      const userResponse = await axios.get('http://localhost:5000/user-management/stats', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Fetch reports count
+      const reportsResponse = await axios.get('http://localhost:5000/reports/undealt', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setStats({
+        openRequests: customerCareResponse.data.open || 0,
+        totalUsers: userResponse.data.totalUsers || 0,
+        faqArticles: faqResponse.data.faqs?.length || 0,
+        pendingReports: reportsResponse.data.length || 0
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // Keep default values if fetch fails
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAdminData = async () => {
     try {
@@ -44,10 +87,6 @@ function SupportAdminFrontpage() {
     localStorage.removeItem('user_type');
     localStorage.removeItem('admin_type');
     navigate('/');
-  };
-
-  const handleProfile = () => {
-    navigate('/admin-profile');
   };
 
   if (!adminData) {
@@ -90,102 +129,26 @@ function SupportAdminFrontpage() {
           <p style={{ margin: '5px 0 0 0', opacity: 0.7 }}>User Support & Help Management</p>
         </div>
         
-        <div style={{ position: 'relative' }}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '50%',
-              width: '50px',
-              height: '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            <FiUser size={20} />
-          </motion.button>
-
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                position: 'absolute',
-                top: '60px',
-                right: '0',
-                background: 'rgba(0, 0, 0, 0.9)',
-                borderRadius: '10px',
-                padding: '15px',
-                minWidth: '200px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <div style={{ marginBottom: '15px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
-                <p style={{ margin: 0, fontWeight: '600' }}>{adminData.name}</p>
-                <p style={{ margin: '5px 0 0 0', fontSize: '14px', opacity: 0.7 }}>{adminData.email}</p>
-                <span style={{ 
-                  background: 'rgba(17, 153, 142, 0.3)', 
-                  color: '#11998e', 
-                  padding: '2px 8px', 
-                  borderRadius: '10px', 
-                  fontSize: '12px',
-                  marginTop: '5px',
-                  display: 'inline-block'
-                }}>
-                  Support Admin
-                </span>
-              </div>
-              
-              <button
-                onClick={handleProfile}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'white',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '10px'
-                }}
-              >
-                <FiSettings size={16} />
-                Profile Settings
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ff4757',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <FiLogOut size={16} />
-                Logout
-              </button>
-            </motion.div>
-          )}
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255, 71, 87, 0.2)',
+            border: '1px solid rgba(255, 71, 87, 0.3)',
+            borderRadius: '10px',
+            padding: '12px 20px',
+            color: '#ff4757',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: '600'
+          }}
+        >
+          <FiLogOut size={16} />
+          Logout
+        </motion.button>
       </motion.header>
 
       {/* Main Content */}
@@ -201,7 +164,7 @@ function SupportAdminFrontpage() {
             marginBottom: '40px'
           }}
         >
-          {/* Support Tickets Card */}
+          {/* View Requests Card */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             style={{
@@ -214,12 +177,14 @@ function SupportAdminFrontpage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
               <FiMessageSquare size={24} style={{ marginRight: '15px', color: '#11998e' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Support Tickets</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>View Requests</h3>
             </div>
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
-              Manage and respond to user support requests
+              View and respond to user customer care requests
             </p>
-            <button style={{
+            <button 
+              onClick={() => navigate('/customer-care-requests')}
+              style={{
               background: 'linear-gradient(45deg, #11998e, #2d1b69)',
               border: 'none',
               color: 'white',
@@ -228,7 +193,7 @@ function SupportAdminFrontpage() {
               cursor: 'pointer',
               fontWeight: '600'
             }}>
-              View Tickets
+              View Requests
             </button>
           </motion.div>
 
@@ -250,7 +215,9 @@ function SupportAdminFrontpage() {
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
               View and manage user accounts and issues
             </p>
-            <button style={{
+            <button 
+              onClick={() => navigate('/users-management')}
+              style={{
               background: 'linear-gradient(45deg, #6c5ce7, #a29bfe)',
               border: 'none',
               color: 'white',
@@ -281,7 +248,9 @@ function SupportAdminFrontpage() {
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
               Create and update frequently asked questions
             </p>
-            <button style={{
+            <button 
+              onClick={() => navigate('/faq-management')}
+              style={{
               background: 'linear-gradient(45deg, #00b894, #00cec9)',
               border: 'none',
               color: 'white',
@@ -312,15 +281,18 @@ function SupportAdminFrontpage() {
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
               Review user reports and content violations
             </p>
-            <button style={{
-              background: 'linear-gradient(45deg, #e17055, #fd79a8)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
+            <button
+              onClick={() => navigate('/reports-management')}
+              style={{
+                background: 'linear-gradient(45deg, #e17055, #fd79a8)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
               View Reports
             </button>
           </motion.div>
@@ -346,19 +318,27 @@ function SupportAdminFrontpage() {
             gap: '20px'
           }}>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#11998e' }}>42</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Open Tickets</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#11998e' }}>
+                {loading ? '...' : stats.openRequests}
+              </p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Open Requests</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#6c5ce7' }}>1,234</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#6c5ce7' }}>
+                {loading ? '...' : stats.totalUsers}
+              </p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Total Users</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#00b894' }}>156</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#00b894' }}>
+                {loading ? '...' : stats.faqArticles}
+              </p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>FAQ Articles</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#e17055' }}>8</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#e17055' }}>
+                {loading ? '...' : stats.pendingReports}
+              </p>
               <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Pending Reports</p>
             </div>
           </div>

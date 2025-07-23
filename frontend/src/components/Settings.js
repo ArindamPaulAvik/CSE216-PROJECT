@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import { FiUser, FiCreditCard, FiSettings, FiSave, FiEye, FiEyeOff, FiCheck, FiX, FiHelpCircle, FiMail, FiPhone, FiMessageSquare } from 'react-icons/fi';
 import axios from 'axios';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const customerCareRef = useRef(null);
+  const userRequestsRef = useRef(null);
   const [activeSection, setActiveSection] = useState('personal');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+  const [highlightedRequestId, setHighlightedRequestId] = useState(null);
 
   // Personal Details State
   const [personalData, setPersonalData] = useState({
@@ -47,53 +51,109 @@ const Settings = () => {
 
   // FAQ State
   const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const [faqData, setFaqData] = useState([]);
 
-  const faqData = [
-    {
-      id: 1,
-      question: "How do I change my password?",
-      answer: "Go to Personal Details section, scroll down to 'Change Password', enter your current password and new password, then click 'Save Changes'."
-    },
-    {
-      id: 2,
-      question: "How do I update my billing information?",
-      answer: "Navigate to the 'Billing & Payment' section on the left menu, update your card details and billing address, then save your changes."
-    },
-    {
-      id: 3,
-      question: "How do I customize my viewing preferences?",
-      answer: "Go to the 'Personalization' section where you can adjust theme settings, autoplay preferences, and subtitle defaults to enhance your viewing experience."
-    },
-    {
-      id: 4,
-      question: "How do I enable/disable notifications?",
-      answer: "In the 'Personalization' section, you can toggle email notifications and push notifications on or off according to your preferences."
-    },
-    {
-      id: 5,
-      question: "I forgot my password. What should I do?",
-      answer: "Please contact our customer support team using the contact form below or call our support hotline. We'll help you reset your password securely."
-    },
-    {
-      id: 6,
-      question: "How do I cancel my subscription?",
-      answer: "To cancel your subscription, please contact our customer support team. We'll process your cancellation request and confirm the details with you."
-    },
-    {
-      id: 7,
-      question: "Can I change my email address?",
-      answer: "Yes, you can update your email address in the 'Personal Details' section. Make sure to verify the new email address when prompted."
-    },
-    {
-      id: 8,
-      question: "How do I enable subtitles by default?",
-      answer: "Go to 'Personalization' → 'Playback' section and toggle on 'Default Subtitles'. This will enable subtitles for all content by default."
-    }
-  ];
+  // Customer Care State
+  const [customerCareData, setCustomerCareData] = useState({
+    subject: '',
+    message: ''
+  });
+  const [userRequests, setUserRequests] = useState([]);
+  const [showRequestForm, setShowRequestForm] = useState(false);
 
   useEffect(() => {
     fetchUserData();
-  }, []);
+    fetchFAQs();
+    fetchUserRequests();
+
+    // Check for customerCare URL parameter
+    const urlParams = new URLSearchParams(location.search);
+    const customerCareParam = urlParams.get('customerCare');
+    const requestId = urlParams.get('requestId');
+
+    if (customerCareParam === 'true') {
+      // Set active section to support (which renders customer care)
+      setActiveSection('support');
+      
+      // Scroll to the user requests section and highlight specific request
+      setTimeout(() => {
+        if (requestId && userRequestsRef.current) {
+          // Scroll to user requests section
+          userRequestsRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+      }, 300);
+      
+      // Highlight specific request if requestId is provided
+      if (requestId) {
+        setHighlightedRequestId(parseInt(requestId));
+        // Remove highlight after 5 seconds
+        setTimeout(() => {
+          setHighlightedRequestId(null);
+        }, 5000);
+      }
+    }
+  }, [location.search]);
+
+  const fetchFAQs = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/faqs');
+      setFaqData(response.data.faqs || []);
+    } catch (error) {
+      console.error('Error fetching FAQs:', error);
+      // Keep empty array if fetch fails
+      setFaqData([]);
+    }
+  };
+
+  const fetchUserRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/customer-care/user/requests', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserRequests(response.data);
+    } catch (error) {
+      console.error('Error fetching user requests:', error);
+      setUserRequests([]);
+    }
+  };
+
+  const handleCustomerCareSubmit = async (e) => {
+    e.preventDefault();
+    if (!customerCareData.subject || !customerCareData.message) {
+      showMessage('Please fill in both subject and message', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/customer-care/user/requests', customerCareData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      showMessage('Your message has been sent successfully!', 'success');
+      setCustomerCareData({ subject: '', message: '' });
+      setShowRequestForm(false);
+      fetchUserRequests(); // Refresh the requests list
+    } catch (error) {
+      console.error('Error sending message:', error);
+      showMessage('Failed to send message. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCustomerCareChange = (e) => {
+    const { name, value } = e.target;
+    setCustomerCareData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const fetchUserData = async () => {
     try {
@@ -515,100 +575,154 @@ const Settings = () => {
   );
 
   const renderCustomerCare = () => (
-    <div className="settings-content">
+    <div className="settings-content" ref={customerCareRef}>
       <div className="settings-header">
         <h2>Customer Care</h2>
         <p>Get help and support from our customer service team</p>
       </div>
 
       <div className="customer-care-sections">
-        {/* Contact Support Section */}
+        {/* Send Message Section */}
         <div className="support-section">
-          <h3>Contact Support</h3>
-          <div className="contact-options">
-            <div className="contact-card">
-              <div className="contact-icon">
-                <FiMail />
-              </div>
-              <div className="contact-info">
-                <h4>Email Support</h4>
-                <p>Get help via email within 24 hours</p>
-                <a href="mailto:support@yourplatform.com" className="contact-link">
-                  support@yourplatform.com
-                </a>
-              </div>
-            </div>
-
-            <div className="contact-card">
-              <div className="contact-icon">
-                <FiPhone />
-              </div>
-              <div className="contact-info">
-                <h4>Phone Support</h4>
-                <p>Speak with our team directly</p>
-                <a href="tel:+1234567890" className="contact-link">
-                  +1 (234) 567-890
-                </a>
-              </div>
-            </div>
-
-            <div className="contact-card">
-              <div className="contact-icon">
-                <FiMessageSquare />
-              </div>
-              <div className="contact-info">
-                <h4>Live Chat</h4>
-                <p>Chat with us in real-time</p>
-                <button className="contact-link chat-button">
-                  Start Chat
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact Form */}
-        <div className="contact-form-section">
-          <h3>Send us a Message</h3>
-          <form className="contact-form">
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Subject</label>
-                <select>
-                  <option value="">Select a topic</option>
-                  <option value="billing">Billing Question</option>
-                  <option value="technical">Technical Issue</option>
-                  <option value="account">Account Problem</option>
-                  <option value="content">Content Request</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Priority</label>
-                <select>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-
-              <div className="form-group full-width">
-                <label>Message</label>
-                <textarea 
-                  rows="5" 
-                  placeholder="Please describe your issue or question in detail..."
-                ></textarea>
-              </div>
-            </div>
-
-            <button type="submit" className="save-button">
-              <FiMail />
-              Send Message
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3>Contact Support</h3>
+            <button 
+              className="save-button"
+              onClick={() => setShowRequestForm(!showRequestForm)}
+              style={{ fontSize: '0.9rem', padding: '8px 16px' }}
+            >
+              <FiMessageSquare />
+              {showRequestForm ? 'Hide Form' : 'Send Message'}
             </button>
-          </form>
+          </div>
+
+          {showRequestForm && (
+            <div className="contact-form-section">
+              <form className="contact-form" onSubmit={handleCustomerCareSubmit}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Subject</label>
+                    <select
+                      name="subject"
+                      value={customerCareData.subject}
+                      onChange={handleCustomerCareChange}
+                      required
+                    >
+                      <option value="">Select a subject...</option>
+                      <option value="Technical Support">Technical Support</option>
+                      <option value="Account Issues">Account Issues</option>
+                      <option value="Bug Report">Bug Report</option>
+                      <option value="Feature Request">Feature Request</option>
+                      <option value="General Inquiry">General Inquiry</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label>Message</label>
+                    <textarea 
+                      name="message"
+                      value={customerCareData.message}
+                      onChange={handleCustomerCareChange}
+                      rows="5" 
+                      placeholder="Please describe your issue or question in detail..."
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="save-button" disabled={loading}>
+                  <FiMail />
+                  {loading ? 'Sending...' : 'Send Message'}
+                </button>
+              </form>
+            </div>
+          )}
         </div>
+
+        {/* User's Previous Requests */}
+<div className="support-section" ref={userRequestsRef}>
+  <h3 style={{ color: 'white' }}>Your Support Requests</h3>
+  {userRequests.length === 0 ? (
+    <div style={{ 
+      padding: '1.5rem', 
+      textAlign: 'center', 
+      background: 'linear-gradient(135deg, rgba(75, 85, 110, 0.9), rgba(77, 64, 105, 0.9))',
+      borderRadius: '0.5rem',
+      color: 'rgba(255, 255, 255, 0.9)',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <FiMessageSquare size={24} style={{ marginBottom: '0.75rem', opacity: 0.7, color: 'white' }} />
+      <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.8)' }}>
+        No support requests yet. Send your first message using the form above.
+      </p>
+    </div>
+  ) : (
+    <div className="requests-list">
+      {userRequests.map((request) => (
+        <div key={request.REQUEST_ID} className="request-item" style={{
+          border: highlightedRequestId === request.REQUEST_ID ? '2px solid rgba(138, 147, 255, 0.8)' : '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '0.5rem',
+          padding: '1rem',
+          marginBottom: '1rem',
+          background: highlightedRequestId === request.REQUEST_ID 
+            ? 'linear-gradient(135deg, rgba(85, 95, 125, 0.95), rgba(128, 112, 160, 0.95))' 
+            : 'linear-gradient(135deg, rgba(75, 85, 110, 0.9), rgba(108, 92, 140, 0.9))',
+          boxShadow: highlightedRequestId === request.REQUEST_ID 
+            ? '0 0 1rem rgba(138, 147, 255, 0.4)' 
+            : '0 0.25rem 0.5rem rgba(0, 0, 0, 0.3)',
+          transition: 'all 0.3s ease'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+            <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{request.SUBJECT}</h4>
+            <span style={{
+              padding: '0.25rem 0.5rem',
+              borderRadius: '0.25rem',
+              fontSize: '0.8rem',
+              fontWeight: 'bold',
+              background: request.STATUS === 'OPEN' ? 'rgba(255, 193, 7, 0.2)' : 
+                        request.STATUS === 'REPLIED' ? 'rgba(13, 202, 240, 0.2)' : 'rgba(25, 135, 84, 0.2)',
+              color: request.STATUS === 'OPEN' ? '#ffc107' : 
+                     request.STATUS === 'REPLIED' ? '#0dcaf0' : '#198754',
+              border: `1px solid ${request.STATUS === 'OPEN' ? '#ffc107' : 
+                                 request.STATUS === 'REPLIED' ? '#0dcaf0' : '#198754'}`
+            }}>
+              {request.STATUS}
+            </span>
+          </div>
+          
+          <p style={{ margin: '0.75rem 0', color: 'rgba(255, 255, 255, 0.85)', lineHeight: '1.5' }}>
+            {request.MESSAGE}
+          </p>
+          
+          <div style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '0.75rem' }}>
+            Sent: {new Date(request.CREATED_AT).toLocaleDateString()} at {new Date(request.CREATED_AT).toLocaleTimeString()}
+          </div>
+
+          {request.ADMIN_REPLY && (
+            <div style={{
+              marginTop: '1rem',
+              padding: '0.75rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderLeft: '4px solid rgba(138, 147, 255, 0.8)',
+              borderRadius: '0 0.25rem 0.25rem 0',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <strong style={{ color: 'rgba(138, 147, 255, 0.9)', display: 'block', marginBottom: '0.5rem' }}>
+                Support Team Reply:
+              </strong>
+              <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.9)', lineHeight: '1.5' }}>
+                {request.ADMIN_REPLY}
+              </p>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
+                Replied: {new Date(request.REPLIED_AT).toLocaleDateString()} at {new Date(request.REPLIED_AT).toLocaleTimeString()}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
       </div>
     </div>
   );
@@ -625,19 +739,19 @@ const Settings = () => {
         <div className="faq-section">
           <div className="faq-list">
             {faqData.map((faq) => (
-              <div key={faq.id} className="faq-item">
+              <div key={faq.FAQ_ID} className="faq-item">
                 <div 
                   className="faq-question"
-                  onClick={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
+                  onClick={() => setExpandedFAQ(expandedFAQ === faq.FAQ_ID ? null : faq.FAQ_ID)}
                 >
-                  <span>{faq.question}</span>
-                  <span className={`faq-arrow ${expandedFAQ === faq.id ? 'expanded' : ''}`}>
+                  <span>{faq.QUESTION}</span>
+                  <span className={`faq-arrow ${expandedFAQ === faq.FAQ_ID ? 'expanded' : ''}`}>
                     ▼
                   </span>
                 </div>
-                {expandedFAQ === faq.id && (
+                {expandedFAQ === faq.FAQ_ID && (
                   <div className="faq-answer">
-                    {faq.answer}
+                    {faq.ANSWER}
                   </div>
                 )}
               </div>

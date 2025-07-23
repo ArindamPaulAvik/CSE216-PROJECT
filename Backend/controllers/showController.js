@@ -504,13 +504,11 @@ exports.getShowDirectors = async (req, res) => {
         sd.DIRECTOR_ID,
         d.DIRECTOR_FIRSTNAME,
         d.DIRECTOR_LASTNAME,
-        d.PICTURE,
-        sd.ROLE_NAME,
-        sd.DESCRIPTION
+        d.PICTURE
       FROM SHOW_DIRECTOR sd
       JOIN DIRECTOR d ON sd.DIRECTOR_ID = d.DIRECTOR_ID
       WHERE sd.SHOW_ID = ?
-      ORDER BY sd.ROLE_NAME
+      ORDER BY d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME
     `, [showId]);
     
     res.json(directorRows);
@@ -523,7 +521,7 @@ exports.getShowDirectors = async (req, res) => {
 // Update show directors
 exports.updateShowDirectors = async (req, res) => {
   const showId = req.params.id;
-  const { directors } = req.body; // Expected format: [{ directorId, roleName, description }]
+  const { directors } = req.body; // Expected format: [{ directorId }]
   
   try {
     // Begin transaction
@@ -534,11 +532,11 @@ exports.updateShowDirectors = async (req, res) => {
     
     // Insert new directors
     if (directors && directors.length > 0) {
-      const values = directors.map(member => [showId, member.directorId, member.roleName || '', member.description || '']);
-      const placeholders = directors.map(() => '(?, ?, ?, ?)').join(', ');
+      const values = directors.map(member => [showId, member.directorId]);
+      const placeholders = directors.map(() => '(?, ?)').join(', ');
       
       await pool.query(
-        `INSERT INTO SHOW_DIRECTOR (SHOW_ID, DIRECTOR_ID, ROLE_NAME, DESCRIPTION) VALUES ${placeholders}`,
+        `INSERT INTO SHOW_DIRECTOR (SHOW_ID, DIRECTOR_ID) VALUES ${placeholders}`,
         values.flat()
       );
     }

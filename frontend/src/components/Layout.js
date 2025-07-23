@@ -519,9 +519,13 @@ useEffect(() => {
           }
         }
       } else if (notification.type === 'admin_notice') {
-        // Navigate to profile or admin section
-        console.log('📢 Admin notice - navigating to profile');
-        navigate('/profile');
+        // Navigate to settings page and scroll to customer care section
+        const requestId = notification.data?.requestId || notification.request_id || notification.REQUEST_ID;
+        if (requestId) {
+          navigate(`/settings?customerCare=true&requestId=${requestId}`);
+        } else {
+          navigate('/settings?customerCare=true');
+        }
       }
     } else {
       console.log('⚠️ No navigation data available for notification');

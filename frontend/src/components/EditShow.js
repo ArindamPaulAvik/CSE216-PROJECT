@@ -447,7 +447,14 @@ function EditShow() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      setSelectedDirectors(response.data || []);
+      // Transform the data to match the expected format
+      const transformedDirectors = response.data.map(director => ({
+        DIRECTOR_ID: director.DIRECTOR_ID,
+        NAME: `${director.DIRECTOR_FIRSTNAME} ${director.DIRECTOR_LASTNAME}`,
+        PICTURE: director.PICTURE
+      }));
+      
+      setSelectedDirectors(transformedDirectors);
     } catch (error) {
       console.error('Error fetching show directors:', error);
       setSelectedDirectors([]);
@@ -460,9 +467,7 @@ function EditShow() {
       const newDirectorMember = {
         DIRECTOR_ID: director.id,
         NAME: director.name,
-        PICTURE: director.picture,
-        ROLE_NAME: '',
-        DESCRIPTION: ''
+        PICTURE: director.picture
       };
       setSelectedDirectors([...selectedDirectors, newDirectorMember]);
     }
@@ -472,19 +477,11 @@ function EditShow() {
     setSelectedDirectors(selectedDirectors.filter(d => d.DIRECTOR_ID !== directorId));
   };
 
-  const handleDirectorRoleChange = (directorId, field, value) => {
-    setSelectedDirectors(selectedDirectors.map(d => 
-      d.DIRECTOR_ID === directorId ? { ...d, [field]: value } : d
-    ));
-  };
-
   const saveDirectors = async () => {
     try {
       const token = localStorage.getItem('token');
       const directorsData = selectedDirectors.map(d => ({
-        directorId: d.DIRECTOR_ID,
-        roleName: d.ROLE_NAME,
-        description: d.DESCRIPTION
+        directorId: d.DIRECTOR_ID
       }));
       
       await axios.put(`http://localhost:5000/admin/shows/${id}/directors`, {
@@ -1463,7 +1460,7 @@ function EditShow() {
                       key={`${directorMember.DIRECTOR_ID}-${index}`}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '60px 1fr 1fr 1fr auto',
+                        gridTemplateColumns: '60px 1fr auto',
                         gap: '15px',
                         alignItems: 'center',
                         padding: '15px',
@@ -1498,40 +1495,6 @@ function EditShow() {
                       <div style={{ color: 'white', fontWeight: '600' }}>
                         {directorMember.NAME}
                       </div>
-
-                      {/* Role Name Input */}
-                      <input
-                        type="text"
-                        placeholder="Role/Position (e.g., Director, Producer)"
-                        value={directorMember.ROLE_NAME}
-                        onChange={(e) => handleDirectorRoleChange(directorMember.DIRECTOR_ID, 'ROLE_NAME', e.target.value)}
-                        style={{
-                          padding: '8px 12px',
-                          background: 'rgba(255, 255, 255, 0.1)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
-                          borderRadius: '6px',
-                          color: 'white',
-                          fontSize: '14px',
-                          outline: 'none'
-                        }}
-                      />
-
-                      {/* Description Input */}
-                      <input
-                        type="text"
-                        placeholder="Description (optional)"
-                        value={directorMember.DESCRIPTION}
-                        onChange={(e) => handleDirectorRoleChange(directorMember.DIRECTOR_ID, 'DESCRIPTION', e.target.value)}
-                        style={{
-                          padding: '8px 12px',
-                          background: 'rgba(255, 255, 255, 0.1)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
-                          borderRadius: '6px',
-                          color: 'white',
-                          fontSize: '14px',
-                          outline: 'none'
-                        }}
-                      />
 
                       {/* Remove Button */}
                       <button
