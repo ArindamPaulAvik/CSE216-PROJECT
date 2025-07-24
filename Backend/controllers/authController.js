@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'your_super_secret_key';
 const saltRounds = 10;
-
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {

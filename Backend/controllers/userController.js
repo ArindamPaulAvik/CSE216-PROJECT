@@ -250,7 +250,7 @@ exports.updatePersonalDetails = async (req, res) => {
 
     // Get user details first
     const [userRows] = await pool.query(`
-      SELECT u.USER_ID, u.PERSON_ID, p.EMAIL, p.PASSWORD
+      SELECT u.USER_ID, u.PERSON_ID, p.EMAIL, p.PASSWORD_HASHED
       FROM PERSON p
       JOIN USER u ON p.PERSON_ID = u.PERSON_ID
       WHERE p.EMAIL = ?
@@ -265,7 +265,7 @@ exports.updatePersonalDetails = async (req, res) => {
     // If password change is requested, verify current password
     if (newPassword && currentPassword) {
       const bcrypt = require('bcrypt');
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.PASSWORD);
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.PASSWORD_HASHED);
       
       if (!isCurrentPasswordValid) {
         return res.status(400).json({ error: 'Current password is incorrect' });
@@ -276,7 +276,7 @@ exports.updatePersonalDetails = async (req, res) => {
       
       // Update password in PERSON table
       await pool.query(`
-        UPDATE PERSON SET PASSWORD = ? WHERE PERSON_ID = ?
+        UPDATE PERSON SET PASSWORD_HASHED = ? WHERE PERSON_ID = ?
       `, [hashedNewPassword, user.PERSON_ID]);
     }
 

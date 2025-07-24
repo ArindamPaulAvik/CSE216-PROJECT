@@ -4,11 +4,11 @@ const pool = require('../db');
 exports.getUserNotifications = async (req, res) => {
   try {
     const userEmail = req.user.email;
-    console.log('🔔 Fetching notifications for user:', userEmail);
+    // Fetching notifications for user: userEmail
     
     // First check if notifications table has any data
     const [allNotifications] = await pool.query('SELECT COUNT(*) as total FROM NOTIFICATIONS');
-    console.log('📊 Total notifications in database:', allNotifications[0].total);
+    // Total notifications in database: allNotifications[0].total
     
     // First get the user ID from email
     const [userRows] = await pool.query(`
@@ -18,25 +18,25 @@ exports.getUserNotifications = async (req, res) => {
       WHERE p.EMAIL = ?
     `, [userEmail]);
 
-    console.log('👤 User query result:', userRows);
+    // User query result: userRows
 
     if (userRows.length === 0) {
-      console.log('❌ User not found for email:', userEmail);
+      // User not found for email: userEmail
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userId = userRows[0].USER_ID;
-    console.log('✅ Found user ID:', userId);
+    // Found user ID: userId
 
     // Check if user has any notification associations
     const [userNotifCount] = await pool.query(`
       SELECT COUNT(*) as count FROM USER_NOTIFICATIONS WHERE USER_ID = ?
     `, [userId]);
-    console.log('📊 User notification associations:', userNotifCount[0].count);
+    // User notification associations: userNotifCount[0].count
 
     // If no associations exist, create some sample ones for this user
     if (userNotifCount[0].count === 0) {
-      console.log('🔧 No user notification associations found, creating sample ones...');
+      // No user notification associations found, creating sample ones...
       
       // Get first 5 notifications
       const [sampleNotifications] = await pool.query('SELECT NOTIF_ID FROM NOTIFICATIONS LIMIT 5');
@@ -48,7 +48,7 @@ exports.getUserNotifications = async (req, res) => {
         `, [userId, notif.NOTIF_ID, Math.random() > 0.5]); // Random read status
       }
       
-      console.log('✅ Created', sampleNotifications.length, 'notification associations');
+      // Created sampleNotifications.length notification associations
     }
 
     // Get user's notifications with read status
@@ -66,7 +66,7 @@ exports.getUserNotifications = async (req, res) => {
       ORDER BY n.CREATED_AT DESC
     `, [userId]);
 
-    console.log('📬 Notification query result:', notifications);
+    // Notification query result: notifications
     console.log('📊 Found', notifications.length, 'notifications');
 
     res.json(notifications);

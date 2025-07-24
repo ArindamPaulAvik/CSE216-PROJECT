@@ -281,15 +281,18 @@ function MarketingAdminFrontpage() {
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
               Manage promotional content and featured shows
             </p>
-            <button style={{
-              background: 'linear-gradient(45deg, #66bb6a, #4caf50)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
+            <button
+              style={{
+                background: 'linear-gradient(45deg, #66bb6a, #4caf50)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+              onClick={() => navigate('/admin-promotions')}
+            >
               Manage Promotions
             </button>
           </motion.div>

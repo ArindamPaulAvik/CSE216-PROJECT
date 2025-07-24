@@ -2,38 +2,38 @@ const pool = require('./db');
 
 async function testNotifications() {
   try {
-    console.log('🔍 Testing notification system...');
+    // Testing notification system...
     
     // Check if NOTIFICATIONS table exists
     const [notifTables] = await pool.query(`
       SHOW TABLES LIKE 'NOTIFICATIONS'
     `);
-    console.log('📋 NOTIFICATIONS table exists:', notifTables.length > 0);
+    // NOTIFICATIONS table exists: notifTables.length > 0
     
     // Check if USER_NOTIFICATIONS table exists
     const [userNotifTables] = await pool.query(`
       SHOW TABLES LIKE 'USER_NOTIFICATIONS'
     `);
-    console.log('📋 USER_NOTIFICATIONS table exists:', userNotifTables.length > 0);
+    // USER_NOTIFICATIONS table exists: userNotifTables.length > 0
     
     if (notifTables.length > 0) {
       // Check notifications count
       const [notifCount] = await pool.query('SELECT COUNT(*) as count FROM NOTIFICATIONS');
-      console.log('📊 Total notifications in DB:', notifCount[0].count);
+      // Total notifications in DB: notifCount[0].count
       
       // Show all notifications
       const [allNotifications] = await pool.query('SELECT * FROM NOTIFICATIONS LIMIT 5');
-      console.log('📬 Sample notifications:', allNotifications);
+      // Sample notifications: allNotifications
     }
     
     if (userNotifTables.length > 0) {
       // Check user notifications count
       const [userNotifCount] = await pool.query('SELECT COUNT(*) as count FROM USER_NOTIFICATIONS');
-      console.log('📊 Total user notifications in DB:', userNotifCount[0].count);
+      // Total user notifications in DB: userNotifCount[0].count
       
       // Show all user notifications
       const [allUserNotifications] = await pool.query('SELECT * FROM USER_NOTIFICATIONS LIMIT 5');
-      console.log('👤 Sample user notifications:', allUserNotifications);
+      // Sample user notifications: allUserNotifications
     }
     
     // Check users table
@@ -43,7 +43,7 @@ async function testNotifications() {
       JOIN USER u ON p.PERSON_ID = u.PERSON_ID 
       LIMIT 3
     `);
-    console.log('👥 Sample users:', users);
+    // Sample users: users
     
   } catch (error) {
     console.error('❌ Error testing notifications:', error);

@@ -15,7 +15,7 @@ router.get('/notifications', authenticateToken, getUserNotifications);
 
 // Test endpoint to check if routes are working
 router.get('/notifications/test', (req, res) => {
-  console.log('🧪 Test endpoint hit!');
+  // Test endpoint hit!
   res.json({ message: 'Notification routes are working!', timestamp: new Date() });
 });
 

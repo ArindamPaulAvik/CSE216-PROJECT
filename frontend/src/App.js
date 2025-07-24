@@ -35,6 +35,7 @@ import SimpleFAQManagement from './components/SimpleFAQManagement';
 import UsersManagement from './components/UsersManagement';
 import UserDetails from './components/UserDetails';
 import CustomerCareRequests from './components/CustomerCareRequests';
+import AdminPromotions from './components/AdminPromotions';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
           <Route path="/users-management" element={<UsersManagement />} />
           <Route path="/user-details/:id" element={<UserDetails />} />
           <Route path="/customer-care-requests" element={<CustomerCareRequests />} />
+          <Route path="/admin-promotions" element={<AdminPromotions />} />
         </Routes>
       </div>
     </Router>

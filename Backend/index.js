@@ -1,4 +1,3 @@
-// ...existing code...
 // index.js
 const express = require('express');
 const cors = require('cors');
@@ -54,7 +53,10 @@ app.use(require('./routes/notifications'));
 
 app.use(require('./routes/episodes'));
 
+const promotionsRouter = require('./routes/promotions');
+app.use('/promotions', promotionsRouter);
+
 // Start server
 app.listen(port, () => {
-  console.log(`✅ Server running at http://localhost:${port}`);
+  // Server running at http://localhost:${port}
 });

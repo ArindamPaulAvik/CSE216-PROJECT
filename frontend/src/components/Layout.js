@@ -52,22 +52,22 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   const fetchNotifications = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      console.log('❌ No auth token found');
+      // No auth token found
       return;
     }
 
-    console.log('🔔 Fetching notifications...');
+    // Fetching notifications...
     try {
       const response = await fetch('http://localhost:5000/notifications', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
+      // Response status: response.status
+      // Response ok: response.ok
 
       if (response.ok) {
         const notifications = await response.json();
-        console.log('📬 Raw notifications from API:', notifications);
+        // Raw notifications from API: notifications
         
         // Transform API response to match frontend format
         const formattedNotifications = notifications.map(notif => {
@@ -99,7 +99,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
           };
         });
         
-        console.log('✨ Formatted notifications:', formattedNotifications);
+        // Formatted notifications: formattedNotifications
         setNotifications(formattedNotifications);
       } else {
         const errorData = await response.text();
@@ -116,7 +116,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
     // Test the notification routes
     fetch('http://localhost:5000/notifications/test')
       .then(res => res.json())
-      .then(data => console.log('🧪 Test endpoint response:', data))
+      .then(data => {/* Test endpoint response: data */})
       .catch(err => console.error('❌ Test endpoint error:', err));
   }, []);
 
@@ -151,14 +151,14 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
           genre: genreState
         }));
         
-        console.log('📚 Genres loaded:', data.genres);
+        // Genres loaded: data.genres
         
         // Check for pending genre selection after genres are loaded
         const selectedGenre = sessionStorage.getItem('selectedGenre');
         const shouldOpenSearch = sessionStorage.getItem('openSearch');
         
         if (selectedGenre && shouldOpenSearch === 'true') {
-          console.log('🎯 Processing pending genre selection:', selectedGenre);
+          // Processing pending genre selection: selectedGenre
           
           // Clear the session storage
           sessionStorage.removeItem('selectedGenre');
@@ -178,7 +178,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
                 [selectedGenre]: true
               }
             }));
-            console.log('✅ Genre filter set for:', selectedGenre);
+            // Genre filter set for: selectedGenre
           }, 100);
         }
       })
@@ -186,7 +186,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   }, []);
 
   const handleGenreChange = (genreName) => {
-    console.log('🔧 Manual genre change:', genreName);
+    // Manual genre change: genreName
     setFilters(prev => ({
       ...prev,
       genre: {
@@ -249,12 +249,8 @@ useEffect(() => {
     // Use '*' for empty search to get all results
     const queryParam = searchTerm.trim() || '*';
     
-    console.log('🔍 Frontend search params:', {
-      query: queryParam,
-      movie,
-      series,
-      genres: genreParam
-    });
+    // Frontend search params:
+    // query: queryParam, movie, series, genres: genreParam
     
     fetch(`http://localhost:5000/search?query=${encodeURIComponent(queryParam)}&movie=${movie}&series=${series}&genres=${genreParam}`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -266,7 +262,7 @@ useEffect(() => {
         return res.json();
       })
       .then(data => {
-        console.log('✅ Frontend received results:', data.results?.length || 0);
+        // Frontend received results: data.results?.length || 0
         
         // Handle different possible response structures
         setSearchResults(data.results || data.shows || data || []);
@@ -305,7 +301,7 @@ useEffect(() => {
     const handleGenreSearch = (event) => {
       const genreName = event.detail.genre;
       
-      console.log('🎯 Genre search triggered for:', genreName);
+      // Genre search triggered for: genreName
       
       // Open search
       setSearchOpen(true);
@@ -315,7 +311,7 @@ useEffect(() => {
       
       // Reset all genre filters first, then set the selected one
       setFilters(prev => {
-        console.log('🔧 Current filters before update:', prev);
+        // Current filters before update: prev
         const newFilters = {
           ...prev,
           genre: {
@@ -326,7 +322,7 @@ useEffect(() => {
             [genreName]: true
           }
         };
-        console.log('🔧 New filters after update:', newFilters);
+        // New filters after update: newFilters
         return newFilters;
       });
     };
@@ -486,7 +482,7 @@ useEffect(() => {
   };
 
   const handleNotificationClick = async (notification) => {
-    console.log('🔔 Notification clicked:', notification);
+    // Notification clicked: notification
     
     // Mark as read first
     await markNotificationAsRead(notification.id);
@@ -497,12 +493,12 @@ useEffect(() => {
     // Route based on notification type
     if (notification.type === 'billing_update') {
       // Navigate to Settings with billing mode
-      console.log('💳 Navigating to billing settings');
+      // Navigating to billing settings
       navigate('/settings?section=billing');
       return;
     } else if (notification.type === 'profile_update') {
       // Navigate to Settings with personal details mode
-      console.log('👤 Navigating to personal settings');
+      // Navigating to personal settings
       navigate('/settings?section=personal');
       return;
     }
@@ -514,13 +510,13 @@ useEffect(() => {
       if (notification.type === 'movie_update' && (movie_id)) {
         // Navigate to show details page
         const showId = movie_id;
-        console.log('🎬 Navigating to show:', showId);
+        // Navigating to show: showId
         navigate(`/show/${showId}`);
       } else if (notification.type === 'comment_reply' && comment_id) {
         // Navigate to the show where the comment was made
         if (notification.data.show_id || notification.data.movie_id) {
           const showId = notification.data.show_id || notification.data.movie_id;
-          console.log('💬 Navigating to show with comment:', showId, 'comment:', comment_id);
+          // Navigating to show with comment: showId, comment: comment_id
           
           if (show_episode_id) {
             // Navigate to show with specific episode and comment
