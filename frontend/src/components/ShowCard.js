@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Play, Volume2, VolumeX, Star } from 'lucide-react';
 
-const ShowCard = ({ show, index = 0 }) => {
+const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: false } }) => {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -36,14 +36,14 @@ const ShowCard = ({ show, index = 0 }) => {
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
     
-    // Preload video after a short delay
-    if (show.TEASER) {
+    // Preload video after a short delay - only if user preference allows it
+    if (show.TEASER && userPreferences.playTrailerOnHover) {
       timerRef.current = setTimeout(() => {
         setShowVideo(true);
         setTimeout(() => setVideoReady(true), 300);
       }, 800);
     }
-  }, [show.TEASER]);
+  }, [show.TEASER, userPreferences.playTrailerOnHover]);
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FiMenu, FiSearch, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiWifi, FiWifiOff, FiChevronRight, FiAward } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Layout({ children, activeSection }) {
+export default function Layout({ children, activeSection, hasWatchAgain = true, hasTopRated = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -494,6 +494,19 @@ useEffect(() => {
     // Close notification panel
     setNotificationOpen(false);
     
+    // Route based on notification type
+    if (notification.type === 'billing_update') {
+      // Navigate to Settings with billing mode
+      console.log('💳 Navigating to billing settings');
+      navigate('/settings?section=billing');
+      return;
+    } else if (notification.type === 'profile_update') {
+      // Navigate to Settings with personal details mode
+      console.log('👤 Navigating to personal settings');
+      navigate('/settings?section=personal');
+      return;
+    }
+    
     // Navigate based on notification type and data
     if (notification.data) {
       const { movie_id, comment_id, show_episode_id } = notification.data;
@@ -518,15 +531,7 @@ useEffect(() => {
             navigate(`/show/${showId}?comment=${comment_id}`);
           }
         }
-      } else if (notification.type === 'admin_notice') {
-        // Navigate to settings page and scroll to customer care section
-        const requestId = notification.data?.requestId || notification.request_id || notification.REQUEST_ID;
-        if (requestId) {
-          navigate(`/settings?customerCare=true&requestId=${requestId}`);
-        } else {
-          navigate('/settings?customerCare=true');
-        }
-      }
+      } 
     } else {
       console.log('⚠️ No navigation data available for notification');
     }
@@ -746,20 +751,24 @@ useEffect(() => {
                   <FiStar size={16} />
                   <span>Recommended</span>
                 </button>
-                <button
-                  onClick={() => scrollToSection('watchagain')}
-                  className={`section-nav-btn ${activeSection === 'watchagain' ? 'active' : ''}`}
-                >
-                  <FiClock size={16} />
-                  <span>Watch Again</span>
-                </button>
-                <button
-                  onClick={() => scrollToSection('toprated')}
-                  className={`section-nav-btn ${activeSection === 'toprated' ? 'active' : ''}`}
-                >
-                  <FiAward size={16} />
-                  <span>Top Rated</span>
-                </button>
+                {hasWatchAgain && (
+                  <button
+                    onClick={() => scrollToSection('watchagain')}
+                    className={`section-nav-btn ${activeSection === 'watchagain' ? 'active' : ''}`}
+                  >
+                    <FiClock size={16} />
+                    <span>Watch Again</span>
+                  </button>
+                )}
+                {hasTopRated && (
+                  <button
+                    onClick={() => scrollToSection('toprated')}
+                    className={`section-nav-btn ${activeSection === 'toprated' ? 'active' : ''}`}
+                  >
+                    <FiAward size={16} />
+                    <span>Top Rated</span>
+                  </button>
+                )}
                 <button
                   onClick={() => scrollToSection('actionhits')}
                   className={`section-nav-btn ${['actionhits', 'thriller', 'comedy', 'drama', 'family'].includes(activeSection) ? 'active' : ''}`}
@@ -824,6 +833,8 @@ useEffect(() => {
                               {notification.type === 'movie_update' && <FiTrendingUp size={16} />}
                               {notification.type === 'admin_notice' && <FiStar size={16} />}
                               {notification.type === 'comment_reply' && <FiClock size={16} />}
+                              {notification.type === 'billing_update' && <FiCreditCard size={16} />}
+                              {notification.type === 'profile_update' && <FiUsers size={16} />}
                             </div>
                             <div className="notification-text">
                               <p className="notification-message">{notification.message}</p>

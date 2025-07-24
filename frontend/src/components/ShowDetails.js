@@ -5,6 +5,7 @@ import axios from 'axios';
 import Layout from './Layout';
 import VideoPlayer from './videoplayer';
 import CommentSection from './Comment';
+import Rating from './Rating';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -19,9 +20,16 @@ function ShowDetails() {
   const [isFavorite, setIsFavorite] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [userSubscription, setUserSubscription] = useState(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const videoRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const navigate = useNavigate();
+
+  // Watch tracking state
+  const [watchStartTime, setWatchStartTime] = useState(null);
+  const [isWatchEventRecorded, setIsWatchEventRecorded] = useState(false);
+  const watchTimerRef = useRef(null);
 
 
   // Check if the show is a movie
@@ -49,11 +57,61 @@ function ShowDetails() {
       });
   }, [id]);
 
+  // Fetch user subscription status
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    axios
+      .get('http://localhost:5000/subscriptions/user/current', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setUserSubscription(res.data.subscription);
+      })
+      .catch((err) => {
+        console.warn('Could not check subscription status.');
+        setUserSubscription(null);
+      });
+  }, []);
+
+  // Reset watch tracking when selected episode changes
+  useEffect(() => {
+    setIsWatchEventRecorded(false);
+    if (watchTimerRef.current) {
+      clearTimeout(watchTimerRef.current);
+      watchTimerRef.current = null;
+    }
+  }, [selectedEpisode]);
+
+  // Cleanup watch timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (watchTimerRef.current) {
+        clearTimeout(watchTimerRef.current);
+        watchTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle episode selection from UserProfile (state-based navigation)
+  useEffect(() => {
+    if (location.state?.selectedEpisodeId && episodes.length > 0) {
+      const targetEpisode = episodes.find(ep => ep.SHOW_EPISODE_ID === parseInt(location.state.selectedEpisodeId));
+      if (targetEpisode) {
+        setSelectedEpisode(targetEpisode);
+        // Clear the state to prevent re-triggering
+        window.history.replaceState({}, '', location.pathname);
+      }
+    }
+  }, [episodes, location.state]);
+
   // Handle episode parameter from URL (for notifications)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const episodeId = params.get('episode');
     const commentId = params.get('comment');
+    const preventScroll = location.state?.preventScroll;
     
     if (episodeId && episodes.length > 0) {
       console.log('📺 Switching to episode from notification:', episodeId);
@@ -65,8 +123,10 @@ function ShowDetails() {
         console.log('✅ Found episode:', targetEpisode);
         setSelectedEpisode(targetEpisode);
         
-        // Directly locate and scroll to the specific comment
-        setTimeout(() => {
+        // Only scroll if not prevented
+        if (!preventScroll) {
+          // Directly locate and scroll to the specific comment
+          setTimeout(() => {
           if (commentId) {
             // Try to find the specific comment first
             const specificComment = document.querySelector(`[data-comment-id="${commentId}"]`) ||
@@ -115,6 +175,7 @@ function ShowDetails() {
             }
           }
         }, 1000); // Delay to ensure episode is selected and comments are loaded
+        }
       } else {
         console.warn('❌ Episode not found:', episodeId);
       }
@@ -170,15 +231,70 @@ function ShowDetails() {
 
   // Video player functions
   const playEpisode = (episode) => {
+    // Check if user has active subscription
+    const hasActiveSubscription = userSubscription && userSubscription.SUBSCRIPTION_STATUS === 1;
+    
+    // Allow episode 1 for everyone, other episodes require subscription
+    if (episode.EPISODE_NUMBER !== 1 && !hasActiveSubscription) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+    
     setSelectedEpisode(episode);
     setShowVideoPlayer(true);
     setIsPlaying(true);
+    
+    // Start watch tracking immediately when video player opens
+    if (!isWatchEventRecorded && episode) {
+      setWatchStartTime(Date.now());
+      
+      // Clear any existing timer
+      if (watchTimerRef.current) {
+        clearTimeout(watchTimerRef.current);
+      }
+      
+      // Set timer for 10 seconds - starts immediately when player opens
+      watchTimerRef.current = setTimeout(() => {
+        recordWatchEvent(episode.SHOW_EPISODE_ID);
+      }, 10000); // 10 seconds
+    }
   };
 
-  // For movies, play the movie directly
+  // For movies, play the movie directly (subscription required for movies)
   const playMovie = () => {
+    const hasActiveSubscription = userSubscription && userSubscription.SUBSCRIPTION_STATUS === 1;
+    
+    if (!hasActiveSubscription) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+    
     setShowVideoPlayer(true);
     setIsPlaying(true);
+    
+    // Start watch tracking immediately when video player opens (for movies, use the show data)
+    if (!isWatchEventRecorded && show && episodes.length > 0) {
+      setWatchStartTime(Date.now());
+      
+      // Clear any existing timer
+      if (watchTimerRef.current) {
+        clearTimeout(watchTimerRef.current);
+      }
+      
+      // For movies, record against the first episode or create a movie-specific logic
+      // You might need to adjust this based on your movie data structure
+      watchTimerRef.current = setTimeout(() => {
+        recordWatchEvent(episodes[0]?.SHOW_EPISODE_ID);
+      }, 10000); // 10 seconds
+    }
+  };
+
+  const closeSubscriptionModal = () => {
+    setShowSubscriptionModal(false);
+  };
+
+  const goToSubscriptionPage = () => {
+    navigate('/subscription');
   };
 
   const closeVideoPlayer = () => {
@@ -187,6 +303,14 @@ function ShowDetails() {
     if (videoRef.current) {
       videoRef.current.pause();
     }
+    
+    // Clean up watch tracking
+    if (watchTimerRef.current) {
+      clearTimeout(watchTimerRef.current);
+      watchTimerRef.current = null;
+    }
+    setWatchStartTime(null);
+    setIsWatchEventRecorded(false);
   };
 
   const togglePlayPause = () => {
@@ -201,8 +325,36 @@ function ShowDetails() {
   };
 
   // Video event handlers
-  const handleVideoPlay = () => setIsPlaying(true);
-  const handleVideoPause = () => setIsPlaying(false);
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
+    // Timer already started when video player opened, no need to start it here
+  };
+
+  const handleVideoPause = () => {
+    setIsPlaying(false);
+    // Don't clear the timer on pause - we want to track time spent in player, not just play time
+  };
+
+  // Function to record watch event
+  const recordWatchEvent = async (episodeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.post('http://localhost:5000/watch/record', {
+        showEpisodeId: episodeId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setIsWatchEventRecorded(true);
+        console.log('Watch event recorded successfully');
+      }
+    } catch (error) {
+      console.error('Error recording watch event:', error);
+    }
+  };
   const handleVideoEnded = () => {
     setIsPlaying(false);
     // Auto-play next episode if available and not a movie
@@ -326,19 +478,25 @@ function ShowDetails() {
     const scale = useTransform(cardScrollProgress, [0, 0.3, 0.7, 1], [0.9, 1, 1, 0.95]);
     const opacity = useTransform(cardScrollProgress, [0, 0.2, 0.8, 1], [0.5, 1, 1, 0.8]);
 
+    // Check if episode is locked (requires subscription)
+    const hasActiveSubscription = userSubscription && userSubscription.SUBSCRIPTION_STATUS === 1;
+    const isLocked = episode.EPISODE_NUMBER !== 1 && !hasActiveSubscription;
+
     return (
       <motion.div
         ref={cardRef}
         style={{ 
           scale, 
-          opacity,
+          opacity: isLocked ? 0.7 : opacity,
           backgroundColor: isSelected ? '#1a1a40' : '#16213e',
           padding: '15px 20px',
           borderRadius: '12px',
-          cursor: 'pointer',
+          cursor: isLocked ? 'not-allowed' : 'pointer',
           border: isSelected 
             ? '3px solid #7f5af0' // Vibrant, thick border for selected
-            : '2px solid #533483', // Visible border for unselected
+            : isLocked 
+              ? '2px solid #666' // Dimmed border for locked episodes
+              : '2px solid #533483', // Visible border for unselected
           transition: 'all 0.3s cubic-bezier(.4,2,.6,1)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -357,15 +515,19 @@ function ShowDetails() {
           delay: index * 0.1,
           ease: [0.25, 0.46, 0.45, 0.94]
         }}
-        whileHover={{ 
+        whileHover={!isLocked ? { 
           scale: 1.02,
           x: 5,
           transition: { duration: 0.2 }
-        }}
-        whileTap={{ scale: 0.98 }}
+        } : {}}
+        whileTap={!isLocked ? { scale: 0.98 } : {}}
         onClick={() => {
-          setSelectedEpisode(episode);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          if (isLocked) {
+            setShowSubscriptionModal(true);
+          } else {
+            setSelectedEpisode(episode);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }}
       >
         {/* Animated background gradient */}
@@ -379,31 +541,40 @@ function ShowDetails() {
             background: 'linear-gradient(135deg, rgba(22, 33, 62, 0.2), rgba(83, 52, 131, 0.08))',
             opacity: 0,
           }}
-          whileHover={{ opacity: 1 }}
+          whileHover={{ opacity: isLocked ? 0 : 1 }}
           transition={{ duration: 0.3 }}
         />
         
-        <motion.span 
-          style={{ 
-            color: '#fff', 
-            fontWeight: '600',
-            position: 'relative',
-            zIndex: 1
-          }}
-          whileHover={{ color: '#e50914' }}
-          transition={{ duration: 0.2 }}
-        >
-          Episode {episode.EPISODE_NUMBER}
-        </motion.span>
+        <motion.div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 1 }}>
+          {isLocked && (
+            <motion.span
+              style={{ color: '#999', fontSize: '1rem' }}
+              animate={{ rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              🔒
+            </motion.span>
+          )}
+          <motion.span 
+            style={{ 
+              color: isLocked ? '#999' : '#fff', 
+              fontWeight: '600',
+            }}
+            whileHover={{ color: isLocked ? '#999' : '#e50914' }}
+            transition={{ duration: 0.2 }}
+          >
+            Episode {episode.EPISODE_NUMBER}
+          </motion.span>
+        </motion.div>
         
         <motion.span 
           style={{ 
-            color: '#999', 
+            color: isLocked ? '#666' : '#999', 
             fontSize: '0.85rem',
             position: 'relative',
             zIndex: 1
           }}
-          whileHover={{ color: '#ccc' }}
+          whileHover={{ color: isLocked ? '#666' : '#ccc' }}
           transition={{ duration: 0.2 }}
         >
           {formatDuration(episode.SHOW_EPISODE_DURATION || episode.DURATION || episode.duration || episode.length || null)}
@@ -1265,6 +1436,30 @@ function ShowDetails() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
               > 
+                {/* Rating Section */}
+                {(isMovie && show.SHOW_ID) || (!isMovie && selectedEpisode) ? (
+                  <motion.div 
+                    style={{
+                      background: 'rgba(22, 33, 62, 0.85)',
+                      borderRadius: '15px',
+                      padding: '30px',
+                      border: '1px solid #533483',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)',
+                      maxWidth: '1000px',
+                      margin: '0 auto 20px auto'
+                    }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 1.0 }}
+                  >
+                    <Rating 
+                      episodeId={isMovie ? show.SHOW_ID : selectedEpisode.SHOW_EPISODE_ID} 
+                      showAverageRating={true}
+                    />
+                  </motion.div>
+                ) : null}
+                
                 <motion.div 
                   style={{
                     background: 'rgba(22, 33, 62, 0.85)',
@@ -1287,6 +1482,126 @@ function ShowDetails() {
           </AnimatePresence>
         </motion.div>
       </motion.div>
+
+      {/* Subscription Required Modal */}
+      {showSubscriptionModal && (
+        <motion.div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={closeSubscriptionModal}
+        >
+          <motion.div
+            style={{
+              backgroundColor: '#16213e',
+              borderRadius: '15px',
+              padding: '40px',
+              maxWidth: '500px',
+              width: '90%',
+              textAlign: 'center',
+              border: '2px solid #533483',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)'
+            }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              style={{
+                fontSize: '4rem',
+                marginBottom: '20px'
+              }}
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              🔒
+            </motion.div>
+            
+            <h2 style={{ 
+              color: '#fff', 
+              marginBottom: '20px',
+              fontSize: '1.8rem'
+            }}>
+              Subscription Required
+            </h2>
+            
+            <p style={{ 
+              color: '#ccc', 
+              marginBottom: '30px',
+              lineHeight: '1.6',
+              fontSize: '1.1rem'
+            }}>
+              {isMovie 
+                ? 'A subscription is required to watch this movie.'
+                : 'A subscription is required to watch episodes beyond the first one. Episode 1 is free for everyone!'
+              }
+            </p>
+            
+            <div style={{ 
+              display: 'flex', 
+              gap: '15px', 
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <motion.button
+                onClick={closeSubscriptionModal}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#ccc',
+                  border: '2px solid #533483',
+                  padding: '12px 25px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                whileHover={{ 
+                  backgroundColor: 'rgba(83, 52, 131, 0.2)',
+                  color: '#fff'
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Cancel
+              </motion.button>
+              
+              <motion.button
+                onClick={goToSubscriptionPage}
+                style={{
+                  background: 'linear-gradient(45deg, #533483 0%, #7f5af0 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '12px 25px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: '0 5px 20px rgba(127, 90, 240, 0.4)'
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Get Subscription
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </Layout>
   );
 }

@@ -12,6 +12,7 @@ import SupportAdminFrontpage from './components/SupportAdminFrontpage';
 import ContentAdminFrontpage from './components/ContentAdminFrontpage';
 import MarketingAdminFrontpage from './components/MarketingAdminFrontpage';
 import UserProfile from './components/UserProfile';
+import UserProfileView from './components/UserProfileView';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
 import ShowsManagement from './components/ShowsManagement';
@@ -28,6 +29,7 @@ import AdminAwardDetails from './components/AdminAwardDetails';
 import EditAward from './components/EditAward';
 import SubmissionsManagement from './components/SubmissionsManagement';
 import ReportsManagement from './components/ReportsManagement';
+import Subscription from './components/Subscription';
 import FAQManagement from './components/FAQManagement';
 import SimpleFAQManagement from './components/SimpleFAQManagement';
 import UsersManagement from './components/UsersManagement';
@@ -54,7 +56,9 @@ function App() {
           <Route path="/directors" element={React.createElement(require('./components/DirectorsPage').default)} />
           <Route path="/director/:id" element={React.createElement(require('./components/DirectorDetailPage').default)} />
           <Route path="/profile" element={<UserProfile />} />
+          <Route path="/profile/:userId" element={<UserProfileView />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/subscription" element={<Subscription />} />
           <Route path="/shows-management" element={<ShowsManagement />} />
           <Route path="/admin-show-details/:id" element={<AdminShowDetails />} />
           <Route path="/edit-show/:id" element={<EditShow />} />

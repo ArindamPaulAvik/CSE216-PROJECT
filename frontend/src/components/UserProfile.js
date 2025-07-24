@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiMail, FiCalendar, FiCamera, FiSave, FiArrowLeft, FiHeart, FiGrid, FiInfo, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiUser, FiMail, FiCalendar, FiCamera, FiSave, FiArrowLeft, FiHeart, FiGrid, FiInfo, FiX, FiTrash2, FiStar, FiEdit3 } from 'react-icons/fi';
+import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
 import Layout from './Layout';
 import axios from 'axios';
 
@@ -14,15 +15,9 @@ function UserProfile() {
     country: '',
     profilePicture: ''
   });
-  const [originalInfo, setOriginalInfo] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [favoritesError, setFavoritesError] = useState('');
   const [imagePreview, setImagePreview] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [removingFavorite, setRemovingFavorite] = useState(null);
@@ -31,6 +26,9 @@ function UserProfile() {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentsError, setCommentsError] = useState('');
+  const [ratings, setRatings] = useState([]);
+  const [loadingRatings, setLoadingRatings] = useState(false);
+  const [ratingsError, setRatingsError] = useState('');
 
   const navigate = useNavigate();
 
@@ -82,7 +80,6 @@ function UserProfile() {
         console.log('User data received:', data); // Debug log
 
         setUserInfo(data);
-        setOriginalInfo(data);
 
         // Set image preview if profile picture exists
         if (data.profilePicture) {
@@ -90,7 +87,8 @@ function UserProfile() {
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);
-        setError(`Failed to load user profile: ${err.message}`);
+        // Remove error display since we're only showing data now
+        console.log(`Failed to load user profile: ${err.message}`);
       } finally {
         setIsLoading(false);
       }
@@ -98,15 +96,6 @@ function UserProfile() {
 
     fetchUserProfile();
   }, [navigate]);
-
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUserInfo(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
   const [activeTab, setActiveTab] = useState('details');
 
@@ -188,30 +177,49 @@ function UserProfile() {
     setShowToDelete(null);
   };
 
+  // Fetch user ratings
+  const fetchUserRatings = async () => {
+    try {
+      setLoadingRatings(true);
+      setRatingsError('');
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get('http://localhost:5000/ratings/user/all', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setRatings(response.data.ratings);
+    } catch (err) {
+      console.error('Error fetching user ratings:', err);
+      setRatingsError('Failed to load ratings');
+    } finally {
+      setLoadingRatings(false);
+    }
+  };
   // Handle tab switching
   const handleTabSwitch = (tab) => {
-    if (isEditing) return;
-    
     setActiveTab(tab);
     
     // Clear errors and modals based on which tab we're switching to
     if (tab === 'details') {
-      setError('');
-      setSuccess('');
       setFavoritesError('');
       setCommentsError('');
+      setRatingsError('');
     } else if (tab === 'favourites') {
-      setError('');
-      setSuccess('');
       setFavoritesError('');
       setCommentsError('');
+      setRatingsError('');
       fetchFavorites();
     } else if (tab === 'posts') {
-      setError('');
-      setSuccess('');
       setFavoritesError('');
       setCommentsError('');
+      setRatingsError('');
       fetchUserComments();
+    } else if (tab === 'ratings') {
+      setFavoritesError('');
+      setCommentsError('');
+      setRatingsError('');
+      fetchUserRatings();
     }
   };
 
@@ -258,212 +266,6 @@ function UserProfile() {
     });
   };
 
-  // Handle profile picture selection
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please select a valid image file');
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size must be less than 5MB');
-        return;
-      }
-
-      setSelectedFile(file);
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-
-      setError('');
-    }
-  };
-
-  // Handle form submission
-  const hasUnsavedChanges = () => {
-    // Format birthdates for comparison
-    let currentFormattedBirthdate = userInfo.birthdate;
-    let originalFormattedBirthdate = originalInfo.birthdate;
-
-    if (currentFormattedBirthdate) {
-      if (currentFormattedBirthdate.includes('T')) {
-        currentFormattedBirthdate = currentFormattedBirthdate.split('T')[0];
-      }
-      else if (currentFormattedBirthdate instanceof Date) {
-        currentFormattedBirthdate = currentFormattedBirthdate.toISOString().split('T')[0];
-      }
-    }
-
-    if (originalFormattedBirthdate) {
-      if (originalFormattedBirthdate.includes('T')) {
-        originalFormattedBirthdate = originalFormattedBirthdate.split('T')[0];
-      }
-      else if (originalFormattedBirthdate instanceof Date) {
-        originalFormattedBirthdate = originalFormattedBirthdate.toISOString().split('T')[0];
-      }
-    }
-
-    return (
-      userInfo.firstName !== originalInfo.firstName ||
-      userInfo.lastName !== originalInfo.lastName ||
-      userInfo.email !== originalInfo.email ||
-      currentFormattedBirthdate !== originalFormattedBirthdate ||
-      userInfo.phone !== originalInfo.phone ||
-      userInfo.country !== originalInfo.country ||
-      selectedFile !== null
-    );
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      // Format birthdate to YYYY-MM-DD format before sending
-      let formattedBirthdate = userInfo.birthdate;
-      if (formattedBirthdate) {
-        // If it's a full ISO string, extract just the date part
-        if (formattedBirthdate.includes('T')) {
-          formattedBirthdate = formattedBirthdate.split('T')[0];
-        }
-        // If it's already a date object, format it
-        else if (formattedBirthdate instanceof Date) {
-          formattedBirthdate = formattedBirthdate.toISOString().split('T')[0];
-        }
-      }
-
-      // Format original birthdate for comparison
-      let originalFormattedBirthdate = originalInfo.birthdate;
-      if (originalFormattedBirthdate) {
-        if (originalFormattedBirthdate.includes('T')) {
-          originalFormattedBirthdate = originalFormattedBirthdate.split('T')[0];
-        }
-        else if (originalFormattedBirthdate instanceof Date) {
-          originalFormattedBirthdate = originalFormattedBirthdate.toISOString().split('T')[0];
-        }
-      }
-
-      // Check if any changes were made
-      const hasChanges =
-        userInfo.firstName !== originalInfo.firstName ||
-        userInfo.lastName !== originalInfo.lastName ||
-        userInfo.email !== originalInfo.email ||
-        formattedBirthdate !== originalFormattedBirthdate ||
-        userInfo.phone !== originalInfo.phone ||
-        userInfo.country !== originalInfo.country ||
-        selectedFile !== null;
-
-      if (!hasChanges) {
-        setError('No changes were made to your profile.');
-        setIsSaving(false);
-        return;
-      }
-
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-
-      // Append user data with properly formatted date
-      formData.append('USER_FIRSTNAME', userInfo.firstName);
-      formData.append('USER_LASTNAME', userInfo.lastName);
-      formData.append('EMAIL', userInfo.email);
-      formData.append('BIRTH_DATE', formattedBirthdate); // Use formatted date
-      formData.append('PHONE_NO', userInfo.phone);
-      formData.append('COUNTRY_NAME', userInfo.country);
-
-      // Append profile picture if selected
-      if (selectedFile) {
-        formData.append('profilePicture', selectedFile);
-      }
-
-      console.log('Submitting form data with formatted birthdate:', formattedBirthdate);
-
-      const response = await fetch('http://localhost:5000/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // Don't set Content-Type when using FormData - let the browser set it
-        },
-        body: formData
-      });
-
-      console.log('Update response status:', response.status);
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP ${response.status}: Failed to update profile`);
-        } else {
-          const errorText = await response.text();
-          console.log('Error response text:', errorText);
-          throw new Error(`HTTP ${response.status}: Server returned non-JSON response`);
-        }
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const responseText = await response.text();
-        console.log('Non-JSON response:', responseText);
-        throw new Error('Server returned non-JSON response');
-      }
-
-      const updatedData = await response.json();
-      console.log('Updated data received:', updatedData);
-
-      setUserInfo(updatedData.user || updatedData);
-      setOriginalInfo(updatedData.user || updatedData);
-      setIsEditing(false);
-      setSelectedFile(null);
-      setSuccess('Profile updated successfully!');
-
-      // Update image preview with new path
-      const userData = updatedData.user || updatedData;
-      if (userData.profilePicture) {
-        setImagePreview(`http://localhost:5000/images/user/${userData.profilePicture}`);
-      }
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError(err.message || 'Failed to update profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle cancel editing
-  const handleCancel = () => {
-    setUserInfo(originalInfo);
-    setIsEditing(false);
-    setSelectedFile(null);
-    setError('');
-    setSuccess('');
-
-    // Reset image preview
-    if (originalInfo.profilePicture) {
-      setImagePreview(`http://localhost:5000/images/user/${originalInfo.profilePicture}`);
-    } else {
-      setImagePreview('');
-    }
-  };
-
-  // Format date for input
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    // Handle the timestamp format from your backend
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  };
-
   if (isLoading) {
     return (
       <Layout>
@@ -490,21 +292,9 @@ function UserProfile() {
           <h1>My Profile</h1>
         </div>
 
-        {/* Alert Messages - Only show for details tab */}
-        {activeTab === 'details' && error && (
-          <div className="alert alert-error">
-            {error}
-          </div>
-        )}
-        {activeTab === 'details' && success && (
-          <div className="alert alert-success">
-            {success}
-          </div>
-        )}
-
-        {/* Profile Form */}
+        {/* Profile Card */}
         <div className="profile-card">
-          <form onSubmit={handleSubmit}>
+          <div>
             {/* Profile Picture Section */}
             <div className="profile-picture-section">
               <div className="profile-picture-container">
@@ -522,20 +312,6 @@ function UserProfile() {
                   <div className="profile-picture-placeholder">
                     <FiUser size={40} />
                   </div>
-                )}
-
-                {isEditing && (
-                  <label className="profile-picture-upload">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      style={{ display: 'none' }}
-                    />
-                    <div className="upload-overlay">
-                      <FiCamera size={20} />
-                    </div>
-                  </label>
                 )}
               </div>
               <div className="profile-picture-info">
@@ -557,179 +333,74 @@ function UserProfile() {
                 <span>Details</span>
               </button>
               <button
-                className={`nav-tab ${activeTab === 'favourites' ? 'active' : ''} ${isEditing ? 'disabled' : ''}`}
+                className={`nav-tab ${activeTab === 'favourites' ? 'active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (!isEditing) {
-                    handleTabSwitch('favourites');
-                  }
+                  handleTabSwitch('favourites');
                 }}
                 type="button"
-                disabled={isEditing}
               >
                 <FiHeart size={16} />
                 <span>Favourites</span>
               </button>
               <button
-                className={`nav-tab ${activeTab === 'posts' ? 'active' : ''} ${isEditing ? 'disabled' : ''}`}
+                className={`nav-tab ${activeTab === 'posts' ? 'active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (!isEditing) {
-                    handleTabSwitch('posts');
-                  }
+                  handleTabSwitch('posts');
                 }}
                 type="button"
-                disabled={isEditing}
               >
                 <FiGrid size={16} />
                 <span>Posts</span>
+              </button>
+              <button
+                className={`nav-tab ${activeTab === 'ratings' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleTabSwitch('ratings');
+                }}
+                type="button"
+              >
+                <FiStar size={16} />
+                <span>Ratings</span>
               </button>
             </div>
 
             {/* Conditional Tab Content */}
 {activeTab === 'details' && (
-  <div className="form-grid">
-    {/* First Name */}
-    <div className="form-group">
-      <label htmlFor="firstName">
-        <FiUser size={16} />
-        First Name
-      </label>
-      <input
-        type="text"
-        id="firstName"
-        name="firstName"
-        value={userInfo.firstName}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-        required
-      />
-    </div>
-
-    {/* Last Name */}
-    <div className="form-group">
-      <label htmlFor="lastName">
-        <FiUser size={16} />
-        Last Name
-      </label>
-      <input
-        type="text"
-        id="lastName"
-        name="lastName"
-        value={userInfo.lastName}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-        required
-      />
-    </div>
-
-    {/* Email */}
-    <div className="form-group form-group-full">
-      <label htmlFor="email">
-        <FiMail size={16} />
-        Email Address
-      </label>
-      <input
-        type="email"
-        id="email"
-        name="email"
-        value={userInfo.email}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-        required
-      />
-    </div>
-
-    {/* Birth Date */}
-    <div className="form-group">
-      <label htmlFor="birthdate">
-        <FiCalendar size={16} />
-        Date of Birth
-      </label>
-      <input
-        type="date"
-        id="birthdate"
-        name="birthdate"
-        value={formatDateForInput(userInfo.birthdate)}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-        required
-      />
-    </div>
-
-    {/* Phone */}
-    <div className="form-group">
-      <label htmlFor="phone">
-        <FiUser size={16} />
-        Phone
-      </label>
-      <input
-        type="tel"
-        id="phone"
-        name="phone"
-        value={userInfo.phone}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-      />
-    </div>
-
-    {/* Country */}
-    <div className="form-group form-group-full">
-      <label htmlFor="country">
-        <FiUser size={16} />
-        Country
-      </label>
-      <input
-        type="text"
-        id="country"
-        name="country"
-        value={userInfo.country}
-        onChange={handleInputChange}
-        disabled={!isEditing}
-      />
-    </div>
-  </div>
-)}
-
-{activeTab === 'details' && (
-  <div className="form-actions">
-    {!isEditing ? (
+  <div className="user-details-display">
+    <div className="details-header">
+      <h3>Profile Information</h3>
       <button
         type="button"
-        onClick={() => setIsEditing(true)}
-        className="btn btn-primary"
+        onClick={() => navigate('/settings?section=personal')}
+        className="edit-icon-button"
+        title="Edit Profile"
       >
-        Edit Profile
+        <FiEdit3 size={18} />
       </button>
-    ) : (
-      <div className="edit-actions">
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="btn btn-secondary"
-          disabled={isSaving}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-success"
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <>
-              <div className="btn-spinner"></div>
-              Saving...
-            </>
-          ) : (
-            <>
-              <FiSave size={16} />
-              Save Changes
-            </>
-          )}
-        </button>
+    </div>
+    <div className="details-grid">
+      <div className="detail-item">
+        <div className="detail-value">{userInfo.firstName}</div>
       </div>
-    )}
+      <div className="detail-item">
+        <div className="detail-value">{userInfo.lastName}</div>
+      </div>
+      <div className="detail-item detail-item-full">
+        <div className="detail-value">{userInfo.email}</div>
+      </div>
+      <div className="detail-item">
+        <div className="detail-value">{userInfo.birthdate ? formatDate(userInfo.birthdate) : 'Not specified'}</div>
+      </div>
+      <div className="detail-item">
+        <div className="detail-value">{userInfo.phone || 'Not specified'}</div>
+      </div>
+      <div className="detail-item detail-item-full">
+        <div className="detail-value">{userInfo.country || 'Not specified'}</div>
+      </div>
+    </div>
   </div>
 )}
 
@@ -780,7 +451,7 @@ function UserProfile() {
               >
                 <h4 className="favorite-title">{show.TITLE}</h4>
                 <div className="favorite-rating">
-                  <span className="rating-star">⭐</span>
+                  <AiFillStar style={{ color: '#ffd700', fontSize: '1.2rem' }} />
                   <span className="rating-value">{show.RATING}</span>
                 </div>
                 <p className="favorite-description">
@@ -920,7 +591,105 @@ function UserProfile() {
   </div>
 )}
 
-          </form>
+{activeTab === 'ratings' && (
+  <div className="tab-content">
+    {ratingsError && (
+      <div className="alert alert-error">
+        {ratingsError}
+      </div>
+    )}
+    {loadingRatings ? (
+      <div className="ratings-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading your ratings...</p>
+      </div>
+    ) : ratings.length === 0 ? (
+      <div className="ratings-empty">
+        <FiStar size={48} className="empty-icon" />
+        <h3>No ratings yet</h3>
+        <p>Episodes you rate will appear here</p>
+      </div>
+    ) : (
+      <div className="ratings-list">
+        <div className="ratings-header">
+          <h3>Your Ratings ({ratings.length})</h3>
+        </div>
+        <div className="ratings-items">
+          {ratings.map(rating => (
+            <div key={`${rating.SHOW_ID}-${rating.SHOW_EPISODE_ID}`} className="rating-item">
+              <div className="show-thumbnail">
+                <img 
+                  src={`/shows/${rating.THUMBNAIL}`} 
+                  alt={rating.SHOW_TITLE}
+                  onError={(e) => {
+                    e.target.src = '/placeholder.jpg';
+                  }}
+                />
+              </div>
+              
+              <div className="rating-content">
+                <div className="rating-header">
+                  <h4 className="show-title">{rating.SHOW_TITLE}</h4>
+                  <div className="episode-info">
+                    {rating.CATEGORY_NAME !== 'Movie' && rating.SEASON && (
+                      <span className="season">Season {rating.SEASON}</span>
+                    )}
+                    <span className="episode">Episode {rating.EPISODE_NUMBER}</span>
+                    {rating.EPISODE_TITLE && (
+                      <span className="episode-title">• {rating.EPISODE_TITLE}</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="rating-display">
+                  <div className="rating-stars">
+                    {[...Array(10)].map((_, i) => {
+                      const StarIcon = i < rating.RATING_VALUE ? AiFillStar : AiOutlineStar;
+                      return (
+                        <StarIcon
+                          key={i}
+                          style={{
+                            color: i < rating.RATING_VALUE ? '#ffd700' : '#666',
+                            fontSize: '1.2rem',
+                            marginRight: '2px'
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="rating-text">
+                    <span className="rating-value">{rating.RATING_VALUE}/10</span>
+                    <span className="rating-date">
+                      • Rated on {new Date(rating.RATING_DATE).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                className="view-episode-btn"
+                onClick={() => {
+                  // Navigate without scrolling by using replace and handling episode selection
+                  navigate(`/show/${rating.SHOW_ID}`, { 
+                    replace: false,
+                    state: { 
+                      selectedEpisodeId: rating.SHOW_EPISODE_ID,
+                      preventScroll: true 
+                    }
+                  });
+                }}
+              >
+                View Episode
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+          </div>
         </div>
 
         {/* Delete Confirmation Modal */}
@@ -1212,6 +981,74 @@ function UserProfile() {
           grid-template-columns: 1fr 1fr;
           gap: 20px;
           margin-bottom: 30px;
+        }
+
+        .user-details-display {
+          margin-bottom: 30px;
+        }
+
+        .details-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .details-header h3 {
+          color: #e0e0e0;
+          font-size: 18px;
+          margin: 0;
+          font-weight: 600;
+        }
+
+        .edit-icon-button {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border: none;
+          border-radius: 8px;
+          padding: 10px;
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .edit-icon-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .details-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .detail-item {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          padding: 16px;
+          transition: all 0.2s ease;
+        }
+
+        .detail-item:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-item-full {
+          grid-column: 1 / -1;
+        }
+
+        .detail-value {
+          color: #e0e0e0;
+          font-size: 16px;
+          font-weight: 500;
+          min-height: 20px;
         }
 
         .form-group-full {
@@ -1941,6 +1778,204 @@ function UserProfile() {
             flex-wrap: wrap;
             gap: 15px;
             justify-content: flex-start;
+          }
+        }
+
+        /* Ratings Styles */
+        .ratings-loading {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 40px;
+          color: #888;
+        }
+
+        .ratings-empty {
+          text-align: center;
+          padding: 60px 20px;
+          color: #888;
+        }
+
+        .ratings-empty .empty-icon {
+          color: #555;
+          margin-bottom: 20px;
+        }
+
+        .ratings-empty h3 {
+          color: #ccc;
+          margin: 20px 0 10px;
+        }
+
+        .ratings-list {
+          max-width: 100%;
+        }
+
+        .ratings-header {
+          margin-bottom: 30px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #333;
+        }
+
+        .ratings-header h3 {
+          color: #fff;
+          margin: 0;
+          font-size: 1.3rem;
+        }
+
+        .ratings-items {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .rating-item {
+          display: flex;
+          align-items: center;
+          background: #1a1a1a;
+          border: 1px solid #333;
+          border-radius: 12px;
+          padding: 20px;
+          transition: all 0.3s ease;
+          gap: 20px;
+        }
+
+        .rating-item:hover {
+          border-color: #555;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .rating-item .show-thumbnail {
+          flex-shrink: 0;
+          width: 80px;
+          height: 120px;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        .rating-item .show-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .rating-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .rating-header .show-title {
+          color: #fff;
+          margin: 0 0 5px 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+        }
+
+        .episode-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .episode-info .season,
+        .episode-info .episode {
+          background: #333;
+          color: #fff;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .episode-info .episode-title {
+          color: #ccc;
+          font-size: 0.9rem;
+        }
+
+        .rating-display {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .rating-stars {
+          display: flex;
+          gap: 2px;
+        }
+
+        .rating-stars .star {
+          font-size: 1rem;
+          color: #444;
+        }
+
+        .rating-stars .star.filled {
+          color: #ffd700;
+        }
+
+        .rating-text {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .rating-value {
+          color: #ffd700;
+          font-weight: 600;
+          font-size: 1rem;
+        }
+
+        .rating-date {
+          color: #999;
+          font-size: 0.8rem;
+        }
+
+        .view-episode-btn {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          flex-shrink: 0;
+        }
+
+        .view-episode-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 768px) {
+          .rating-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+          }
+
+          .rating-item .show-thumbnail {
+            width: 60px;
+            height: 90px;
+          }
+
+          .rating-content {
+            width: 100%;
+          }
+
+          .view-episode-btn {
+            width: 100%;
+            text-align: center;
+          }
+
+          .episode-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
           }
         }
       `}</style>

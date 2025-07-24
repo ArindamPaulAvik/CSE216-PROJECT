@@ -898,7 +898,26 @@ function CommentSection({ episodeId }) {
                       display: comment.DELETED ? 'none' : 'block',
                     }}
                   />
-                  <strong style={{ color: '#7f5af0' }}>
+                  <strong 
+                    style={{ 
+                      color: '#7f5af0', 
+                      cursor: comment.DELETED ? 'default' : 'pointer',
+                      textDecoration: comment.DELETED ? 'none' : 'none'
+                    }}
+                    onClick={() => {
+                      if (!comment.DELETED && comment.USERNAME && comment.USERNAME !== 'You' && comment.USER_ID) {
+                        window.open(`/profile/${comment.USER_ID}`, '_blank');
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!comment.DELETED && comment.USERNAME && comment.USERNAME !== 'You') {
+                        e.target.style.textDecoration = 'underline';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.textDecoration = 'none';
+                    }}
+                  >
                     {comment.DELETED ? '[USER]' : (comment.USERNAME || 'Anonymous')}
                     {comment.isTemp && <span style={{ color: '#888', fontSize: '12px' }}> (posting...)</span>}
                   </strong>
@@ -1311,7 +1330,27 @@ function CommentSection({ episodeId }) {
                               display: reply.DELETED ? 'none' : 'block',
                             }}
                           />
-                          <span style={{ color: '#7f5af0', fontWeight: 600 }}>
+                          <span 
+                            style={{ 
+                              color: '#7f5af0', 
+                              fontWeight: 600,
+                              cursor: reply.DELETED ? 'default' : 'pointer',
+                              textDecoration: reply.DELETED ? 'none' : 'none'
+                            }}
+                            onClick={() => {
+                              if (!reply.DELETED && reply.USERNAME && reply.USERNAME !== 'You' && reply.USER_ID) {
+                                window.open(`/profile/${reply.USER_ID}`, '_blank');
+                              }
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!reply.DELETED && reply.USERNAME && reply.USERNAME !== 'You') {
+                                e.target.style.textDecoration = 'underline';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.textDecoration = 'none';
+                            }}
+                          >
                             {reply.DELETED ? '[USER]' : (reply.USERNAME || 'Anonymous')}{reply.isTemp && <span style={{ color: '#888', fontSize: '11px' }}> (posting...)</span>}
                           </span>
                           <span className="comment-time" style={{ marginLeft: 10, color: '#aaa', fontSize: '0.95em', display: 'flex', alignItems: 'center', gap: 6 }}>

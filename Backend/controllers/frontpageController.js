@@ -64,8 +64,9 @@ exports.getFrontpage = async (req, res) => {
       JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-      WHERE p.EMAIL = ? AND ue.WATCHED = 1
+      WHERE p.EMAIL = ?
       GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER
+      LIMIT 4
     `, [userEmail]);
 
     const [recommendedShows] = await pool.query(`
@@ -84,7 +85,7 @@ exports.getFrontpage = async (req, res) => {
         JOIN SHOW_EPISODE se ON ue.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
         JOIN SHOW_GENRE sg ON se.SHOW_ID = sg.SHOW_ID
         JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-        WHERE ue.USER_ID = ? AND ue.WATCHED = 1
+        WHERE ue.USER_ID = ?
         GROUP BY sg.GENRE_ID, g.GENRE_NAME
       ),
 

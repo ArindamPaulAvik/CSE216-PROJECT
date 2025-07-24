@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
-import { FiUser, FiCreditCard, FiSettings, FiSave, FiEye, FiEyeOff, FiCheck, FiX, FiHelpCircle, FiMail, FiPhone, FiMessageSquare } from 'react-icons/fi';
+import { FiUser, FiCreditCard, FiSettings, FiSave, FiEye, FiEyeOff, FiCheck, FiX, FiHelpCircle, FiMail, FiPhone, FiMessageSquare, FiCamera } from 'react-icons/fi';
 import axios from 'axios';
 
 const Settings = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const customerCareRef = useRef(null);
-  const userRequestsRef = useRef(null);
   const [activeSection, setActiveSection] = useState('personal');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,8 +24,13 @@ const Settings = () => {
     dateOfBirth: '',
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    profilePicture: ''
   });
+
+  // Profile picture state
+  const [imagePreview, setImagePreview] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Billing State
   const [billingData, setBillingData] = useState({
@@ -42,11 +46,8 @@ const Settings = () => {
 
   // Personalization State
   const [personalizationData, setPersonalizationData] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    autoplay: true,
-    subtitles: false,
-    parentalControl: true
+    playTrailerOnHover: false,
+    showMyRatingsToOthers: false
   });
 
   // FAQ State
@@ -66,33 +67,37 @@ const Settings = () => {
     fetchFAQs();
     fetchUserRequests();
 
-    // Check for customerCare URL parameter
+    // Check for URL parameters
     const urlParams = new URLSearchParams(location.search);
+    const sectionParam = urlParams.get('section');
     const customerCareParam = urlParams.get('customerCare');
     const requestId = urlParams.get('requestId');
 
-    if (customerCareParam === 'true') {
-      // Set active section to support (which renders customer care)
-      setActiveSection('support');
+    // Handle section parameter for routing from notifications
+    if (sectionParam === 'billing') {
+      setActiveSection('billing');
+    } else if (sectionParam === 'personal') {
+      setActiveSection('personal');
+    } else if (customerCareParam === 'true') {
+      setActiveSection('customer-care');
       
-      // Scroll to the user requests section and highlight specific request
+      // Scroll to customer care section after a short delay
       setTimeout(() => {
-        if (requestId && userRequestsRef.current) {
-          // Scroll to user requests section
-          userRequestsRef.current.scrollIntoView({ 
+        if (customerCareRef.current) {
+          customerCareRef.current.scrollIntoView({ 
             behavior: 'smooth', 
             block: 'start' 
           });
         }
-      }, 300);
-      
+      }, 100);
+
       // Highlight specific request if requestId is provided
       if (requestId) {
         setHighlightedRequestId(parseInt(requestId));
-        // Remove highlight after 5 seconds
+        // Remove highlight after 3 seconds
         setTimeout(() => {
           setHighlightedRequestId(null);
-        }, 5000);
+        }, 3000);
       }
     }
   }, [location.search]);
@@ -158,7 +163,9 @@ const Settings = () => {
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/frontpage', {
+      
+      // Fetch user profile data with profile picture
+      const response = await axios.get('http://localhost:5000/user/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -169,8 +176,26 @@ const Settings = () => {
           lastName: response.data.lastName || '',
           email: response.data.email || '',
           phone: response.data.phone || '',
-          dateOfBirth: response.data.dateOfBirth || ''
+          dateOfBirth: response.data.birthdate ? response.data.birthdate.split('T')[0] : '',
+          profilePicture: response.data.profilePicture || ''
         }));
+
+        // Set image preview if profile picture exists
+        if (response.data.profilePicture) {
+          setImagePreview(`http://localhost:5000/images/user/${response.data.profilePicture}`);
+        }
+      }
+
+      // Fetch user preferences
+      const prefsResponse = await axios.get('http://localhost:5000/users/preferences', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (prefsResponse.data) {
+        setPersonalizationData({
+          playTrailerOnHover: prefsResponse.data.playTrailerOnHover || false,
+          showMyRatingsToOthers: prefsResponse.data.showMyRatingsToOthers || false
+        });
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -186,6 +211,33 @@ const Settings = () => {
     }, 3000);
   };
 
+  // Handle profile picture selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showMessage('Please select a valid image file', 'error');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showMessage('Image size must be less than 5MB', 'error');
+        return;
+      }
+
+      setSelectedFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handlePersonalSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -193,14 +245,20 @@ const Settings = () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Update personal details
-      const updateData = {
-        firstName: personalData.firstName,
-        lastName: personalData.lastName,
-        email: personalData.email,
-        phone: personalData.phone,
-        dateOfBirth: personalData.dateOfBirth
-      };
+      // Create FormData for multipart form submission
+      const formData = new FormData();
+      
+      // Append user data
+      formData.append('USER_FIRSTNAME', personalData.firstName);
+      formData.append('USER_LASTNAME', personalData.lastName);
+      formData.append('EMAIL', personalData.email);
+      formData.append('PHONE_NO', personalData.phone);
+      formData.append('BIRTH_DATE', personalData.dateOfBirth);
+
+      // Append profile picture if selected
+      if (selectedFile) {
+        formData.append('profilePicture', selectedFile);
+      }
 
       // If password change is requested
       if (personalData.newPassword) {
@@ -209,23 +267,36 @@ const Settings = () => {
           setLoading(false);
           return;
         }
-        updateData.currentPassword = personalData.currentPassword;
-        updateData.newPassword = personalData.newPassword;
+        formData.append('currentPassword', personalData.currentPassword);
+        formData.append('newPassword', personalData.newPassword);
       }
 
-      await axios.put('http://localhost:5000/users/profile', updateData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.put('http://localhost:5000/user/profile', formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       showMessage('Personal details updated successfully!');
       
-      // Clear password fields
+      // Update the profile picture if it was updated
+      if (response.data.user && response.data.user.profilePicture) {
+        setPersonalData(prev => ({
+          ...prev,
+          profilePicture: response.data.user.profilePicture
+        }));
+        setImagePreview(`http://localhost:5000/images/user/${response.data.user.profilePicture}`);
+      }
+      
+      // Clear password fields and selected file
       setPersonalData(prev => ({
         ...prev,
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       }));
+      setSelectedFile(null);
 
     } catch (error) {
       showMessage(error.response?.data?.message || 'Failed to update personal details', 'error');
@@ -280,6 +351,42 @@ const Settings = () => {
       </div>
 
       <form onSubmit={handlePersonalSubmit} className="settings-form">
+        {/* Profile Picture Section */}
+        <div className="profile-picture-section">
+          <h3>Profile Picture</h3>
+          <div className="profile-picture-container">
+            <div className="profile-picture-preview">
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="Profile"
+                  className="profile-picture"
+                  onError={(e) => {
+                    e.target.src = '/images/user/default-avatar.png';
+                  }}
+                />
+              ) : (
+                <div className="profile-picture-placeholder">
+                  <FiUser size={40} />
+                </div>
+              )}
+              
+              <label className="profile-picture-upload">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: 'none' }}
+                />
+                <div className="upload-overlay">
+                  <FiCamera size={20} />
+                  <span>Change Photo</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div className="form-grid">
           <div className="form-group">
             <label>First Name</label>
@@ -495,72 +602,32 @@ const Settings = () => {
     <div className="settings-content">
       <div className="settings-header">
         <h2>Personalization</h2>
-        <p>Customize your viewing experience and preferences</p>
+        <p>Customize your viewing experience and privacy preferences</p>
       </div>
 
       <form onSubmit={handlePersonalizationSubmit} className="settings-form">
         <div className="preferences-grid">
           <div className="preference-group">
-            <h3>Notifications</h3>
+            <h3>Viewing Preferences</h3>
             <div className="toggle-group">
               <label className="toggle-label">
                 <input
                   type="checkbox"
-                  checked={personalizationData.emailNotifications}
-                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, emailNotifications: e.target.checked }))}
+                  checked={personalizationData.playTrailerOnHover}
+                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, playTrailerOnHover: e.target.checked }))}
                 />
                 <span className="toggle-slider"></span>
-                Email Notifications
+                Play trailer on hover
               </label>
 
               <label className="toggle-label">
                 <input
                   type="checkbox"
-                  checked={personalizationData.pushNotifications}
-                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, pushNotifications: e.target.checked }))}
+                  checked={personalizationData.showMyRatingsToOthers}
+                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, showMyRatingsToOthers: e.target.checked }))}
                 />
                 <span className="toggle-slider"></span>
-                Push Notifications
-              </label>
-            </div>
-          </div>
-
-          <div className="preference-group">
-            <h3>Playback</h3>
-            <div className="toggle-group">
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={personalizationData.autoplay}
-                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, autoplay: e.target.checked }))}
-                />
-                <span className="toggle-slider"></span>
-                Autoplay
-              </label>
-
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={personalizationData.subtitles}
-                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, subtitles: e.target.checked }))}
-                />
-                <span className="toggle-slider"></span>
-                Default Subtitles
-              </label>
-            </div>
-          </div>
-
-          <div className="preference-group">
-            <h3>Parental Control</h3>
-            <div className="toggle-group">
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={personalizationData.parentalControl}
-                  onChange={(e) => setPersonalizationData(prev => ({ ...prev, parentalControl: e.target.checked }))}
-                />
-                <span className="toggle-slider"></span>
-                Enable Parental Control
+                Show my ratings to others
               </label>
             </div>
           </div>
@@ -640,89 +707,79 @@ const Settings = () => {
         </div>
 
         {/* User's Previous Requests */}
-<div className="support-section" ref={userRequestsRef}>
-  <h3 style={{ color: 'white' }}>Your Support Requests</h3>
-  {userRequests.length === 0 ? (
-    <div style={{ 
-      padding: '1.5rem', 
-      textAlign: 'center', 
-      background: 'linear-gradient(135deg, rgba(75, 85, 110, 0.9), rgba(77, 64, 105, 0.9))',
-      borderRadius: '0.5rem',
-      color: 'rgba(255, 255, 255, 0.9)',
-      border: '1px solid rgba(255, 255, 255, 0.1)'
-    }}>
-      <FiMessageSquare size={24} style={{ marginBottom: '0.75rem', opacity: 0.7, color: 'white' }} />
-      <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.8)' }}>
-        No support requests yet. Send your first message using the form above.
-      </p>
-    </div>
-  ) : (
-    <div className="requests-list">
-      {userRequests.map((request) => (
-        <div key={request.REQUEST_ID} className="request-item" style={{
-          border: highlightedRequestId === request.REQUEST_ID ? '2px solid rgba(138, 147, 255, 0.8)' : '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '0.5rem',
-          padding: '1rem',
-          marginBottom: '1rem',
-          background: highlightedRequestId === request.REQUEST_ID 
-            ? 'linear-gradient(135deg, rgba(85, 95, 125, 0.95), rgba(128, 112, 160, 0.95))' 
-            : 'linear-gradient(135deg, rgba(75, 85, 110, 0.9), rgba(108, 92, 140, 0.9))',
-          boxShadow: highlightedRequestId === request.REQUEST_ID 
-            ? '0 0 1rem rgba(138, 147, 255, 0.4)' 
-            : '0 0.25rem 0.5rem rgba(0, 0, 0, 0.3)',
-          transition: 'all 0.3s ease'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-            <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{request.SUBJECT}</h4>
-            <span style={{
-              padding: '0.25rem 0.5rem',
-              borderRadius: '0.25rem',
-              fontSize: '0.8rem',
-              fontWeight: 'bold',
-              background: request.STATUS === 'OPEN' ? 'rgba(255, 193, 7, 0.2)' : 
-                        request.STATUS === 'REPLIED' ? 'rgba(13, 202, 240, 0.2)' : 'rgba(25, 135, 84, 0.2)',
-              color: request.STATUS === 'OPEN' ? '#ffc107' : 
-                     request.STATUS === 'REPLIED' ? '#0dcaf0' : '#198754',
-              border: `1px solid ${request.STATUS === 'OPEN' ? '#ffc107' : 
-                                 request.STATUS === 'REPLIED' ? '#0dcaf0' : '#198754'}`
+        <div className="support-section">
+          <h3>Your Support Requests</h3>
+          {userRequests.length === 0 ? (
+            <div style={{ 
+              padding: '20px', 
+              textAlign: 'center', 
+              background: '#f8f9fa', 
+              borderRadius: '8px',
+              color: '#666'
             }}>
-              {request.STATUS}
-            </span>
-          </div>
-          
-          <p style={{ margin: '0.75rem 0', color: 'rgba(255, 255, 255, 0.85)', lineHeight: '1.5' }}>
-            {request.MESSAGE}
-          </p>
-          
-          <div style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '0.75rem' }}>
-            Sent: {new Date(request.CREATED_AT).toLocaleDateString()} at {new Date(request.CREATED_AT).toLocaleTimeString()}
-          </div>
+              <FiMessageSquare size={24} style={{ marginBottom: '10px', opacity: 0.5 }} />
+              <p>No support requests yet. Send your first message using the form above.</p>
+            </div>
+          ) : (
+            <div className="requests-list">
+              {userRequests.map((request) => (
+                <div key={request.REQUEST_ID} className="request-item" style={{
+                  border: highlightedRequestId === request.REQUEST_ID ? '2px solid #007bff' : '1px solid #ddd',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  marginBottom: '15px',
+                  background: highlightedRequestId === request.REQUEST_ID ? '#f8f9ff' : '#fff',
+                  boxShadow: highlightedRequestId === request.REQUEST_ID ? '0 0 15px rgba(0, 123, 255, 0.3)' : 'none',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <h4 style={{ margin: 0, color: '#333' }}>{request.SUBJECT}</h4>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold',
+                      background: request.STATUS === 'OPEN' ? '#fff3cd' : 
+                                request.STATUS === 'REPLIED' ? '#d1ecf1' : '#d4edda',
+                      color: request.STATUS === 'OPEN' ? '#856404' : 
+                             request.STATUS === 'REPLIED' ? '#0c5460' : '#155724'
+                    }}>
+                      {request.STATUS}
+                    </span>
+                  </div>
+                  
+                  <p style={{ margin: '10px 0', color: '#666', lineHeight: '1.5' }}>
+                    {request.MESSAGE}
+                  </p>
+                  
+                  <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '10px' }}>
+                    Sent: {new Date(request.CREATED_AT).toLocaleDateString()} at {new Date(request.CREATED_AT).toLocaleTimeString()}
+                  </div>
 
-          {request.ADMIN_REPLY && (
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.75rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderLeft: '4px solid rgba(138, 147, 255, 0.8)',
-              borderRadius: '0 0.25rem 0.25rem 0',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <strong style={{ color: 'rgba(138, 147, 255, 0.9)', display: 'block', marginBottom: '0.5rem' }}>
-                Support Team Reply:
-              </strong>
-              <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.9)', lineHeight: '1.5' }}>
-                {request.ADMIN_REPLY}
-              </p>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
-                Replied: {new Date(request.REPLIED_AT).toLocaleDateString()} at {new Date(request.REPLIED_AT).toLocaleTimeString()}
-              </div>
+                  {request.ADMIN_REPLY && (
+                    <div style={{
+                      marginTop: '15px',
+                      padding: '12px',
+                      background: '#f8f9fa',
+                      borderLeft: '4px solid #007bff',
+                      borderRadius: '0 4px 4px 0'
+                    }}>
+                      <strong style={{ color: '#007bff', display: 'block', marginBottom: '5px' }}>
+                        Support Team Reply:
+                      </strong>
+                      <p style={{ margin: 0, color: '#333', lineHeight: '1.5' }}>
+                        {request.ADMIN_REPLY}
+                      </p>
+                      <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '8px' }}>
+                        Replied: {new Date(request.REPLIED_AT).toLocaleDateString()} at {new Date(request.REPLIED_AT).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
-      ))}
-    </div>
-  )}
-</div>
       </div>
     </div>
   );
@@ -1029,6 +1086,82 @@ const Settings = () => {
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: 20px;
           margin-bottom: 30px;
+        }
+
+        .profile-picture-section {
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-picture-section h3 {
+          color: #e0e0e0;
+          font-size: 18px;
+          margin-bottom: 15px;
+          font-weight: 600;
+        }
+
+        .profile-picture-container {
+          display: flex;
+          justify-content: center;
+        }
+
+        .profile-picture-preview {
+          position: relative;
+          width: 120px;
+          height: 120px;
+        }
+
+        .profile-picture,
+        .profile-picture-placeholder {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          background: rgba(255, 255, 255, 0.1);
+          border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .profile-picture-placeholder {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #888;
+        }
+
+        .profile-picture-upload {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          cursor: pointer;
+        }
+
+        .upload-overlay {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border: 2px solid #fff;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          font-size: 10px;
+          color: white;
+          text-align: center;
+          padding: 2px;
+        }
+
+        .upload-overlay:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .upload-overlay span {
+          font-size: 8px;
+          margin-top: 2px;
+          line-height: 1;
         }
 
         .form-group {

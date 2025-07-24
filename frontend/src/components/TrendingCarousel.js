@@ -4,7 +4,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import './TrendingCarousel.css';
 
-const TrendingCarousel = ({ shows = [], onShowClick }) => {
+const TrendingCarousel = ({ shows = [], onShowClick, userPreferences = { playTrailerOnHover: false } }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
@@ -131,14 +131,14 @@ const TrendingCarousel = ({ shows = [], onShowClick }) => {
     clearTimeout(hoverTimeoutRef.current);
     clearTimeout(stopVideoTimeoutRef.current);
     
-    // Start playing trailer after a brief delay
-    if (shows[currentIndex]?.TEASER) {
+    // Start playing trailer after a brief delay - only if user preference allows it
+    if (shows[currentIndex]?.TEASER && userPreferences.playTrailerOnHover) {
       hoverTimeoutRef.current = setTimeout(() => {
         setIsVideoPlaying(true);
         setTimeout(() => setVideoReady(true), 500);
       }, 1500); // Start after 1.5s
     }
-  }, [shows, currentIndex]);
+  }, [shows, currentIndex, userPreferences.playTrailerOnHover]);
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);

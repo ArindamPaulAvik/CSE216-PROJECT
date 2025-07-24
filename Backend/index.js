@@ -45,6 +45,11 @@ app.use('/reports', require('./routes/reports'));
 app.use('/faqs', require('./routes/faqs'));
 app.use('/user-management', require('./routes/userManagement'));
 app.use('/customer-care', require('./routes/customerCare'));
+app.use('/subscriptions', require('./routes/subscriptions'));
+app.use('/methods', require('./routes/methods'));
+app.use('/ratings', require('./routes/ratings'));
+app.use('/promo', require('./routes/promo'));
+app.use('/watch', require('./routes/watch'));
 app.use(require('./routes/notifications'));
 
 app.use(require('./routes/episodes'));

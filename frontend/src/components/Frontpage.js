@@ -19,6 +19,12 @@ function FrontPage() {
   const [dramaShows, setDramaShows] = useState([]);
   const [familyShows, setFamilyShows] = useState([]);
   
+  // User preferences state
+  const [userPreferences, setUserPreferences] = useState({
+    playTrailerOnHover: false,
+    showMyRatingsToOthers: false
+  });
+  
   // Debug effect to monitor comedyShows state
   useEffect(() => {
     console.log('Comedy shows state updated:', comedyShows);
@@ -48,6 +54,7 @@ function FrontPage() {
       return;
     }
 
+    // Fetch frontpage data
     axios.get('http://localhost:5000/frontpage', {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -76,6 +83,21 @@ function FrontPage() {
         } else {
           console.error('Error fetching frontpage:', err);
         }
+      });
+
+    // Fetch user preferences
+    axios.get('http://localhost:5000/users/preferences', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        setUserPreferences({
+          playTrailerOnHover: res.data.playTrailerOnHover || false,
+          showMyRatingsToOthers: res.data.showMyRatingsToOthers || false
+        });
+      })
+      .catch(err => {
+        console.error('Error fetching user preferences:', err);
+        // Keep default preferences if fetch fails
       });
   }, []);
 
@@ -388,13 +410,18 @@ function FrontPage() {
   ), []);
 
   return (
-    <Layout activeSection={activeSection}>
+    <Layout 
+      activeSection={activeSection} 
+      hasWatchAgain={watchAgainShows.length > 0}
+      hasTopRated={topRatedShows.length > 0}
+    >
       {/* Trending Now Section */}
       <section id="trending" className="shows-section" ref={trendingRef}>
         <h2 className="section-title trending-title">Trending Now</h2>
         <TrendingCarousel
           shows={trendingShows}
           onShowClick={(showId) => navigate(`/show/${showId}`)}
+          userPreferences={userPreferences}
         />
       </section>
 
@@ -406,28 +433,25 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {recommendedShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>
       )}
 
       {/* Watch Again Section */}
-      <section id="watchagain" className="shows-section" ref={watchAgainRef}>
-        <h2 className="section-title watch-again-title">
-          Watch Again
-        </h2>
-        <div className="shows-grid">
-          {watchAgainShows.map((show, index) => (
-            <ShowCard key={show.SHOW_ID} show={show} index={index} />
-          ))}
-        </div>
-        {watchAgainShows.length === 0 && (
-          <p className="empty-message">
-            No shows to watch again yet. Start watching some content!
-          </p>
-        )}
-      </section>
+      {watchAgainShows.length > 0 && (
+        <section id="watchagain" className="shows-section" ref={watchAgainRef}>
+          <h2 className="section-title watch-again-title">
+            Watch Again
+          </h2>
+          <div className="shows-grid">
+            {watchAgainShows.map((show, index) => (
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Top Rated Section */}
       {topRatedShows.length > 0 && (
@@ -437,7 +461,7 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {topRatedShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>
@@ -451,7 +475,7 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {actionHitsShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>
@@ -465,7 +489,7 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {thrillerShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>
@@ -479,7 +503,7 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {comedyShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>
@@ -493,7 +517,7 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {dramaShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>
@@ -507,7 +531,7 @@ function FrontPage() {
           </h2>
           <div className="shows-grid">
             {familyShows.map((show, index) => (
-              <ShowCard key={show.SHOW_ID} show={show} index={index} />
+              <ShowCard key={show.SHOW_ID} show={show} index={index} userPreferences={userPreferences} />
             ))}
           </div>
         </section>

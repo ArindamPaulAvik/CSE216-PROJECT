@@ -41,8 +41,7 @@ exports.updateProfile = async (req, res) => {
       USER_LASTNAME,
       EMAIL,
       BIRTH_DATE,
-      PHONE_NO,
-      COUNTRY_NAME
+      PHONE_NO
     } = req.body;
 
     const profilePicture = req.file ? req.file.filename : null;
@@ -90,16 +89,14 @@ exports.updateProfile = async (req, res) => {
       'USER_FIRSTNAME = ?',
       'USER_LASTNAME = ?',
       'BIRTH_DATE = ?',
-      'PHONE_NO = ?',
-      'COUNTRY_ID = (SELECT COUNTRY_ID FROM COUNTRY WHERE COUNTRY_NAME = ?)'
+      'PHONE_NO = ?'
     ];
 
     const updateParams = [
       USER_FIRSTNAME,
       USER_LASTNAME,
       formattedBirthDate, // Use formatted date
-      PHONE_NO,
-      COUNTRY_NAME
+      PHONE_NO
     ];
 
     if (profilePicture) {
@@ -125,7 +122,6 @@ exports.updateProfile = async (req, res) => {
         email: EMAIL,
         birthdate: formattedBirthDate,
         phone: PHONE_NO,
-        country: COUNTRY_NAME,
         profilePicture: profilePicture || null
       }
     });
@@ -375,14 +371,8 @@ exports.updatePreferences = async (req, res) => {
   try {
     const userEmail = req.user.email;
     const {
-      theme,
-      language,
-      emailNotifications,
-      pushNotifications,
-      autoplay,
-      qualityPreference,
-      subtitles,
-      adultContent
+      playTrailerOnHover,
+      showMyRatingsToOthers
     } = req.body;
 
     // Get user ID
@@ -399,37 +389,176 @@ exports.updatePreferences = async (req, res) => {
 
     const userId = userRows[0].USER_ID;
 
+    // Convert boolean values to integers for the database
+    const hoverTrailer = playTrailerOnHover ? 1 : 0;
+    const showRating = showMyRatingsToOthers ? 1 : 0;
+
     // Check if preferences exist
     const [existingPrefs] = await pool.query(`
-      SELECT * FROM USER_PREFERENCES WHERE USER_ID = ?
+      SELECT * FROM user_preferences WHERE USER_ID = ?
     `, [userId]);
 
     if (existingPrefs.length > 0) {
       // Update existing preferences
       await pool.query(`
-        UPDATE USER_PREFERENCES SET 
-          THEME = ?,
-          LANGUAGE = ?,
-          EMAIL_NOTIFICATIONS = ?,
-          PUSH_NOTIFICATIONS = ?,
-          AUTOPLAY = ?,
-          QUALITY_PREFERENCE = ?,
-          SUBTITLES = ?,
-          ADULT_CONTENT = ?
+        UPDATE user_preferences SET 
+          HOVER_TRAILER = ?,
+          SHOW_RATING = ?
         WHERE USER_ID = ?
-      `, [theme, language, emailNotifications, pushNotifications, autoplay, qualityPreference, subtitles, adultContent, userId]);
+      `, [hoverTrailer, showRating, userId]);
     } else {
       // Create new preferences
       await pool.query(`
-        INSERT INTO USER_PREFERENCES 
-        (USER_ID, THEME, LANGUAGE, EMAIL_NOTIFICATIONS, PUSH_NOTIFICATIONS, AUTOPLAY, QUALITY_PREFERENCE, SUBTITLES, ADULT_CONTENT)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [userId, theme, language, emailNotifications, pushNotifications, autoplay, qualityPreference, subtitles, adultContent]);
+        INSERT INTO user_preferences 
+        (USER_ID, HOVER_TRAILER, SHOW_RATING)
+        VALUES (?, ?, ?)
+      `, [userId, hoverTrailer, showRating]);
     }
 
     res.json({ message: 'Preferences updated successfully' });
   } catch (err) {
     console.error('Error updating preferences:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.getPreferences = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+
+    // Get user ID
+    const [userRows] = await pool.query(`
+      SELECT u.USER_ID
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      WHERE p.EMAIL = ?
+    `, [userEmail]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userRows[0].USER_ID;
+
+    // Get preferences
+    const [prefs] = await pool.query(`
+      SELECT HOVER_TRAILER, SHOW_RATING FROM user_preferences WHERE USER_ID = ?
+    `, [userId]);
+
+    if (prefs.length === 0) {
+      // Return default preferences if none exist
+      return res.json({
+        playTrailerOnHover: false,
+        showMyRatingsToOthers: false
+      });
+    }
+
+    // Convert integer values back to boolean
+    res.json({
+      playTrailerOnHover: prefs[0].HOVER_TRAILER === 1,
+      showMyRatingsToOthers: prefs[0].SHOW_RATING === 1
+    });
+  } catch (err) {
+    console.error('Error fetching preferences:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.getUserProfileById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const viewerEmail = req.user.email;
+
+    // Get viewer's user ID for privacy checks
+    const [viewerRows] = await pool.query(`
+      SELECT u.USER_ID
+      FROM PERSON p
+      JOIN USER u ON p.PERSON_ID = u.PERSON_ID
+      WHERE p.EMAIL = ?
+    `, [viewerEmail]);
+
+    if (viewerRows.length === 0) {
+      return res.status(404).json({ error: 'Viewer not found' });
+    }
+
+    const viewerId = viewerRows[0].USER_ID;
+
+    // Get target user profile
+    const [userRows] = await pool.query(`
+      SELECT u.USER_ID, u.USER_FIRSTNAME, u.USER_LASTNAME, u.PROFILE_PICTURE, 
+             p.EMAIL, u.PHONE_NO, u.BIRTH_DATE
+      FROM USER u
+      JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
+      WHERE u.USER_ID = ?
+      LIMIT 1
+    `, [userId]);
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetUser = userRows[0];
+    const targetUserId = targetUser.USER_ID;
+
+    // Get target user's privacy preferences
+    const [prefsRows] = await pool.query(`
+      SELECT SHOW_RATING FROM user_preferences WHERE USER_ID = ?
+    `, [targetUserId]);
+
+    const showRatings = prefsRows.length > 0 ? prefsRows[0].SHOW_RATING === 1 : false;
+
+    // Get user's watch history (shows they've watched)
+    const [watchHistoryRows] = await pool.query(`
+      SELECT DISTINCT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING, 
+             COUNT(DISTINCT ue.SHOW_EPISODE_ID) as episodes_watched
+      FROM user_episode ue
+      JOIN SHOW_EPISODE se ON ue.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
+      JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
+      WHERE ue.USER_ID = ? AND ue.WATCHED = 1
+      GROUP BY s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING
+      ORDER BY MAX(ue.TIMESTAMP) DESC
+      LIMIT 20
+    `, [targetUserId]);
+
+    // Get user's favorite shows
+    const [favoritesRows] = await pool.query(`
+      SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING
+      FROM FAV_LIST_SHOW fls
+      JOIN \`SHOW\` s ON fls.SHOW_ID = s.SHOW_ID
+      WHERE fls.USER_ID = ?
+      ORDER BY fls.SHOW_ID DESC
+      LIMIT 20
+    `, [targetUserId]);
+
+    // Get user's ratings (only if they allow it)
+    let ratingsData = [];
+    if (showRatings) {
+      const [ratingsRows] = await pool.query(`
+        SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, r.RATING, r.REVIEW
+        FROM RATING r
+        JOIN \`SHOW\` s ON r.SHOW_ID = s.SHOW_ID
+        WHERE r.USER_ID = ?
+        ORDER BY r.RATING_ID DESC
+        LIMIT 20
+      `, [targetUserId]);
+      ratingsData = ratingsRows;
+    }
+
+    res.json({
+      profile: {
+        firstName: targetUser.USER_FIRSTNAME,
+        lastName: targetUser.USER_LASTNAME,
+        fullName: `${targetUser.USER_FIRSTNAME} ${targetUser.USER_LASTNAME}`,
+        profilePicture: targetUser.PROFILE_PICTURE || null
+      },
+      watchHistory: watchHistoryRows,
+      favorites: favoritesRows,
+      ratings: ratingsData,
+      canViewRatings: showRatings,
+      isOwnProfile: viewerId === targetUserId
+    });
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
