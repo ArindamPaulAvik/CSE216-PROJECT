@@ -486,118 +486,6 @@ const Settings = () => {
     </div>
   );
 
-  const renderBillingPayment = () => (
-    <div className="settings-content">
-      <div className="settings-header">
-        <h2>Billing & Payment</h2>
-        <p>Manage your payment methods and billing information</p>
-      </div>
-
-      <form onSubmit={handleBillingSubmit} className="settings-form">
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Cardholder Name</label>
-            <input
-              type="text"
-              value={billingData.cardholderName}
-              onChange={(e) => setBillingData(prev => ({ ...prev, cardholderName: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Card Number</label>
-            <input
-              type="text"
-              value={billingData.cardNumber}
-              onChange={(e) => setBillingData(prev => ({ ...prev, cardNumber: e.target.value }))}
-              placeholder="1234 5678 9012 3456"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Expiry Date</label>
-            <input
-              type="text"
-              value={billingData.expiryDate}
-              onChange={(e) => setBillingData(prev => ({ ...prev, expiryDate: e.target.value }))}
-              placeholder="MM/YY"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>CVV</label>
-            <input
-              type="text"
-              value={billingData.cvv}
-              onChange={(e) => setBillingData(prev => ({ ...prev, cvv: e.target.value }))}
-              placeholder="123"
-              maxLength="4"
-              required
-            />
-          </div>
-
-          <div className="form-group full-width">
-            <label>Billing Address</label>
-            <input
-              type="text"
-              value={billingData.billingAddress}
-              onChange={(e) => setBillingData(prev => ({ ...prev, billingAddress: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>City</label>
-            <input
-              type="text"
-              value={billingData.city}
-              onChange={(e) => setBillingData(prev => ({ ...prev, city: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Postal Code</label>
-            <input
-              type="text"
-              value={billingData.postalCode}
-              onChange={(e) => setBillingData(prev => ({ ...prev, postalCode: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Country</label>
-            <select
-              value={billingData.country}
-              onChange={(e) => setBillingData(prev => ({ ...prev, country: e.target.value }))}
-              required
-            >
-              <option value="">Select Country</option>
-              <option value="US">United States</option>
-              <option value="CA">Canada</option>
-              <option value="UK">United Kingdom</option>
-              <option value="AU">Australia</option>
-              <option value="DE">Germany</option>
-              <option value="FR">France</option>
-              <option value="JP">Japan</option>
-              <option value="BR">Brazil</option>
-              <option value="IN">India</option>
-            </select>
-          </div>
-        </div>
-
-        <button type="submit" className="save-button" disabled={loading}>
-          <FiSave />
-          {loading ? 'Saving...' : 'Save Payment Info'}
-        </button>
-      </form>
-    </div>
-  );
-
   const renderPersonalization = () => (
     <div className="settings-content">
       <div className="settings-header">
@@ -882,14 +770,6 @@ const Settings = () => {
                 </div>
 
                 <div
-                  className={`nav-item ${activeSection === 'billing' ? 'active' : ''}`}
-                  onClick={() => setActiveSection('billing')}
-                >
-                  <FiCreditCard />
-                  <span>Billing & Payment</span>
-                </div>
-
-                <div
                   className={`nav-item ${activeSection === 'personalization' ? 'active' : ''}`}
                   onClick={() => setActiveSection('personalization')}
                 >
@@ -925,7 +805,6 @@ const Settings = () => {
             )}
 
             {activeSection === 'personal' && renderPersonalDetails()}
-            {activeSection === 'billing' && renderBillingPayment()}
             {activeSection === 'personalization' && renderPersonalization()}
             {activeSection === 'support' && renderCustomerCare()}
             {activeSection === 'faq' && renderFAQ()}

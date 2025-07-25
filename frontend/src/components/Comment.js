@@ -677,6 +677,8 @@ function CommentSection({ episodeId }) {
     return new Date(b.TIME) - new Date(a.TIME);
   });
 
+  const loggedInUserId = localStorage.getItem('user_id');
+
   return (
     <div 
       data-testid="comment-section" 
@@ -905,8 +907,12 @@ function CommentSection({ episodeId }) {
                       textDecoration: comment.DELETED ? 'none' : 'none'
                     }}
                     onClick={() => {
-                      if (!comment.DELETED && comment.USERNAME && comment.USERNAME !== 'You' && comment.USER_ID) {
-                        window.open(`/profile/${comment.USER_ID}`, '_blank');
+                      if (!comment.DELETED && comment.USERNAME && comment.USER_ID) {
+                        if (String(comment.USER_ID) === String(loggedInUserId)) {
+                          window.open('/profile', '_blank');
+                        } else {
+                          window.open(`/profile/${comment.USER_ID}`, '_blank');
+                        }
                       }
                     }}
                     onMouseEnter={(e) => {
@@ -1338,8 +1344,12 @@ function CommentSection({ episodeId }) {
                               textDecoration: reply.DELETED ? 'none' : 'none'
                             }}
                             onClick={() => {
-                              if (!reply.DELETED && reply.USERNAME && reply.USERNAME !== 'You' && reply.USER_ID) {
-                                window.open(`/profile/${reply.USER_ID}`, '_blank');
+                              if (!reply.DELETED && reply.USERNAME && reply.USER_ID) {
+                                if (String(reply.USER_ID) === String(loggedInUserId)) {
+                                  window.open('/profile', '_blank');
+                                } else {
+                                  window.open(`/profile/${reply.USER_ID}`, '_blank');
+                                }
                               }
                             }}
                             onMouseEnter={(e) => {

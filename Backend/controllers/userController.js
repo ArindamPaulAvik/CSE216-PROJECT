@@ -220,7 +220,8 @@ exports.getUserComments = async (req, res) => {
         se.SHOW_EPISODE_TITLE AS EPISODE_TITLE,
         s.TITLE AS SHOW_TITLE,
         s.SHOW_ID,
-        s.THUMBNAIL AS SHOW_THUMBNAIL
+        s.THUMBNAIL AS SHOW_THUMBNAIL,
+        s.CATEGORY_ID AS CATEGORY_ID
       FROM COMMENT c
       JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
@@ -315,12 +316,16 @@ exports.getUserFavorites = async (req, res) => {
       return res.status(400).json({ error: 'Invalid user ID' });
     }
 
-    // Get user's favorite shows
+    // Get user's favorite shows WITH GENRES
     const [favorites] = await pool.query(`
-      SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING, s.DESCRIPTION
+      SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING, s.DESCRIPTION,
+             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
       FROM FAV_LIST_SHOW fls
       JOIN \`SHOW\` s ON fls.SHOW_ID = s.SHOW_ID
+      LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+      LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE fls.USER_ID = ?
+      GROUP BY s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING, s.DESCRIPTION
       ORDER BY fls.SHOW_ID DESC
     `, [userId]);
 
@@ -356,7 +361,8 @@ exports.getUserCommentsByUserId = async (req, res) => {
         se.SHOW_EPISODE_TITLE AS EPISODE_TITLE,
         s.TITLE AS SHOW_TITLE,
         s.SHOW_ID,
-        s.THUMBNAIL AS SHOW_THUMBNAIL
+        s.THUMBNAIL AS SHOW_THUMBNAIL,
+        s.CATEGORY_ID AS CATEGORY_ID
       FROM COMMENT c
       JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
@@ -413,7 +419,7 @@ exports.getUserRatings = async (req, res) => {
 
     // Get user's ratings
     const [ratings] = await pool.query(`
-      SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, r.RATING_VALUE, r.RATING_DATE, se.SHOW_EPISODE_TITLE
+      SELECT s.SHOW_ID, s.TITLE AS SHOW_TITLE, s.THUMBNAIL, r.RATING_VALUE, r.RATING_DATE, se.SHOW_EPISODE_TITLE
       FROM RATING r
       JOIN SHOW_EPISODE se ON r.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
@@ -613,9 +619,10 @@ exports.getUserProfileById = async (req, res) => {
     // Get target user profile - simplified query first
     const [userRows] = await pool.query(`
       SELECT u.USER_ID, u.USER_FIRSTNAME, u.USER_LASTNAME, u.PROFILE_PICTURE, 
-             p.EMAIL
+             p.EMAIL, u.PHONE_NO, u.BIRTH_DATE, c.COUNTRY_NAME
       FROM USER u
       JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
+      LEFT JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
       WHERE u.USER_ID = ?
       LIMIT 1
     `, [userId]);
@@ -666,11 +673,17 @@ exports.getUserProfileById = async (req, res) => {
     let favoritesRows = [];
     try {
       const [favResult] = await pool.query(`
-        SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING
-        FROM FAV_LIST_SHOW fls
-        JOIN \`SHOW\` s ON fls.SHOW_ID = s.SHOW_ID
-        WHERE fls.USER_ID = ?
-        ORDER BY fls.SHOW_ID DESC
+        SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING, s.DESCRIPTION,
+               s.RELEASE_DATE AS RELEASE_DATE,
+               f.ADD_DATE AS ADDED_DATE,
+               GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+        FROM FAV_LIST_SHOW f
+        JOIN \`SHOW\` s ON f.SHOW_ID = s.SHOW_ID
+        LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+        LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+        WHERE f.USER_ID = ?
+        GROUP BY s.SHOW_ID, f.ADD_DATE
+        ORDER BY f.ADD_DATE DESC
         LIMIT 20
       `, [targetUserId]);
       favoritesRows = favResult || [];
@@ -706,6 +719,10 @@ exports.getUserProfileById = async (req, res) => {
         firstName: targetUser.USER_FIRSTNAME,
         lastName: targetUser.USER_LASTNAME,
         fullName: `${targetUser.USER_FIRSTNAME} ${targetUser.USER_LASTNAME}`,
+        email: targetUser.EMAIL,
+        phone: targetUser.PHONE_NO,
+        birthdate: targetUser.BIRTH_DATE,
+        country: targetUser.COUNTRY_NAME,
         profilePicture: targetUser.PROFILE_PICTURE || null
       },
       watchHistory: watchHistoryRows,

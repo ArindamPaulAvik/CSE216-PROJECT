@@ -370,21 +370,27 @@ function UserProfileView() {
                 </div>
                 <div className="details-grid">
                   <div className="detail-item">
+                    <div className="detail-label">First Name</div>
                     <div className="detail-value">{profile.firstName || 'Not specified'}</div>
                   </div>
                   <div className="detail-item">
+                    <div className="detail-label">Last Name</div>
                     <div className="detail-value">{profile.lastName || 'Not specified'}</div>
                   </div>
                   <div className="detail-item detail-item-full">
+                    <div className="detail-label">Email</div>
                     <div className="detail-value">{profile.email}</div>
                   </div>
                   <div className="detail-item">
+                    <div className="detail-label">Birthdate</div>
                     <div className="detail-value">{profile.birthdate ? formatDate(profile.birthdate) : 'Not specified'}</div>
                   </div>
                   <div className="detail-item">
+                    <div className="detail-label">Phone Number</div>
                     <div className="detail-value">{profile.phone || 'Not specified'}</div>
                   </div>
                   <div className="detail-item detail-item-full">
+                    <div className="detail-label">Country</div>
                     <div className="detail-value">{profile.country || 'Not specified'}</div>
                   </div>
                 </div>
@@ -448,13 +454,7 @@ function UserProfileView() {
                               }
                             </p>
                             <div className="favorite-genres">
-                              {show.GENRES || 'No genres available'}
-                            </div>
-                          </div>
-                          
-                          <div className="favorite-meta">
-                            <div className="favorite-date">
-                              Added {formatDate(show.ADDED_DATE)}
+                              {typeof show.GENRES === 'string' && show.GENRES.trim() ? show.GENRES : 'No genres available'}
                             </div>
                           </div>
                         </div>
@@ -514,7 +514,7 @@ function UserProfileView() {
                                 </div>
                                 <div className="show-details">
                                   <h4 className="show-title">{comment.SHOW_TITLE}</h4>
-                                  {comment.EPISODE_TITLE && (
+                                  {comment.CATEGORY_ID !== 1 && comment.EPISODE_TITLE && (
                                     <p className="episode-title">Episode: {comment.EPISODE_TITLE}</p>
                                   )}
                                 </div>
@@ -547,12 +547,6 @@ function UserProfileView() {
                                 <span className="stat-icon">👎</span>
                                 <span className="stat-count">{comment.DISLIKE_COUNT || 0}</span>
                               </div>
-                              {comment.PINNED && (
-                                <div className="stat-item pinned">
-                                  <span className="stat-icon">📌</span>
-                                  <span>Pinned</span>
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -1896,6 +1890,12 @@ function UserProfileView() {
             align-items: flex-start;
             gap: 5px;
           }
+        }
+        .detail-label {
+          color: #b0b0b0;
+          font-size: 13px;
+          font-weight: 500;
+          margin-bottom: 4px;
         }
       `}</style>
       </div>

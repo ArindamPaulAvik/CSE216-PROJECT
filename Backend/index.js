@@ -50,6 +50,10 @@ app.use('/ratings', require('./routes/ratings'));
 app.use('/promo', require('./routes/promo'));
 app.use('/watch', require('./routes/watch'));
 app.use(require('./routes/notifications'));
+app.use('/user-join-stats', require('./routes/userJoinStats'));
+app.use('/income-stats', require('./routes/incomeStats'));
+app.use('/offers', require('./routes/offers'));
+app.use('/publishers', require('./routes/publishers'));
 
 app.use(require('./routes/episodes'));
 

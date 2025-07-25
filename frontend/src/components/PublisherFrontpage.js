@@ -12,21 +12,17 @@ function PublisherFrontpage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('user_type');
-    
     if (!token || userType !== 'publisher') {
       alert('Access denied. Please login as a publisher.');
       navigate('/');
       return;
     }
-
-    // Fetch publisher data
     fetchPublisherData();
   }, [navigate]);
 
   const fetchPublisherData = async () => {
     try {
       const token = localStorage.getItem('token');
-      // You can implement this API later
       setPublisherData({
         name: 'Publisher Name',
         contractId: 'PUB-12345',
@@ -46,6 +42,14 @@ function PublisherFrontpage() {
 
   const handleProfile = () => {
     navigate('/publisher-profile');
+  };
+
+  const handleViewContract = () => {
+    navigate('/publisher-contract');
+  };
+
+  const handleContractDetails = () => {
+    navigate('/publisher-contract');
   };
 
   if (!publisherData) {
@@ -237,15 +241,18 @@ function PublisherFrontpage() {
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
               View detailed analytics and performance metrics
             </p>
-            <button style={{
-              background: 'linear-gradient(45deg, #7b68ee, #6a5acd)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
+            <button
+              onClick={() => navigate('/publisher-analytics')}
+              style={{
+                background: 'linear-gradient(45deg, #7b68ee, #6a5acd)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
               View Analytics
             </button>
           </motion.div>
@@ -281,7 +288,7 @@ function PublisherFrontpage() {
             </button>
           </motion.div>
 
-          {/* Performance Card */}
+          {/* Contract Card */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             style={{
@@ -294,21 +301,25 @@ function PublisherFrontpage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
               <FiTrendingUp size={24} style={{ marginRight: '15px', color: '#ff6b6b' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Performance</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Contract</h3>
             </div>
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
-              Monitor content performance and trending metrics
+              View your contract details and status
             </p>
-            <button style={{
-              background: 'linear-gradient(45deg, #ff6b6b, #ee5a52)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
-              View Performance
+            <button
+              onClick={handleContractDetails}
+              style={{
+                background: 'linear-gradient(45deg, #ff6b6b, #ee5a24)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                marginTop: '23px'
+              }}
+            >
+              Contract details
             </button>
           </motion.div>
         </motion.div>

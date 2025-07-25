@@ -162,7 +162,9 @@ function Auth() {
         if (res.data.adminType) {
           localStorage.setItem('admin_type', res.data.adminType);
         }
-        
+        if (res.data.publisherId) {
+          localStorage.setItem('publisher_id', res.data.publisherId);
+        }
         // Navigate based on user type
         navigate(res.data.redirectTo || '/frontpage');
       }

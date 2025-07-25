@@ -383,21 +383,27 @@ function UserProfile() {
     </div>
     <div className="details-grid">
       <div className="detail-item">
+        <div className="detail-label">First Name</div>
         <div className="detail-value">{userInfo.firstName}</div>
       </div>
       <div className="detail-item">
+        <div className="detail-label">Last Name</div>
         <div className="detail-value">{userInfo.lastName}</div>
       </div>
       <div className="detail-item detail-item-full">
+        <div className="detail-label">Email</div>
         <div className="detail-value">{userInfo.email}</div>
       </div>
       <div className="detail-item">
+        <div className="detail-label">Birthdate</div>
         <div className="detail-value">{userInfo.birthdate ? formatDate(userInfo.birthdate) : 'Not specified'}</div>
       </div>
       <div className="detail-item">
+        <div className="detail-label">Phone Number</div>
         <div className="detail-value">{userInfo.phone || 'Not specified'}</div>
       </div>
       <div className="detail-item detail-item-full">
+        <div className="detail-label">Country</div>
         <div className="detail-value">{userInfo.country || 'Not specified'}</div>
       </div>
     </div>
@@ -542,7 +548,7 @@ function UserProfile() {
                     </div>
                     <div className="show-details">
                       <h4 className="show-title">{comment.SHOW_TITLE}</h4>
-                      {comment.EPISODE_TITLE && (
+                      {comment.CATEGORY_ID !== 1 && comment.EPISODE_TITLE && (
                         <p className="episode-title">Episode: {comment.EPISODE_TITLE}</p>
                       )}
                     </div>
@@ -555,14 +561,16 @@ function UserProfile() {
                 </div>
                 
                 <div className="comment-body">
-                  <p className="comment-text">{comment.TEXT}</p>
+                  <p className="comment-text">
+                    {comment.TEXT}
+                    {comment.EDITED === 1 && (
+                      <span className="edited-indicator"> (edited)</span>
+                    )}
+                  </p>
                   {comment.IMG_LINK && (
                     <div className="comment-image">
                       <img src={`http://localhost:5000${comment.IMG_LINK}`} alt="Comment attachment" />
                     </div>
-                  )}
-                  {comment.EDITED === 1 && (
-                    <span className="edited-indicator">(edited)</span>
                   )}
                 </div>
                 
@@ -1977,6 +1985,12 @@ function UserProfile() {
             align-items: flex-start;
             gap: 5px;
           }
+        }
+        .detail-label {
+          color: #b0b0b0;
+          font-size: 13px;
+          font-weight: 500;
+          margin-bottom: 4px;
         }
       `}</style>
     </Layout>

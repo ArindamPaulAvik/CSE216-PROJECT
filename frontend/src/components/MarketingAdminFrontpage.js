@@ -90,102 +90,25 @@ function MarketingAdminFrontpage() {
           <p style={{ margin: '5px 0 0 0', opacity: 0.7 }}>Campaigns & Analytics Management</p>
         </div>
         
-        <div style={{ position: 'relative' }}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '50%',
-              width: '50px',
-              height: '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            <FiUser size={20} />
-          </motion.button>
-
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                position: 'absolute',
-                top: '60px',
-                right: '0',
-                background: 'rgba(0, 0, 0, 0.9)',
-                borderRadius: '10px',
-                padding: '15px',
-                minWidth: '200px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <div style={{ marginBottom: '15px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
-                <p style={{ margin: 0, fontWeight: '600' }}>{adminData.name}</p>
-                <p style={{ margin: '5px 0 0 0', fontSize: '14px', opacity: 0.7 }}>{adminData.email}</p>
-                <span style={{ 
-                  background: 'rgba(255, 107, 107, 0.3)', 
-                  color: '#ff6b6b', 
-                  padding: '2px 8px', 
-                  borderRadius: '10px', 
-                  fontSize: '12px',
-                  marginTop: '5px',
-                  display: 'inline-block'
-                }}>
-                  Marketing Admin
-                </span>
-              </div>
-              
-              <button
-                onClick={handleProfile}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'white',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '10px'
-                }}
-              >
-                <FiSettings size={16} />
-                Profile Settings
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ff4757',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <FiLogOut size={16} />
-                Logout
-              </button>
-            </motion.div>
-          )}
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            cursor: 'pointer'
+          }}
+        >
+          <FiLogOut size={20} />
+        </motion.button>
       </motion.header>
 
       {/* Main Content */}
@@ -201,7 +124,7 @@ function MarketingAdminFrontpage() {
             marginBottom: '40px'
           }}
         >
-          {/* Campaigns Management Card */}
+          {/* Manage Publishers Card (was Campaigns) */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             style={{
@@ -213,11 +136,11 @@ function MarketingAdminFrontpage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-              <FiTarget size={24} style={{ marginRight: '15px', color: '#ff6b6b' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Campaigns</h3>
+              <FiUser size={24} style={{ marginRight: '15px', color: '#42a5f5' }} />
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Manage Publishers</h3>
             </div>
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
-              Create and manage marketing campaigns
+              Add, edit, and manage publisher accounts and permissions
             </p>
             <button style={{
               background: 'linear-gradient(45deg, #ff6b6b, #ee5a24)',
@@ -227,8 +150,10 @@ function MarketingAdminFrontpage() {
               borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: '600'
-            }}>
-              Manage Campaigns
+            }}
+              onClick={() => navigate('/admin-publishers')}
+            >
+              Manage Publishers
             </button>
           </motion.div>
 
@@ -258,7 +183,9 @@ function MarketingAdminFrontpage() {
               borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: '600'
-            }}>
+            }}
+              onClick={() => navigate('/admin-analytics')}
+            >
               View Analytics
             </button>
           </motion.div>
@@ -297,7 +224,7 @@ function MarketingAdminFrontpage() {
             </button>
           </motion.div>
 
-          {/* Notifications Card */}
+          {/* Manage Offers Card (was Notifications) */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             style={{
@@ -310,10 +237,10 @@ function MarketingAdminFrontpage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
               <FiBell size={24} style={{ marginRight: '15px', color: '#ab47bc' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Notifications</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Manage Offers</h3>
             </div>
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
-              Send marketing notifications to users
+              Create and manage special offers and marketing deals
             </p>
             <button style={{
               background: 'linear-gradient(45deg, #ab47bc, #9c27b0)',
@@ -323,8 +250,10 @@ function MarketingAdminFrontpage() {
               borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: '600'
-            }}>
-              Send Notifications
+            }}
+              onClick={() => navigate('/admin-offers')}
+            >
+              Manage Offers
             </button>
           </motion.div>
         </motion.div>

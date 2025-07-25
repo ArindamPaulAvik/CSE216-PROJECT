@@ -36,6 +36,11 @@ import UsersManagement from './components/UsersManagement';
 import UserDetails from './components/UserDetails';
 import CustomerCareRequests from './components/CustomerCareRequests';
 import AdminPromotions from './components/AdminPromotions';
+import AnalyticsPage from './components/AnalyticsPage';
+import AdminOffers from './components/AdminOffers';
+import AdminPublishers from './components/AdminPublishers';
+import PublisherContract from './components/PublisherContract';
+import PublisherAnalyticsPage from './components/PublisherAnalyticsPage';
 
 function App() {
   return (
@@ -81,6 +86,11 @@ function App() {
           <Route path="/user-details/:id" element={<UserDetails />} />
           <Route path="/customer-care-requests" element={<CustomerCareRequests />} />
           <Route path="/admin-promotions" element={<AdminPromotions />} />
+          <Route path="/admin-analytics" element={<AnalyticsPage />} />
+          <Route path="/admin-offers" element={<AdminOffers />} />
+          <Route path="/admin-publishers" element={<AdminPublishers />} />
+          <Route path="/publisher-contract" element={<PublisherContract />} />
+          <Route path="/publisher-analytics" element={<PublisherAnalyticsPage />} />
         </Routes>
       </div>
     </Router>

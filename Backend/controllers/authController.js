@@ -80,7 +80,7 @@ exports.login = async (req, res) => {
 
     if (publisherRows.length > 0) {
       const publisherId = publisherRows[0].PUBLISHER_ID;
-      const token = jwt.sign({ publisherId, email, userType: 'publisher' }, SECRET_KEY, { expiresIn: '2h' });
+      const token = jwt.sign({ publisherId, personId, email, userType: 'publisher' }, SECRET_KEY, { expiresIn: '2h' });
       return res.status(200).json({ 
         message: 'Login successful', 
         token, 
