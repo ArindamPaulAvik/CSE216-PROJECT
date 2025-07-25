@@ -18,7 +18,7 @@ exports.getEpisodeInfo = async (req, res) => {
         s.SHOW_ID
       FROM SHOW_EPISODE se
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
-      WHERE se.SHOW_EPISODE_ID = ?
+      WHERE se.SHOW_EPISODE_ID = ? AND s.REMOVED = 0
     `, [episodeId]);
 
     if (episode.length === 0) {

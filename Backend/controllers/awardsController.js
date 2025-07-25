@@ -103,7 +103,7 @@ exports.getAwardById = async (req, res) => {
         s.RATING
       FROM \`SHOW\` s
       INNER JOIN SHOW_AWARD sa ON s.SHOW_ID = sa.SHOW_ID
-      WHERE sa.AWARD_ID = ?
+      WHERE sa.AWARD_ID = ? AND s.REMOVED = 0
       ORDER BY s.TITLE
     `;
     

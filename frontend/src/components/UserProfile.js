@@ -39,7 +39,7 @@ function UserProfile() {
         const token = localStorage.getItem('token');
 
         if (!token) {
-          navigate('/login');
+          navigate('/auth');
           return;
         }
 
@@ -59,7 +59,7 @@ function UserProfile() {
           if (response.status === 401) {
             console.log('Unauthorized, redirecting to login');
             localStorage.removeItem('token');
-            navigate('/login');
+            navigate('/auth');
             return;
           }
 

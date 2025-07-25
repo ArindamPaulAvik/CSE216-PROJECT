@@ -37,6 +37,7 @@ exports.getFrontpage = async (req, res) => {
   LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
   LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
   LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+  WHERE s.REMOVED = 0
   GROUP BY 
     s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, s.BANNER, IS_FAVORITE
   ORDER BY s.WATCH_COUNT DESC
@@ -45,7 +46,7 @@ exports.getFrontpage = async (req, res) => {
 
 
     const [allshows] = await pool.query(`
-      SELECT SHOW_ID, TITLE, THUMBNAIL, RATING FROM \`SHOW\`
+      SELECT SHOW_ID, TITLE, THUMBNAIL, RATING FROM \`SHOW\` WHERE REMOVED = 0
     `);
 
     const [watchagainshows] = await pool.query(`
@@ -64,7 +65,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-      WHERE p.EMAIL = ?
+      WHERE p.EMAIL = ? AND s.REMOVED = 0
       GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER
       LIMIT 4
     `, [userEmail]);
@@ -103,7 +104,7 @@ exports.getFrontpage = async (req, res) => {
         LEFT JOIN FAV_LIST_SHOW fls ON s.SHOW_ID = fls.SHOW_ID AND fls.USER_ID = ?
         LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
         LEFT JOIN USER_EPISODE ue ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID AND ue.USER_ID = ?
-        WHERE fls.USER_ID IS NOT NULL OR ue.USER_ID IS NOT NULL
+        WHERE fls.USER_ID IS NOT NULL OR ue.USER_ID IS NOT NULL AND s.REMOVED = 0
       )
 
       SELECT DISTINCT
@@ -124,7 +125,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       JOIN top_user_genres tug ON g.GENRE_ID = tug.GENRE_ID
-      WHERE s.SHOW_ID NOT IN (SELECT SHOW_ID FROM user_content)
+      WHERE s.SHOW_ID NOT IN (SELECT SHOW_ID FROM user_content) AND s.REMOVED = 0
       GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.WATCH_COUNT
       HAVING matching_genres_count > 0
       ORDER BY recommendation_score DESC, s.RATING DESC, s.WATCH_COUNT DESC
@@ -150,7 +151,7 @@ exports.getFrontpage = async (req, res) => {
         END AS IS_FAVORITE
       FROM \`SHOW\` s
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
-      WHERE s.RATING IS NOT NULL AND s.RATING > 0
+      WHERE s.RATING IS NOT NULL AND s.RATING > 0 AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
       ORDER BY s.RATING DESC, s.WATCH_COUNT DESC
@@ -178,7 +179,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
-      WHERE LOWER(g.GENRE_NAME) LIKE '%action%'
+      WHERE LOWER(g.GENRE_NAME) LIKE '%action%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
@@ -206,7 +207,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
-      WHERE LOWER(g.GENRE_NAME) LIKE '%thriller%' OR LOWER(g.GENRE_NAME) LIKE '%suspense%'
+      WHERE LOWER(g.GENRE_NAME) LIKE '%thriller%' OR LOWER(g.GENRE_NAME) LIKE '%suspense%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
@@ -234,7 +235,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
-      WHERE LOWER(g.GENRE_NAME) LIKE '%comedy%' OR LOWER(g.GENRE_NAME) LIKE '%humor%' OR LOWER(g.GENRE_NAME) LIKE '%comic%'
+      WHERE LOWER(g.GENRE_NAME) LIKE '%comedy%' OR LOWER(g.GENRE_NAME) LIKE '%humor%' OR LOWER(g.GENRE_NAME) LIKE '%comic%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
@@ -292,7 +293,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
-      WHERE LOWER(g.GENRE_NAME) LIKE '%drama%'
+      WHERE LOWER(g.GENRE_NAME) LIKE '%drama%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
@@ -320,7 +321,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
-      WHERE (LOWER(g.GENRE_NAME) LIKE '%family%' OR s.AGE_RESTRICTION_ID IN (1, 2, 3))
+      WHERE (LOWER(g.GENRE_NAME) LIKE '%family%' OR s.AGE_RESTRICTION_ID IN (1, 2, 3)) AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
       ORDER BY RAND()

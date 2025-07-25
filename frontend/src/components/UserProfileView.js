@@ -69,7 +69,7 @@ function UserProfileView() {
         if (error.response.status === 401) {
           setError('You are not authorized to view this profile. Please log in again.');
           localStorage.removeItem('token');
-          navigate('/login');
+          navigate('/auth');
           return;
         } else if (error.response.status === 404) {
           setError('User not found');

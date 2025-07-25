@@ -146,7 +146,7 @@ exports.getActorById = async (req, res) => {
       `SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL
        FROM \`SHOW\` s
        JOIN SHOW_CAST sa ON s.SHOW_ID = sa.SHOW_ID
-       WHERE sa.ACTOR_ID = ?`,
+       WHERE sa.ACTOR_ID = ? AND s.REMOVED = 0`,
       [actorId]
     );
 

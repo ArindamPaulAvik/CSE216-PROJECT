@@ -82,7 +82,7 @@ exports.searchShows = async (req, res) => {
       ${genreJoin}
       LEFT JOIN show_genre sg2 ON s.SHOW_ID = sg2.SHOW_ID
       LEFT JOIN genre g2 ON sg2.GENRE_ID = g2.GENRE_ID
-      ${whereSQL}
+      ${whereSQL} AND s.REMOVED = 0
       GROUP BY s.SHOW_ID
       ${genreHaving}
       ORDER BY ${isEmptySearch ? 's.TITLE' : 'CASE WHEN s.TITLE LIKE ? THEN 0 ELSE 1 END, s.TITLE'}

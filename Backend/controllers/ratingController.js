@@ -229,7 +229,7 @@ const getUserRatings = async (req, res) => {
       JOIN show_episode se ON r.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`show\` s ON se.SHOW_ID = s.SHOW_ID
       LEFT JOIN category c ON s.CATEGORY_ID = c.CATEGORY_ID
-      WHERE r.USER_ID = ?
+      WHERE r.USER_ID = ? AND s.REMOVED = 0
       ORDER BY r.RATING_DATE DESC
     `;
     

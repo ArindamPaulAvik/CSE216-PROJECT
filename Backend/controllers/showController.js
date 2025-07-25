@@ -27,7 +27,7 @@ exports.getShowDetails = async (req, res) => {
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON s.SHOW_ID = fls.SHOW_ID
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
-      WHERE s.SHOW_ID = ?
+      WHERE s.SHOW_ID = ? AND s.REMOVED = 0
       GROUP BY s.SHOW_ID
       LIMIT 1
     `, [showId]);
@@ -47,7 +47,7 @@ exports.getShowDetails = async (req, res) => {
              sc.DESCRIPTION as ROLE_DESCRIPTION
       FROM SHOW_CAST sc
       JOIN ACTOR a ON sc.ACTOR_ID = a.ACTOR_ID
-      WHERE sc.SHOW_ID = ?
+      WHERE sc.SHOW_ID = ? AND s.REMOVED = 0
       ORDER BY sc.ROLE_NAME
     `, [showId]);
 
@@ -101,6 +101,7 @@ exports.getAllShows = async (req, res) => {
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
+      WHERE s.REMOVED = 0
       GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.SEASON, st.STATUS_NAME, c.CATEGORY_NAME, p.PUBLISHER_NAME, a.AGE_RESTRICTION_NAME
       ORDER BY s.TITLE ASC
     `);
@@ -231,7 +232,7 @@ exports.updateShow = async (req, res) => {
     // Add the show ID to the end of values array
     updateValues.push(showId);
 
-    const updateQuery = `UPDATE \`SHOW\` SET ${updateFields.join(', ')} WHERE SHOW_ID = ?`;
+    const updateQuery = `UPDATE \`SHOW\` SET ${updateFields.join(', ')} WHERE SHOW_ID = ? AND REMOVED = 0`;
     
     await pool.query(updateQuery, updateValues);
 
@@ -413,6 +414,7 @@ exports.getDashboardAnalytics = async (req, res) => {
       SELECT c.CATEGORY_NAME, COUNT(s.SHOW_ID) as count
       FROM CATEGORY c
       LEFT JOIN \`SHOW\` s ON c.CATEGORY_ID = s.CATEGORY_ID
+      WHERE s.REMOVED = 0
       GROUP BY c.CATEGORY_ID, c.CATEGORY_NAME
     `);
     
@@ -448,7 +450,7 @@ exports.getShowCast = async (req, res) => {
              sc.DESCRIPTION as ROLE_DESCRIPTION
       FROM SHOW_CAST sc
       JOIN ACTOR a ON sc.ACTOR_ID = a.ACTOR_ID
-      WHERE sc.SHOW_ID = ?
+      WHERE sc.SHOW_ID = ? AND s.REMOVED = 0
       ORDER BY sc.ROLE_NAME
     `, [showId]);
     
@@ -507,7 +509,7 @@ exports.getShowDirectors = async (req, res) => {
         d.PICTURE
       FROM SHOW_DIRECTOR sd
       JOIN DIRECTOR d ON sd.DIRECTOR_ID = d.DIRECTOR_ID
-      WHERE sd.SHOW_ID = ?
+      WHERE sd.SHOW_ID = ? AND s.REMOVED = 0
       ORDER BY d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME
     `, [showId]);
     

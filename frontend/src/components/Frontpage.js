@@ -50,7 +50,7 @@ function FrontPage() {
     const token = localStorage.getItem('token');
     if (!token) {
       alert('You are not logged in. Redirecting...');
-      window.location.href = '/login';
+      window.location.href = '/auth';
       return;
     }
 
@@ -79,7 +79,7 @@ function FrontPage() {
         if (err.response?.status === 401 || err.response?.status === 403) {
           alert('Session expired. Please log in again.');
           localStorage.removeItem('token');
-          window.location.href = '/login';
+          window.location.href = '/auth';
         } else {
           console.error('Error fetching frontpage:', err);
         }

@@ -49,7 +49,7 @@ exports.getDirectorById = async (req, res) => {
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-      WHERE d.DIRECTOR_ID = ?
+      WHERE d.DIRECTOR_ID = ? AND s.REMOVED = 0
       GROUP BY s.SHOW_ID, d.DIRECTOR_ID, d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME, d.BIOGRAPHY, d.PICTURE, s.TITLE, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.DESCRIPTION, s.RELEASE_DATE, c.CATEGORY_NAME
       ORDER BY s.RELEASE_DATE DESC
     `, [directorId]);
@@ -97,7 +97,7 @@ exports.getShowsByDirector = async (req, res) => {
     const [shows] = await pool.query(
       `SELECT s.* FROM \`SHOW\` s
        JOIN SHOW_DIRECTOR sd ON s.SHOW_ID = sd.SHOW_ID
-       WHERE sd.DIRECTOR_ID = ?`,
+       WHERE sd.DIRECTOR_ID = ? AND s.REMOVED = 0`,
       [directorId]
     );
     res.json(shows);
