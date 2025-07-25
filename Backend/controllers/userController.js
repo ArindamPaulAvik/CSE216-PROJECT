@@ -225,7 +225,7 @@ exports.getUserComments = async (req, res) => {
       FROM COMMENT c
       JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
-      WHERE c.USER_ID = ? AND c.DELETED = 0 AND s.REMOVED = 0
+      WHERE c.USER_ID = ? AND c.DELETED = 0
       ORDER BY c.TIME DESC
     `, [userId]);
 
@@ -366,7 +366,7 @@ exports.getUserCommentsByUserId = async (req, res) => {
       FROM COMMENT c
       JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
-      WHERE c.USER_ID = ? AND c.DELETED = 0 AND s.REMOVED = 0
+      WHERE c.USER_ID = ? AND c.DELETED = 0
       ORDER BY c.TIME DESC
     `, [userId]);
 
@@ -423,7 +423,7 @@ exports.getUserRatings = async (req, res) => {
       FROM RATING r
       JOIN SHOW_EPISODE se ON r.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
       JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
-      WHERE r.USER_ID = ? AND s.REMOVED = 0
+      WHERE r.USER_ID = ?
       ORDER BY r.RATING_DATE DESC
     `, [userId]);
 
@@ -658,7 +658,7 @@ exports.getUserProfileById = async (req, res) => {
         FROM user_episode ue
         JOIN SHOW_EPISODE se ON ue.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
         JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
-        WHERE ue.USER_ID = ? AND ue.WATCHED = 1 AND s.REMOVED = 0
+        WHERE ue.USER_ID = ? AND ue.WATCHED = 1
         GROUP BY s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING
         ORDER BY MAX(ue.TIMESTAMP) DESC
         LIMIT 20
@@ -681,7 +681,7 @@ exports.getUserProfileById = async (req, res) => {
         JOIN \`SHOW\` s ON f.SHOW_ID = s.SHOW_ID
         LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
         LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-        WHERE f.USER_ID = ? AND s.REMOVED = 0
+        WHERE f.USER_ID = ?
         GROUP BY s.SHOW_ID, f.ADD_DATE
         ORDER BY f.ADD_DATE DESC
         LIMIT 20
@@ -700,7 +700,7 @@ exports.getUserProfileById = async (req, res) => {
           SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, r.RATING, r.REVIEW
           FROM RATING r
           JOIN \`SHOW\` s ON r.SHOW_ID = s.SHOW_ID
-          WHERE r.USER_ID = ? AND s.REMOVED = 0
+          WHERE r.USER_ID = ?
           ORDER BY r.RATING_ID DESC
           LIMIT 20
         `, [targetUserId]);

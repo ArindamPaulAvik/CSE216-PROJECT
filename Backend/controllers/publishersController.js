@@ -27,7 +27,7 @@ async function extendContract(req, res) {
     return res.status(400).json({ error: 'Invalid extend days' });
   }
   try {
-    await pool.query('UPDATE publisher SET IS_ACTIVE = 1, CONTRACT_DURATION_DAYS = CONTRACT_DURATION_DAYS + ? WHERE PUBLISHER_ID = ?', [parseInt(extendDays), req.params.id]);
+    await pool.query('UPDATE publisher SET CONTRACT_DURATION_DAYS = CONTRACT_DURATION_DAYS + ? WHERE PUBLISHER_ID = ?', [parseInt(extendDays), req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to extend contract' });
@@ -47,7 +47,7 @@ async function updateContract(req, res) {
   }
   try {
     await pool.query(
-      'UPDATE publisher SET IS_ACTIVE = 1, PUBLISHER_NAME=?, CONTRACT_ID=?, CONTRACT_DATE=?, CONTRACT_DURATION_DAYS=?, ROYALTY=?, MIN_GUARANTEE=? WHERE PUBLISHER_ID=?',
+      'UPDATE publisher SET PUBLISHER_NAME=?, CONTRACT_ID=?, CONTRACT_DATE=?, CONTRACT_DURATION_DAYS=?, ROYALTY=?, MIN_GUARANTEE=? WHERE PUBLISHER_ID=?',
       [publisherName, contractId, contractDate, contractDurationDays, royalty, minGuarantee, req.params.id]
     );
     res.json({ success: true });
@@ -290,7 +290,7 @@ async function acceptPublisherRequestedRenewal(req, res) {
     const newRoyalty = reqRow.NEW_ROYALTY !== null ? reqRow.NEW_ROYALTY : pub.ROYALTY;
     const newMinGuarantee = reqRow.NEW_MIN_GUARANTEE !== null ? reqRow.NEW_MIN_GUARANTEE : pub.MIN_GUARANTEE;
     await pool.query(
-      'UPDATE publisher SET IS_ACTIVE = 1, CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
+      'UPDATE publisher SET CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
       [newDuration, newRoyalty, newMinGuarantee, pub.PUBLISHER_ID]
     );
     res.json({ success: true });
@@ -332,7 +332,7 @@ async function acceptAdminRequestedRenewal(req, res) {
     const newRoyalty = reqRow.NEW_ROYALTY !== null ? reqRow.NEW_ROYALTY : pub.ROYALTY;
     const newMinGuarantee = reqRow.NEW_MIN_GUARANTEE !== null ? reqRow.NEW_MIN_GUARANTEE : pub.MIN_GUARANTEE;
     await pool.query(
-      'UPDATE publisher SET IS_ACTIVE = 1, CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
+      'UPDATE publisher SET CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
       [newDuration, newRoyalty, newMinGuarantee, pub.PUBLISHER_ID]
     );
     res.json({ success: true });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMenu, FiSearch, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiWifi, FiWifiOff, FiChevronRight, FiAward, FiLogOut } from 'react-icons/fi';
+import { FiMenu, FiSearch, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiWifi, FiWifiOff, FiChevronRight, FiAward } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout({ children, activeSection, hasWatchAgain = true, hasTopRated = true }) {
@@ -854,29 +854,51 @@ useEffect(() => {
               )}
             </div>
 
-            {/* Logout Button (replaces user profile dropdown) */}
-            <button
-              className="header-logout-btn"
-              onClick={handleLogout}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '20px',
-                padding: '10px 18px',
-                color: '#ff4757',
-                fontWeight: 600,
-                fontSize: '15px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                marginLeft: '18px',
-              }}
+            {/* User Profile Dropdown */}
+            <div 
+              className="user-info-dropdown" 
+              onMouseEnter={() => setProfileDropdownOpen(true)}
+              onMouseLeave={() => setProfileDropdownOpen(false)}
             >
-              <FiLogOut size={18} />
-              Logout
-            </button>
+              <div className="user-info" title="Profile Menu">
+                {userImage ? (
+                  <img
+                    src={`http://localhost:5000/images/user/${userImage}`}
+                    alt="Profile"
+                    className="user-avatar-img"
+                    onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}
+                  />
+                ) : (
+                  <div className="user-avatar">
+                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <div className="user-details">
+                  <span className="user-name">{userName || 'User'}</span>
+                  <span className="user-status">Premium Member</span>
+                </div>
+                <div className="user-status-indicator online" />
+                <FiChevronRight className={`dropdown-arrow ${profileDropdownOpen ? 'open' : ''}`} />
+              </div>
+              
+              {/* Dropdown Menu */}
+              {profileDropdownOpen && (
+                <div className="profile-dropdown-menu">
+                  <div className="dropdown-item" onClick={() => navigate('/profile')}>
+                    <FiUsers size={16} />
+                    <span>Profile</span>
+                  </div>
+                  <div className="dropdown-item" onClick={() => navigate('/subscription')}>
+                    <FiCreditCard size={16} />
+                    <span>Subscriptions</span>
+                  </div>
+                  <div className="dropdown-item" onClick={() => navigate('/settings')}>
+                    <FiSettings size={16} />
+                    <span>Settings</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

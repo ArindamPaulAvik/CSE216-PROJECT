@@ -92,91 +92,27 @@ function PublisherFrontpage() {
           <p style={{ margin: '5px 0 0 0', opacity: 0.7 }}>Content Management Portal</p>
         </div>
         
-        <div style={{ position: 'relative' }}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '50%',
-              width: '50px',
-              height: '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            <FiUser size={20} />
-          </motion.button>
-
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                position: 'absolute',
-                top: '60px',
-                right: '0',
-                background: 'rgba(0, 0, 0, 0.9)',
-                borderRadius: '10px',
-                padding: '15px',
-                minWidth: '200px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <div style={{ marginBottom: '15px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
-                <p style={{ margin: 0, fontWeight: '600' }}>{publisherData.name}</p>
-                <p style={{ margin: '5px 0 0 0', fontSize: '14px', opacity: 0.7 }}>{publisherData.email}</p>
-              </div>
-              
-              <button
-                onClick={handleProfile}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'white',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '10px'
-                }}
-              >
-                <FiSettings size={16} />
-                Profile Settings
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ff4757',
-                  padding: '10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <FiLogOut size={16} />
-                Logout
-              </button>
-            </motion.div>
-          )}
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '10px',
+            padding: '10px 22px',
+            color: 'white',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            fontWeight: '600',
+            fontSize: '1rem',
+            gap: '10px'
+          }}
+        >
+          <FiLogOut size={20} />
+          Logout
+        </motion.button>
       </motion.header>
 
       {/* Main Content */}
