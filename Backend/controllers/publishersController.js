@@ -383,6 +383,38 @@ async function publisherEarnings(req, res) {
   }
 }
 
+// Get all shows for a publisher with earnings calculation
+async function getPublisherShows(req, res) {
+  const userType = req.user?.userType;
+  const publisherId = req.user?.publisherId;
+  
+  if (userType !== 'publisher' || !publisherId) {
+    return res.status(403).json({ error: 'Access denied. Only publishers can view their shows.' });
+  }
+  
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        s.SHOW_ID,
+        s.TITLE,
+        s.THUMBNAIL,
+        s.RATING,
+        s.WATCH_COUNT,
+        p.ROYALTY,
+        (s.WATCH_COUNT * p.ROYALTY) as INCOME
+      FROM \`SHOW\` s
+      JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
+      WHERE s.PUBLISHER_ID = ? AND s.REMOVED = 0
+      ORDER BY s.WATCH_COUNT DESC
+    `, [publisherId]);
+    
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching publisher shows:', err);
+    res.status(500).json({ error: 'Failed to fetch publisher shows' });
+  }
+}
+
 module.exports = {
   getAllPublishers,
   extendContract,
@@ -396,5 +428,6 @@ module.exports = {
   acceptPublisherRequestedRenewal,
   acceptAdminRequestedRenewal,
   getMyContract,
-  publisherEarnings
+  publisherEarnings,
+  getPublisherShows
 }; 

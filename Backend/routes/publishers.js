@@ -16,5 +16,6 @@ router.put('/contract-renewal-requests/:id/accept', authenticateToken, publisher
 router.put('/contract-renewal-requests/:id/accept-pub', authenticateToken, publishersController.acceptAdminRequestedRenewal);
 router.get('/my-contract', authenticateToken, publishersController.getMyContract);
 router.post('/publisher-earnings', authenticateToken, publishersController.publisherEarnings);
+router.get('/my-shows', authenticateToken, publishersController.getPublisherShows);
 
 module.exports = router; 

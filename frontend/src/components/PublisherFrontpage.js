@@ -141,21 +141,23 @@ function PublisherFrontpage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
               <FiUpload size={24} style={{ marginRight: '15px', color: '#00d4ff' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Content Upload</h3>
+              <h3 style={{ margin: 0, fontSize: '1.4rem' }}>Content Management</h3>
             </div>
-            <p style={{ opacity: 0.8, marginBottom: '20px' }}>
+            <p style={{ opacity: 0.8, marginBottom: '22px' }}>
               Upload and manage your shows, movies, and episodes
             </p>
-            <button style={{
-              background: 'linear-gradient(45deg, #00d4ff, #0077be)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
-              Upload Content
+            <button 
+              onClick={() => navigate('/manage-content')}
+              style={{
+                background: 'linear-gradient(45deg, #00d4ff, #0077be)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}>
+              Manage Content
             </button>
           </motion.div>
 
@@ -193,7 +195,7 @@ function PublisherFrontpage() {
             </button>
           </motion.div>
 
-          {/* Revenue Card */}
+          {/* Billing and Payment Card */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             style={{
@@ -206,21 +208,24 @@ function PublisherFrontpage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
               <FiDollarSign size={24} style={{ marginRight: '15px', color: '#32cd32' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Revenue</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Billing and Payment</h3>
             </div>
             <p style={{ opacity: 0.8, marginBottom: '20px' }}>
-              Track your earnings and revenue streams
+              Manage invoices and payment history
             </p>
-            <button style={{
-              background: 'linear-gradient(45deg, #32cd32, #228b22)',
-              border: 'none',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
-              View Revenue
+            <button 
+              onClick={() => navigate('/billing-and-payments')}
+              style={{
+                background: 'linear-gradient(45deg, #32cd32, #228b22)',
+                border: 'none',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                marginTop: '23px'
+              }}>
+              View Payments
             </button>
           </motion.div>
 

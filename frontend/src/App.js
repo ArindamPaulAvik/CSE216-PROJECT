@@ -41,6 +41,8 @@ import AdminOffers from './components/AdminOffers';
 import AdminPublishers from './components/AdminPublishers';
 import PublisherContract from './components/PublisherContract';
 import PublisherAnalyticsPage from './components/PublisherAnalyticsPage';
+import BillingAndPaymentsPage from './components/BillingAndPaymentsPage';
+import ManageContentPage from './components/ManageContentPage';
 
 function App() {
   return (
@@ -91,6 +93,8 @@ function App() {
           <Route path="/admin-publishers" element={<AdminPublishers />} />
           <Route path="/publisher-contract" element={<PublisherContract />} />
           <Route path="/publisher-analytics" element={<PublisherAnalyticsPage />} />
+          <Route path="/billing-and-payments" element={<BillingAndPaymentsPage />} />
+          <Route path="/manage-content" element={<ManageContentPage />} />
         </Routes>
       </div>
     </Router>
