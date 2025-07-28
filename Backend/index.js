@@ -8,7 +8,7 @@ const fs = require('fs');
 const pool = require('./db'); // Add this line
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 const { searchShows } = require('./controllers/searchController');
 const { uploadPath, actorUploadPath, directorUploadPath } = require('./config/multerConfig');
 
