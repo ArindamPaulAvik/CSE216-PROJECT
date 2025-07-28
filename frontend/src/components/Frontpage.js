@@ -551,6 +551,18 @@ function FrontPage() {
       )}
 
       <style>{`
+        /* CSS Custom Properties for Glass Theme */
+        :root {
+          --glass-primary: rgba(255, 255, 255, 0.05);
+          --glass-secondary: rgba(255, 255, 255, 0.03);
+          --glass-border: rgba(255, 255, 255, 0.08);
+          --glass-text: rgba(255, 255, 255, 0.9);
+          --glass-text-secondary: rgba(255, 255, 255, 0.7);
+          --glass-accent: rgba(102, 126, 234, 0.3);
+          --glass-blur: blur(15px);
+          --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
         /* Scroll Animation Keyframes */
         @keyframes fadeInUp {
           from {
@@ -574,11 +586,35 @@ function FrontPage() {
           }
         }
 
+        @keyframes glassShimmer {
+          0% { transform: translateX(-100%) skewX(-15deg); }
+          100% { transform: translateX(200%) skewX(-15deg); }
+        }
+
         .shows-section {
-          margin-bottom: 60px;
+          margin-bottom: 80px;
           opacity: 0;
           transform: translateY(60px);
           transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+          padding: 40px 0;
+          position: relative;
+        }
+
+        .shows-section::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -50px;
+          right: -50px;
+          bottom: 0;
+          background: var(--glass-secondary);
+          backdrop-filter: var(--glass-blur);
+          border-radius: 30px;
+          border: 1px solid var(--glass-border);
+          box-shadow: var(--glass-shadow);
+          opacity: 0;
+          transition: opacity 0.8s ease;
+          z-index: -1;
         }
 
         .shows-section.animate-in {
@@ -586,18 +622,51 @@ function FrontPage() {
           transform: translateY(0);
         }
 
+        .shows-section.animate-in::before {
+          opacity: 1;
+        }
+
         .shows-section.animate-in .section-title {
           animation: slideInLeft 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
 
         .section-title {
-          color: #fff;
-          margin-bottom: 30px;
-          font-size: 1.8rem;
-          font-weight: bold;
-          padding-bottom: 10px;
+          color: var(--glass-text);
+          margin-bottom: 40px;
+          font-size: 2.2rem;
+          font-weight: 700;
+          padding: 20px 30px;
           display: inline-block;
           position: relative;
+          background: var(--glass-primary);
+          backdrop-filter: var(--glass-blur) saturate(180%);
+          border-radius: 20px;
+          border: 1px solid var(--glass-border);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          overflow: hidden;
+          letter-spacing: -0.5px;
+        }
+
+        .section-title::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.2) 50%,
+            transparent 100%
+          );
+          transition: left 0.8s ease;
+        }
+
+        .shows-section.animate-in .section-title::before {
+          left: 100%;
         }
 
         .section-title::after {
@@ -609,6 +678,7 @@ function FrontPage() {
           height: 3px;
           border-radius: 2px;
           transition: width 0.8s ease;
+          box-shadow: 0 0 20px currentColor;
         }
 
         .shows-section.animate-in .section-title::after {
@@ -616,64 +686,115 @@ function FrontPage() {
         }
 
         .trending-title::after {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
         }
 
         .recommended-title::after {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          background: linear-gradient(135deg, rgba(240, 147, 251, 0.8) 0%, rgba(245, 87, 108, 0.8) 100%);
         }
 
         .watch-again-title::after {
-          background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+          background: linear-gradient(135deg, rgba(118, 75, 162, 0.8) 0%, rgba(102, 126, 234, 0.8) 100%);
         }
 
         .top-rated-title::after {
-          background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(255, 140, 0, 0.8) 100%);
         }
 
         .action-hits-title::after {
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+          background: linear-gradient(135deg, rgba(255, 107, 107, 0.8) 0%, rgba(238, 90, 36, 0.8) 100%);
         }
 
         .thriller-title::after {
-          background: linear-gradient(135deg, #2c2c54 0%, #8b5cf6 100%);
+          background: linear-gradient(135deg, rgba(44, 44, 84, 0.8) 0%, rgba(139, 92, 246, 0.8) 100%);
         }
 
         .comedy-title::after {
-          background: linear-gradient(135deg, #f9ca24 0%, #f0932b 100%);
+          background: linear-gradient(135deg, rgba(249, 202, 36, 0.8) 0%, rgba(240, 147, 43, 0.8) 100%);
         }
 
         .drama-title::after {
-          background: linear-gradient(135deg, #eb4d4b 0%, #6c5ce7 100%);
+          background: linear-gradient(135deg, rgba(235, 77, 75, 0.8) 0%, rgba(108, 92, 231, 0.8) 100%);
         }
 
         .family-title::after {
-          background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+          background: linear-gradient(135deg, rgba(0, 210, 255, 0.8) 0%, rgba(58, 123, 213, 0.8) 100%);
         }
 
         .shows-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          grid-template-rows: repeat(auto-fit, 480px); /* Fixed row height */
+          grid-template-rows: repeat(auto-fit, 500px); /* Updated to match new card height */
           gap: 30px;
           overflow: visible;
           contain: layout;
           position: relative;
           z-index: 1;
-          align-items: start; /* Align cards to start of grid area */
+          align-items: start;
+          padding: 0 20px;
         }
 
-        /* Responsive adjustments */
+        /* Enhanced responsive adjustments */
         @media (max-width: 768px) {
+          .shows-section {
+            margin-bottom: 60px;
+            padding: 30px 0;
+          }
+
+          .shows-section::before {
+            left: -20px;
+            right: -20px;
+            border-radius: 20px;
+          }
+
           .shows-grid {
             grid-template-columns: 1fr;
-            grid-template-rows: repeat(auto-fit, 420px); /* Fixed mobile height */
+            grid-template-rows: repeat(auto-fit, 440px); /* Fixed mobile height */
             gap: 20px;
+            padding: 0 10px;
           }
 
           .section-title {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
+            padding: 16px 24px;
+            margin-bottom: 30px;
           }
+        }
+
+        @media (max-width: 480px) {
+          .section-title {
+            font-size: 1.5rem;
+            padding: 12px 20px;
+          }
+
+          .shows-section {
+            padding: 20px 0;
+          }
+        }
+
+        /* Enhance layout background with glass effects */
+        .layout-container {
+          background: 
+            radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+            linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+          min-height: 100vh;
+        }
+
+        /* Add subtle glass overlay to main content */
+        .main-content::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
+          pointer-events: none;
+          z-index: -1;
         }
 
         /* Reduce motion for accessibility */
@@ -682,6 +803,23 @@ function FrontPage() {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+          }
+          
+          .shows-section::before,
+          .section-title::before {
+            display: none;
+          }
+        }
+
+        /* High contrast mode adjustments */
+        @media (prefers-contrast: high) {
+          .section-title {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+          }
+          
+          .shows-section::before {
+            border: 2px solid rgba(255, 255, 255, 0.2);
           }
         }
       `}</style>
