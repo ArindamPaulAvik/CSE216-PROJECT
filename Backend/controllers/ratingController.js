@@ -1,6 +1,6 @@
 const db = require('../db');
 
-// Get rating for a specific episode by a user
+// Get RATING for a specific episode by a user
 const getUserEpisodeRating = async (req, res) => {
   try {
     const { episodeId } = req.params;
@@ -9,7 +9,7 @@ const getUserEpisodeRating = async (req, res) => {
     // Get the actual SHOW_EPISODE_ID (handles both direct episode ID and show ID for movies)
     const fetchEpisodeQuery = `
       SELECT SHOW_EPISODE_ID 
-      FROM show_episode 
+      FROM SHOW_EPISODE 
       WHERE SHOW_EPISODE_ID = ? OR SHOW_ID = ?
       LIMIT 1
     `;
@@ -25,8 +25,7 @@ const getUserEpisodeRating = async (req, res) => {
     const actualEpisodeId = episodeResult[0].SHOW_EPISODE_ID;
     
     const query = `
-      SELECT RATING_VALUE, RATING_DATE 
-      FROM rating 
+      SELECT * FROM RATING 
       WHERE USER_ID = ? AND SHOW_EPISODE_ID = ?
     `;
     
@@ -45,7 +44,7 @@ const getUserEpisodeRating = async (req, res) => {
   }
 };
 
-// Get average rating for an episode
+// Get average RATING for an episode
 const getEpisodeAverageRating = async (req, res) => {
   try {
     const { episodeId } = req.params;
@@ -53,7 +52,7 @@ const getEpisodeAverageRating = async (req, res) => {
     // Get the actual SHOW_EPISODE_ID (handles both direct episode ID and show ID for movies)
     const fetchEpisodeQuery = `
       SELECT SHOW_EPISODE_ID 
-      FROM show_episode 
+      FROM SHOW_EPISODE 
       WHERE SHOW_EPISODE_ID = ? OR SHOW_ID = ?
       LIMIT 1
     `;
@@ -72,7 +71,7 @@ const getEpisodeAverageRating = async (req, res) => {
       SELECT 
         AVG(RATING_VALUE) as average_rating,
         COUNT(*) as total_ratings
-      FROM rating 
+      FROM RATING 
       WHERE SHOW_EPISODE_ID = ?
     `;
     
@@ -92,7 +91,7 @@ const getEpisodeAverageRating = async (req, res) => {
   }
 };
 
-// Submit or update rating for an episode
+// Submit or update RATING for an episode
 const submitEpisodeRating = async (req, res) => {
   try {
     const { episodeId } = req.params;
@@ -109,7 +108,7 @@ const submitEpisodeRating = async (req, res) => {
     // Get the actual SHOW_EPISODE_ID (handles both direct episode ID and show ID)
     const fetchEpisodeQuery = `
       SELECT SHOW_EPISODE_ID 
-      FROM show_episode 
+      FROM SHOW_EPISODE 
       WHERE SHOW_EPISODE_ID = ? OR SHOW_ID = ?
     `;
     const [episodeResult] = await db.execute(fetchEpisodeQuery, [episodeId, episodeId]);
@@ -123,14 +122,14 @@ const submitEpisodeRating = async (req, res) => {
     
     const actualEpisodeId = episodeResult[0].SHOW_EPISODE_ID;
     
-    // Check if rating already exists
-    const checkQuery = 'SELECT * FROM rating WHERE USER_ID = ? AND SHOW_EPISODE_ID = ?';
+    // Check if RATING already exists
+    const checkQuery = 'SELECT * FROM RATING WHERE USER_ID = ? AND SHOW_EPISODE_ID = ?';
     const [existingRatings] = await db.execute(checkQuery, [userId, actualEpisodeId]);
     
     if (existingRatings.length > 0) {
       // Update existing rating
       const updateQuery = `
-        UPDATE rating 
+        UPDATE RATING 
         SET RATING_VALUE = ?, RATING_DATE = CURRENT_TIMESTAMP 
         WHERE USER_ID = ? AND SHOW_EPISODE_ID = ?
       `;
@@ -143,7 +142,7 @@ const submitEpisodeRating = async (req, res) => {
     } else {
       // Insert new rating
       const insertQuery = `
-        INSERT INTO rating (USER_ID, SHOW_EPISODE_ID, RATING_VALUE) 
+        INSERT INTO RATING (USER_ID, SHOW_EPISODE_ID, RATING_VALUE) 
         VALUES (?, ?, ?)
       `;
       await db.execute(insertQuery, [userId, actualEpisodeId, ratingValue]);
@@ -162,7 +161,7 @@ const submitEpisodeRating = async (req, res) => {
   }
 };
 
-// Delete user's rating for an episode
+// Delete user's RATING for an episode
 const deleteEpisodeRating = async (req, res) => {
   try {
     const { episodeId } = req.params;
@@ -171,7 +170,7 @@ const deleteEpisodeRating = async (req, res) => {
     // Get the actual SHOW_EPISODE_ID (handles both direct episode ID and show ID for movies)
     const fetchEpisodeQuery = `
       SELECT SHOW_EPISODE_ID 
-      FROM show_episode 
+      FROM SHOW_EPISODE 
       WHERE SHOW_EPISODE_ID = ? OR SHOW_ID = ?
       LIMIT 1
     `;
@@ -186,7 +185,7 @@ const deleteEpisodeRating = async (req, res) => {
     
     const actualEpisodeId = episodeResult[0].SHOW_EPISODE_ID;
     
-    const deleteQuery = 'DELETE FROM rating WHERE USER_ID = ? AND SHOW_EPISODE_ID = ?';
+    const deleteQuery = 'DELETE FROM RATING WHERE USER_ID = ? AND SHOW_EPISODE_ID = ?';
     const [result] = await db.execute(deleteQuery, [userId, actualEpisodeId]);
     
     if (result.affectedRows === 0) {
@@ -225,10 +224,10 @@ const getUserRatings = async (req, res) => {
         s.THUMBNAIL,
         s.SEASON,
         c.CATEGORY_NAME
-      FROM rating r
-      JOIN show_episode se ON r.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
-      JOIN \`show\` s ON se.SHOW_ID = s.SHOW_ID
-      LEFT JOIN category c ON s.CATEGORY_ID = c.CATEGORY_ID
+      FROM RATING r
+      JOIN SHOW_EPISODE se ON r.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
+      JOIN SHOWS s ON se.SHOW_ID = s.SHOW_ID
+      LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       WHERE r.USER_ID = ? AND s.REMOVED = 0
       ORDER BY r.RATING_DATE DESC
     `;
@@ -260,8 +259,8 @@ const getShowRatings = async (req, res) => {
         se.TITLE as EPISODE_TITLE,
         AVG(r.RATING_VALUE) as average_rating,
         COUNT(r.RATING_VALUE) as total_ratings
-      FROM show_episode se
-      LEFT JOIN rating r ON se.SHOW_EPISODE_ID = r.SHOW_EPISODE_ID
+      FROM SHOW_EPISODE se
+      LEFT JOIN RATING r ON se.SHOW_EPISODE_ID = r.SHOW_EPISODE_ID
       WHERE se.SHOW_ID = ?
       GROUP BY se.SHOW_EPISODE_ID, se.EPISODE_NUMBER, se.TITLE
       ORDER BY se.EPISODE_NUMBER

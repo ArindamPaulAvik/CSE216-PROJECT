@@ -10,6 +10,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
     const [submitLoading, setSubmitLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
     // Fetch violations from backend
     useEffect(() => {
@@ -19,7 +20,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
             setReportText('');
             setError('');
             setSuccess(false);
-            fetch('http://localhost:5000/violations')
+            fetch(`${BASE_URL}/violations`)
                 .then(res => res.json())
                 .then(data => {
                     setViolations(data);

@@ -7,6 +7,7 @@ function DirectorDetailPage() {
   const { id } = useParams();
   const [director, setDirector] = useState(null);
   const navigate = useNavigate();
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -16,7 +17,7 @@ function DirectorDetailPage() {
       return;
     }
 
-    axios.get(`http://localhost:5000/directors/${id}`, {
+    axios.get(`${BASE_URL}/directors/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setDirector(res.data))
@@ -68,7 +69,7 @@ function DirectorDetailPage() {
           alignItems: 'flex-start',
         }}>
           <img
-            src={`/directors/${director.PICTURE}`}
+            src={`${BASE_URL}/directors/${director.PICTURE}`}
             alt={director.DIRECTOR_NAME}
             style={{
               width: 250,
@@ -160,7 +161,7 @@ function DirectorDetailPage() {
               }}
             >
               <img
-                src={`/showS/${show.THUMBNAIL}`}
+                src={`${BASE_URL}/shows/${show.THUMBNAIL}`}
                 alt={show.TITLE}
                 style={{
                   width: '100%',

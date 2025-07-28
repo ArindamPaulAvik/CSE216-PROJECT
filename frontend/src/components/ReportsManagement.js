@@ -30,6 +30,7 @@ function ReportsManagement() {
   const [modalType, setModalType] = useState('success'); // 'success' or 'error'
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -50,7 +51,7 @@ function ReportsManagement() {
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/reports/undealt', {
+      const response = await axios.get(`${BASE_URL}/reports/undealt`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReports(response.data);
@@ -65,7 +66,7 @@ function ReportsManagement() {
   const fetchViolations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/reports/violations', {
+      const response = await axios.get(`${BASE_URL}/reports/violations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setViolations(response.data);
@@ -77,7 +78,7 @@ function ReportsManagement() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/reports/stats', {
+      const response = await axios.get(`${BASE_URL}/reports/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(response.data);
@@ -104,7 +105,7 @@ function ReportsManagement() {
       async () => {
         try {
           const token = localStorage.getItem('token');
-          await axios.delete(`http://localhost:5000/reports/comment/${commentId}`, {
+          await axios.delete(`${BASE_URL}/reports/comment/${commentId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -125,7 +126,7 @@ function ReportsManagement() {
       async () => {
         try {
           const token = localStorage.getItem('token');
-          await axios.put(`http://localhost:5000/reports/${reportId}/dismiss`, {}, {
+          await axios.put(`${BASE_URL}/reports/${reportId}/dismiss`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
           

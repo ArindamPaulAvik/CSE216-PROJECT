@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPlus } from 'react-icons/fi';
 
-const API_BASE = "http://localhost:5000";
 
 function AdminPublishers() {
   const navigate = useNavigate();
@@ -30,6 +29,8 @@ function AdminPublishers() {
   const [completedFilter, setCompletedFilter] = useState('ALL');
   const [rejectingId, setRejectingId] = useState(null);
   const [acceptingId, setAcceptingId] = useState(null);
+  
+const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     fetchPublishers();
@@ -42,7 +43,7 @@ function AdminPublishers() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/publishers`, {
+      const response = await fetch(`${BASE_URL}/publishers`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch publishers');
@@ -58,7 +59,7 @@ function AdminPublishers() {
   const fetchAdminPendingRequests = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/publishers/contract-renewal-requests?status=PENDING&requestedBy=ADMIN`, {
+      const response = await fetch(`${BASE_URL}/publishers/contract-renewal-requests?status=PENDING&requestedBy=ADMIN`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -75,7 +76,7 @@ function AdminPublishers() {
   const fetchPublisherPendingRequests = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/publishers/contract-renewal-requests?status=PENDING&requestedBy=PUBLISHER`, {
+      const response = await fetch(`${BASE_URL}/publishers/contract-renewal-requests?status=PENDING&requestedBy=PUBLISHER`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -96,7 +97,7 @@ function AdminPublishers() {
   const markPublisherRequestsSeen = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE}/publishers/contract-renewal-requests/mark-seen`, {
+      await fetch(`${BASE_URL}/publishers/contract-renewal-requests/mark-seen`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -106,7 +107,7 @@ function AdminPublishers() {
   const fetchAllAdminRequests = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/publishers/contract-renewal-requests?requestedBy=ADMIN`, {
+      const response = await fetch(`${BASE_URL}/publishers/contract-renewal-requests?requestedBy=ADMIN`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -126,7 +127,7 @@ function AdminPublishers() {
   const markAdminCompletedSeen = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE}/publishers/contract-renewal-requests/mark-seen-accepted`, {
+      await fetch(`${BASE_URL}/publishers/contract-renewal-requests/mark-seen-accepted`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -137,7 +138,7 @@ function AdminPublishers() {
     setRejectingId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE}/publishers/contract-renewal-requests/${requestId}/reject`, {
+      await fetch(`${BASE_URL}/publishers/contract-renewal-requests/${requestId}/reject`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -153,7 +154,7 @@ function AdminPublishers() {
     setAcceptingId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE}/publishers/contract-renewal-requests/${requestId}/accept`, {
+      await fetch(`${BASE_URL}/publishers/contract-renewal-requests/${requestId}/accept`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -489,7 +490,7 @@ function AdminPublishers() {
               e.preventDefault();
               try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/publishers/contract-renewal-requests`, {
+                const response = await fetch(`${BASE_URL}/publishers/contract-renewal-requests`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',

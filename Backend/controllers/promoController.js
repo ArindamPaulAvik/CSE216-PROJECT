@@ -16,18 +16,18 @@ const validatePromoCode = async (req, res) => {
     // Check if promo code exists and is valid
     const promoQuery = `
       SELECT 
-        p.PROMOTION_ID,
-        p.PROMO_CODE,
-        p.DISCOUNT_RATE,
-        p.START_DATE,
-        p.END_DATE,
-        p.DESCRIPTION,
-        p.SUBSCRIPTION_TYPE_ID
-      FROM promotion p
-      WHERE p.PROMO_CODE = ? 
-        AND (p.SUBSCRIPTION_TYPE_ID = ? OR p.SUBSCRIPTION_TYPE_ID IS NULL)
-        AND CURDATE() BETWEEN p.START_DATE AND p.END_DATE
-      ORDER BY p.SUBSCRIPTION_TYPE_ID DESC
+        P.PROMOTION_ID,
+        P.PROMO_CODE,
+        P.DISCOUNT_RATE,
+        P.START_DATE,
+        P.END_DATE,
+        P.DESCRIPTION,
+        P.SUBSCRIPTION_TYPE_ID
+      FROM PROMOTION P
+      WHERE P.PROMO_CODE = ? 
+        AND (P.SUBSCRIPTION_TYPE_ID = ? OR P.SUBSCRIPTION_TYPE_ID IS NULL)
+        AND CURDATE() BETWEEN P.START_DATE AND P.END_DATE
+      ORDER BY P.SUBSCRIPTION_TYPE_ID DESC
       LIMIT 1
     `;
 
@@ -45,8 +45,8 @@ const validatePromoCode = async (req, res) => {
     // Check if user has already used this promo code
     const usageQuery = `
       SELECT COUNT(*) as usage_count
-      FROM user_promotion_usage upu
-      WHERE upu.USER_ID = ? AND upu.PROMOTION_ID = ?
+      FROM USER_PROMOTION_USAGE UPU
+      WHERE UPU.USER_ID = ? AND UPU.PROMOTION_ID = ?
     `;
 
     const [usageResults] = await db.execute(usageQuery, [userId, promotion.PROMOTION_ID]);
@@ -81,7 +81,7 @@ const validatePromoCode = async (req, res) => {
 const recordPromoUsage = async (userId, promotionId) => {
   try {
     const insertQuery = `
-      INSERT INTO user_promotion_usage (USER_ID, PROMOTION_ID)
+      INSERT INTO USER_PROMOTION_USAGE (USER_ID, PROMOTION_ID)
       VALUES (?, ?)
     `;
     

@@ -144,7 +144,7 @@ exports.getActorById = async (req, res) => {
 
     const [shows] = await pool.query(
       `SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL
-       FROM \`SHOW\` s
+       FROM SHOWS s
        JOIN SHOW_CAST sa ON s.SHOW_ID = sa.SHOW_ID
        WHERE sa.ACTOR_ID = ? AND s.REMOVED = 0`,
       [actorId]

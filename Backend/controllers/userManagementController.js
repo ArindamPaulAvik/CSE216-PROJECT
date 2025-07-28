@@ -5,19 +5,19 @@ const getAllUsers = async (req, res) => {
   try {
     const query = `
       SELECT 
-        u.USER_ID,
-        u.PERSON_ID,
-        u.USER_FIRSTNAME,
-        u.USER_LASTNAME,
-        u.PHONE_NO,
-        u.BIRTH_DATE,
-        p.EMAIL,
-        c.COUNTRY_NAME,
-        c.COUNTRY_ID
-      FROM USER u
-      JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
-      JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
-      ORDER BY u.USER_FIRSTNAME, u.USER_LASTNAME
+        U.USER_ID,
+        U.PERSON_ID,
+        U.USER_FIRSTNAME,
+        U.USER_LASTNAME,
+        U.PHONE_NO,
+        U.BIRTH_DATE,
+        P.EMAIL,
+        C.COUNTRY_NAME,
+        C.COUNTRY_ID
+      FROM USER U
+      JOIN PERSON P ON U.PERSON_ID = P.PERSON_ID
+      JOIN COUNTRY C ON U.COUNTRY_ID = C.COUNTRY_ID
+      ORDER BY U.USER_FIRSTNAME, U.USER_LASTNAME
     `;
     
     const [users] = await db.execute(query);
@@ -35,19 +35,19 @@ const getUserById = async (req, res) => {
     
     const query = `
       SELECT 
-        u.USER_ID,
-        u.PERSON_ID,
-        u.USER_FIRSTNAME,
-        u.USER_LASTNAME,
-        u.PHONE_NO,
-        u.BIRTH_DATE,
-        p.EMAIL,
-        c.COUNTRY_NAME,
-        c.COUNTRY_ID
-      FROM USER u
-      JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
-      JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
-      WHERE u.USER_ID = ?
+        U.USER_ID,
+        U.PERSON_ID,
+        U.USER_FIRSTNAME,
+        U.USER_LASTNAME,
+        U.PHONE_NO,
+        U.BIRTH_DATE,
+        P.EMAIL,
+        C.COUNTRY_NAME,
+        C.COUNTRY_ID
+      FROM USER U
+      JOIN PERSON P ON U.PERSON_ID = P.PERSON_ID
+      JOIN COUNTRY C ON U.COUNTRY_ID = C.COUNTRY_ID
+      WHERE U.USER_ID = ?
     `;
     
     const [users] = await db.execute(query, [id]);
@@ -100,24 +100,24 @@ const searchUsers = async (req, res) => {
     
     const query = `
       SELECT 
-        u.USER_ID,
-        u.PERSON_ID,
-        u.USER_FIRSTNAME,
-        u.USER_LASTNAME,
-        u.PHONE_NO,
-        u.BIRTH_DATE,
-        p.EMAIL,
-        c.COUNTRY_NAME,
-        c.COUNTRY_ID
-      FROM USER u
-      JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
-      JOIN COUNTRY c ON u.COUNTRY_ID = c.COUNTRY_ID
+        U.USER_ID,
+        U.PERSON_ID,
+        U.USER_FIRSTNAME,
+        U.USER_LASTNAME,
+        U.PHONE_NO,
+        U.BIRTH_DATE,
+        P.EMAIL,
+        C.COUNTRY_NAME,
+        C.COUNTRY_ID
+      FROM USER U
+      JOIN PERSON P ON U.PERSON_ID = P.PERSON_ID
+      JOIN COUNTRY C ON U.COUNTRY_ID = C.COUNTRY_ID
       WHERE 
-        u.USER_FIRSTNAME LIKE ? OR 
-        u.USER_LASTNAME LIKE ? OR 
-        p.EMAIL LIKE ? OR
-        CONCAT(u.USER_FIRSTNAME, ' ', u.USER_LASTNAME) LIKE ?
-      ORDER BY u.USER_FIRSTNAME, u.USER_LASTNAME
+        U.USER_FIRSTNAME LIKE ? OR 
+        U.USER_LASTNAME LIKE ? OR 
+        P.EMAIL LIKE ? OR
+        CONCAT(U.USER_FIRSTNAME, ' ', U.USER_LASTNAME) LIKE ?
+      ORDER BY U.USER_FIRSTNAME, U.USER_LASTNAME
     `;
     
     const searchTerm = `%${search}%`;

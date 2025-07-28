@@ -18,6 +18,7 @@ function UserDetails() {
   const { id } = useParams();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,7 +37,7 @@ function UserDetails() {
   const fetchUserDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/user-management/${id}`, {
+      const response = await axios.get(`${BASE_URL}/user-management/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);

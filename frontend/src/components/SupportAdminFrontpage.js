@@ -14,6 +14,7 @@ function SupportAdminFrontpage() {
     pendingReports: 0
   });
   const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,20 +37,20 @@ function SupportAdminFrontpage() {
       const token = localStorage.getItem('token');
       
       // Fetch customer care stats
-      const customerCareResponse = await axios.get('http://localhost:5000/customer-care/admin/stats', {
+      const customerCareResponse = await axios.get(`${BASE_URL}/customer-care/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Fetch FAQ count
-      const faqResponse = await axios.get('http://localhost:5000/faqs');
+      const faqResponse = await axios.get(`${BASE_URL}/faqs`);
       
       // Fetch user count
-      const userResponse = await axios.get('http://localhost:5000/user-management/stats', {
+      const userResponse = await axios.get(`${BASE_URL}/user-management/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Fetch reports count
-      const reportsResponse = await axios.get('http://localhost:5000/reports/undealt', {
+        const reportsResponse = await axios.get(`${BASE_URL}/reports/undealt`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

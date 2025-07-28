@@ -8,25 +8,25 @@ const getUserSubscription = async (req, res) => {
     
     const query = `
       SELECT 
-        us.USER_ID,
-        us.TRANSACTION_ID,
-        us.SUBSCRIPTION_TYPE_ID,
-        us.START_DATE,
-        us.END_DATE,
-        us.SUBSCRIPTION_STATUS,
-        st.DESCRIPTION,
-        st.PRICE,
-        st.DURATION_DAYS,
-        t.AMOUNT,
-        t.TRANSACTION_DATE,
-        t.TRANSACTION_STATUS
-      FROM user_subscription us
-      JOIN subscription_type st ON us.SUBSCRIPTION_TYPE_ID = st.SUBSCRIPTION_TYPE_ID
-      JOIN transaction t ON us.TRANSACTION_ID = t.TRANSACTION_ID
-      WHERE us.USER_ID = ? 
-      AND us.SUBSCRIPTION_STATUS = 1 
-      AND us.END_DATE > CURDATE()
-      ORDER BY us.END_DATE DESC
+        US.USER_ID,
+        US.TRANSACTION_ID,
+        US.SUBSCRIPTION_TYPE_ID,
+        US.START_DATE,
+        US.END_DATE,
+        US.SUBSCRIPTION_STATUS,
+        ST.DESCRIPTION,
+        ST.PRICE,
+        ST.DURATION_DAYS,
+        T.AMOUNT,
+        T.TRANSACTION_DATE,
+        T.TRANSACTION_STATUS
+      FROM USER_SUBSCRIPTION US
+      JOIN SUBSCRIPTION_TYPE ST ON US.SUBSCRIPTION_TYPE_ID = ST.SUBSCRIPTION_TYPE_ID
+      JOIN TRANSACTION T ON US.TRANSACTION_ID = T.TRANSACTION_ID
+      WHERE US.USER_ID = ? 
+      AND US.SUBSCRIPTION_STATUS = 1 
+      AND US.END_DATE > CURDATE()
+      ORDER BY US.END_DATE DESC
       LIMIT 1
     `;
     
@@ -63,7 +63,7 @@ const getAllSubscriptionTypes = async (req, res) => {
         DESCRIPTION,
         DURATION_DAYS,
         IS_ACTIVE
-      FROM subscription_type
+      FROM SUBSCRIPTION_TYPE
       WHERE IS_ACTIVE = 1
       ORDER BY PRICE ASC
     `;
@@ -97,7 +97,7 @@ const createSubscription = async (req, res) => {
     }
     
     // Get subscription type details
-    const typeQuery = 'SELECT DURATION_DAYS FROM subscription_type WHERE SUBSCRIPTION_TYPE_ID = ?';
+    const typeQuery = 'SELECT DURATION_DAYS FROM SUBSCRIPTION_TYPE WHERE SUBSCRIPTION_TYPE_ID = ?';
     const [typeResult] = await db.execute(typeQuery, [subscriptionTypeId]);
     
     if (typeResult.length === 0) {
@@ -113,7 +113,7 @@ const createSubscription = async (req, res) => {
     
     // Create subscription
     const insertQuery = `
-      INSERT INTO user_subscription (
+      INSERT INTO USER_SUBSCRIPTION (
         USER_ID, 
         TRANSACTION_ID, 
         SUBSCRIPTION_TYPE_ID, 
@@ -159,22 +159,22 @@ const getSubscriptionById = async (req, res) => {
     
     const query = `
       SELECT 
-        us.USER_ID,
-        us.TRANSACTION_ID,
-        us.SUBSCRIPTION_TYPE_ID,
-        us.START_DATE,
-        us.END_DATE,
-        us.SUBSCRIPTION_STATUS,
-        st.DESCRIPTION,
-        st.PRICE,
-        st.DURATION_DAYS,
-        t.AMOUNT,
-        t.TRANSACTION_DATE,
-        t.TRANSACTION_STATUS
-      FROM user_subscription us
-      JOIN subscription_type st ON us.SUBSCRIPTION_TYPE_ID = st.SUBSCRIPTION_TYPE_ID
-      JOIN transaction t ON us.TRANSACTION_ID = t.TRANSACTION_ID
-      WHERE us.USER_ID = ? AND us.TRANSACTION_ID = ?
+        US.USER_ID,
+        US.TRANSACTION_ID,
+        US.SUBSCRIPTION_TYPE_ID,
+        US.START_DATE,
+        US.END_DATE,
+        US.SUBSCRIPTION_STATUS,
+        ST.DESCRIPTION,
+        ST.PRICE,
+        ST.DURATION_DAYS,
+        T.AMOUNT,
+        T.TRANSACTION_DATE,
+        T.TRANSACTION_STATUS
+      FROM USER_SUBSCRIPTION US
+      JOIN SUBSCRIPTION_TYPE ST ON US.SUBSCRIPTION_TYPE_ID = ST.SUBSCRIPTION_TYPE_ID
+      JOIN TRANSACTION T ON US.TRANSACTION_ID = T.TRANSACTION_ID
+      WHERE US.USER_ID = ? AND US.TRANSACTION_ID = ?
     `;
     
     const [subscriptions] = await db.execute(query, [userId, id]);
@@ -207,7 +207,7 @@ const updateSubscriptionStatus = async (req, res) => {
     const userId = req.user.userId;
     
     const query = `
-      UPDATE user_subscription 
+      UPDATE USER_SUBSCRIPTION 
       SET SUBSCRIPTION_STATUS = ? 
       WHERE USER_ID = ? AND TRANSACTION_ID = ?
     `;
@@ -242,7 +242,7 @@ const cancelSubscription = async (req, res) => {
     // Find active subscription
     const findQuery = `
       SELECT TRANSACTION_ID, SUBSCRIPTION_TYPE_ID, START_DATE, END_DATE
-      FROM user_subscription 
+      FROM USER_SUBSCRIPTION 
       WHERE USER_ID = ? AND SUBSCRIPTION_STATUS = 1 
       ORDER BY END_DATE DESC 
       LIMIT 1
@@ -259,7 +259,7 @@ const cancelSubscription = async (req, res) => {
     
     // Update subscription status to cancelled (0)
     const updateQuery = `
-      UPDATE user_subscription 
+      UPDATE USER_SUBSCRIPTION 
       SET SUBSCRIPTION_STATUS = 0 
       WHERE USER_ID = ? AND SUBSCRIPTION_STATUS = 1
     `;
@@ -280,7 +280,7 @@ const cancelSubscription = async (req, res) => {
   }
 };
 
-// Get transaction details
+// Get TRANSACTION details
 const getTransactionDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -288,17 +288,17 @@ const getTransactionDetails = async (req, res) => {
     
     const query = `
       SELECT 
-        t.TRANSACTION_ID,
-        t.METHOD_ID,
-        t.USER_ID,
-        t.AMOUNT,
-        t.TRANSACTION_DATE,
-        t.TRANSACTION_STATUS,
-        m.METHOD_NAME,
-        m.METHOD_ICON
-      FROM transaction t
-      JOIN method m ON t.METHOD_ID = m.METHOD_ID
-      WHERE t.TRANSACTION_ID = ? AND t.USER_ID = ?
+        T.TRANSACTION_ID,
+        T.METHOD_ID,
+        T.USER_ID,
+        T.AMOUNT,
+        T.TRANSACTION_DATE,
+        T.TRANSACTION_STATUS,
+        M.METHOD_NAME,
+        M.METHOD_ICON
+      FROM TRANSACTION T
+      JOIN METHOD M ON T.METHOD_ID = M.METHOD_ID
+      WHERE T.TRANSACTION_ID = ? AND T.USER_ID = ?
     `;
     
     const [transactions] = await db.execute(query, [id, userId]);
@@ -312,7 +312,7 @@ const getTransactionDetails = async (req, res) => {
     
     const transaction = transactions[0];
     
-    // Get payment details based on method type
+    // Get payment details based on METHOD type
     let paymentDetails = null;
     
     try {
@@ -387,14 +387,14 @@ const createTransaction = async (req, res) => {
     try {
       // Create transaction record with discounted amount
       const transactionQuery = `
-        INSERT INTO transaction (METHOD_ID, USER_ID, AMOUNT, TRANSACTION_STATUS)
+        INSERT INTO TRANSACTION (METHOD_ID, USER_ID, AMOUNT, TRANSACTION_STATUS)
         VALUES (?, ?, ?, 'PENDING')
       `;
       
       const [transactionResult] = await db.execute(transactionQuery, [methodId, userId, amount]);
       const transactionId = transactionResult.insertId;
       
-      // Insert into appropriate payment method table based on payment type
+      // Insert into appropriate payment METHOD table based on payment type
       if (paymentDetails.paymentType === 'PAYPAL') {
         const paypalQuery = `
           INSERT INTO PAYPAL (TRANSACTION_ID, PAYPAL_ID, PAYPAL_EMAIL, METHOD_ID)
@@ -458,7 +458,7 @@ const updateTransactionStatus = async (req, res) => {
     const userId = req.user.userId;
     
     const query = `
-      UPDATE transaction 
+      UPDATE TRANSACTION 
       SET TRANSACTION_STATUS = ? 
       WHERE TRANSACTION_ID = ? AND USER_ID = ?
     `;

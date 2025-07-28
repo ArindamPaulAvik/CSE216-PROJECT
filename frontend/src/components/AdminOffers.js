@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPlus } from 'react-icons/fi';
 
-const API_BASE = "http://localhost:5000";
-
 function AdminOffers() {
   const navigate = useNavigate();
   const [offers, setOffers] = useState([]);
@@ -14,6 +12,8 @@ function AdminOffers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
 
   const [formData, setFormData] = useState({
     price: '',
@@ -31,7 +31,7 @@ function AdminOffers() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/offers`, {
+      const response = await fetch(`${BASE_URL}/offers`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -50,8 +50,8 @@ function AdminOffers() {
     e.preventDefault();
     try {
       const url = editingOffer 
-        ? `${API_BASE}/offers/${editingOffer.SUBSCRIPTION_TYPE_ID}`
-        : `${API_BASE}/offers`;
+        ? `${BASE_URL}/offers/${editingOffer.SUBSCRIPTION_TYPE_ID}`
+        : `${BASE_URL}/offers`;
       const method = editingOffer ? 'PUT' : 'POST';
       const token = localStorage.getItem('token');
       const response = await fetch(url, {
@@ -88,7 +88,7 @@ function AdminOffers() {
     if (!deleteId) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/offers/${deleteId}`, { 
+      const response = await fetch(`${BASE_URL}/offers/${deleteId}`, { 
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

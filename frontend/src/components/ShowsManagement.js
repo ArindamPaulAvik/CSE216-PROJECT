@@ -11,6 +11,7 @@ function ShowsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     fetchShows();
@@ -31,8 +32,8 @@ function ShowsManagement() {
 
   // Helper function to get image path like in user frontpage
   const getImagePath = (thumbnail) => {
-    if (!thumbnail) return 'http://localhost:5000/shows/placeholder.jpg';
-    return `/shows/${thumbnail}`;
+    if (!thumbnail) return `${BASE_URL}/shows/placeholder.jpg`;
+    return `${BASE_URL}/shows/${thumbnail}`;
   };
 
   const handleImageError = (e, showTitle, thumbnail) => {
@@ -43,7 +44,7 @@ function ShowsManagement() {
   const fetchShows = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/admin/shows', {
+      const response = await axios.get(`${BASE_URL}/admin/shows`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

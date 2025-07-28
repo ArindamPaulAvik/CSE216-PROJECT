@@ -5,16 +5,30 @@ const authenticateToken = require('../middleware/authenticateToken');
 
 // Get all offers
 router.get('/', authenticateToken, async (req, res) => {
-  const userType = req.user?.userType;
-  const adminType = req.user?.adminType;
-  if (userType !== 'admin' || adminType !== 'Marketing') {
-    return res.status(403).json({ error: 'Access denied. Only marketing admins can manage offers.' });
-  }
   try {
-    const [rows] = await pool.query('SELECT * FROM subscription_type');
+    // Debug logging
+    console.log('=== OFFERS ROUTE DEBUG ===');
+    console.log('req.user:', req.user);
+    console.log('userType:', req.user?.userType);
+    console.log('adminType:', req.user?.adminType);
+    console.log('========================');
+
+    const userType = req.user?.userType;
+    const adminType = req.user?.adminType;
+    
+    if (userType !== 'admin' || adminType !== 'Marketing') {
+      console.log('Access denied - User type:', userType, 'Admin type:', adminType);
+      return res.status(403).json({ error: 'Access denied. Only marketing admins can manage offers.' });
+    }
+    
+    console.log('Executing database query...');
+    const [rows] = await pool.query('SELECT * FROM SUBSCRIPTION_TYPE');
+    console.log('Query successful, rows:', rows.length);
+    
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch offers' });
+    console.error('Error in offers route:', err);
+    res.status(500).json({ error: 'Failed to fetch offers', details: err.message });
   }
 });
 
@@ -31,12 +45,13 @@ router.post('/', authenticateToken, async (req, res) => {
   }
   try {
     const [result] = await pool.query(
-      'INSERT INTO subscription_type (PRICE, DESCRIPTION, DURATION_DAYS, IS_ACTIVE) VALUES (?, ?, ?, ?)',
+      'INSERT INTO SUBSCRIPTION_TYPE (PRICE, DESCRIPTION, DURATION_DAYS, IS_ACTIVE) VALUES (?, ?, ?, ?)',
       [price, description, durationDays, isActive]
     );
     res.json({ id: result.insertId });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to add offer' });
+    console.error('Error adding offer:', err);
+    res.status(500).json({ error: 'Failed to add offer', details: err.message });
   }
 });
 
@@ -54,12 +69,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
   try {
     await pool.query(
-      'UPDATE subscription_type SET PRICE=?, DESCRIPTION=?, DURATION_DAYS=?, IS_ACTIVE=? WHERE SUBSCRIPTION_TYPE_ID=?',
+      'UPDATE SUBSCRIPTION_TYPE SET PRICE=?, DESCRIPTION=?, DURATION_DAYS=?, IS_ACTIVE=? WHERE SUBSCRIPTION_TYPE_ID=?',
       [price, description, durationDays, isActive, id]
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update offer' });
+    console.error('Error updating offer:', err);
+    res.status(500).json({ error: 'Failed to update offer', details: err.message });
   }
 });
 
@@ -72,11 +88,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM subscription_type WHERE SUBSCRIPTION_TYPE_ID=?', [id]);
+    await pool.query('DELETE FROM SUBSCRIPTION_TYPE WHERE SUBSCRIPTION_TYPE_ID=?', [id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete offer' });
+    console.error('Error deleting offer:', err);
+    res.status(500).json({ error: 'Failed to delete offer', details: err.message });
   }
 });
 
-module.exports = router; 
+module.exports = router;

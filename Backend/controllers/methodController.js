@@ -3,7 +3,7 @@ const db = require('../db');
 // Get all payment methods
 const getAllMethods = async (req, res) => {
   try {
-    const query = 'SELECT * FROM method ORDER BY METHOD_ID';
+    const query = 'SELECT * FROM METHOD ORDER BY METHOD_ID';
     const [methods] = await db.execute(query);
     
     res.json({

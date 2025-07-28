@@ -10,14 +10,15 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
   const [isFavorite, setIsFavorite] = useState(show?.IS_FAVORITE || false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   
   const timerRef = useRef(null);
   const cardRef = useRef(null);
   const videoRef = useRef(null);
 
   const getImagePath = (thumbnail) => {
-    if (!thumbnail) return 'http://localhost:5000/shows/placeholder.jpg';
-    return `/shows/${thumbnail}`;
+    if (!thumbnail) return `${BASE_URL}/shows/placeholder.jpg`;
+    return `${BASE_URL}/shows/${thumbnail}`;
   };
 
   const getYouTubeEmbedUrl = (url) => {
@@ -30,7 +31,7 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
 
   const handleImageError = (e, title, thumb) => {
     console.error(`Image error for ${title}`, thumb);
-    e.target.src = '/placeholder.jpg';
+    e.target.src = `${BASE_URL}/placeholder.jpg`;
   };
 
   const handleMouseEnter = useCallback(() => {
@@ -68,7 +69,7 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
         return;
       }
 
-      const url = `http://localhost:5000/favorite/${show.SHOW_ID}`;
+      const url = `${BASE_URL}/favorite/${show.SHOW_ID}`;
       
       console.log(`POST ${url}`, { showId: show.SHOW_ID, currentFavorite: isFavorite });
 

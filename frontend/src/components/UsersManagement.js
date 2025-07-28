@@ -20,6 +20,7 @@ function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({});
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -54,7 +55,7 @@ function UsersManagement() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/user-management', {
+      const response = await axios.get(`${BASE_URL}/user-management`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(response.data);
@@ -70,7 +71,7 @@ function UsersManagement() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/user-management/stats', {
+      const response = await axios.get(`${BASE_URL}/user-management/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(response.data);

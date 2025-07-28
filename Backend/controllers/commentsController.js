@@ -19,12 +19,12 @@ const upload = multer({ storage });
 async function updateCommentCounts(commentId) {
   try {
     const [likesCount] = await pool.query(
-      'SELECT COUNT(*) as count FROM comment_interactions WHERE comment_id = ? AND interaction_type = ?',
+      'SELECT COUNT(*) as count FROM COMMENT_INTERACTIONS WHERE COMMENT_ID = ? AND INTERACTION_TYPE = ?',
       [commentId, 'like']
     );
     
     const [dislikesCount] = await pool.query(
-      'SELECT COUNT(*) as count FROM comment_interactions WHERE comment_id = ? AND interaction_type = ?',
+      'SELECT COUNT(*) as count FROM COMMENT_INTERACTIONS WHERE COMMENT_ID = ? AND INTERACTION_TYPE = ?',
       [commentId, 'dislike']
     );
     
@@ -45,15 +45,15 @@ exports.getComments = async (req, res) => {
   try {
     // Fetch all comments for the episode
     const [comments] = await pool.query(
-      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,c.IMG_LINK,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, u.PROFILE_PICTURE,
-              c.PARENT_ID, c.DELETED, c.EDITED,
-              ${userId ? 'ci.interaction_type AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
-       FROM COMMENT c
-       JOIN USER u ON c.USER_ID = u.USER_ID
-       ${userId ? 'LEFT JOIN comment_interactions ci ON c.COMMENT_ID = ci.comment_id AND ci.user_id = ?' : ''}
-       WHERE c.SHOW_EPISODE_ID = ?
-       ORDER BY c.TIME ASC`,
+      `SELECT C.COMMENT_ID, C.TEXT AS COMMENT_TEXT, C.TIME, C.USER_ID,C.IMG_LINK,
+              U.USER_FIRSTNAME AS USERNAME, C.LIKE_COUNT, C.DISLIKE_COUNT, U.PROFILE_PICTURE,
+              C.PARENT_ID, C.DELETED, C.EDITED,
+              ${userId ? 'CI.INTERACTION_TYPE AS USER_INTERACTION' : 'NULL AS USER_INTERACTION'}
+       FROM COMMENT C
+       JOIN USER U ON C.USER_ID = U.USER_ID
+       ${userId ? 'LEFT JOIN COMMENT_INTERACTIONS CI ON C.COMMENT_ID = CI.COMMENT_ID AND CI.USER_ID = ?' : ''}
+       WHERE C.SHOW_EPISODE_ID = ?
+       ORDER BY C.TIME ASC`,
       userId ? [userId, episodeId] : [episodeId]
     );
 
@@ -98,11 +98,11 @@ exports.addComment = async (req, res) => {
       [userId, episode_id, comment_text, parent_id || null, img_link || null]
     );
     const [commentRows] = await pool.query(
-      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID, c.IMG_LINK
-       FROM COMMENT c
-       JOIN USER u ON c.USER_ID = u.USER_ID
-       WHERE c.COMMENT_ID = ?`,
+      `SELECT C.COMMENT_ID, C.TEXT AS COMMENT_TEXT, C.TIME, C.USER_ID,
+              U.USER_FIRSTNAME AS USERNAME, C.LIKE_COUNT, C.DISLIKE_COUNT, C.PARENT_ID, C.IMG_LINK
+       FROM COMMENT C
+       JOIN USER U ON C.USER_ID = U.USER_ID
+       WHERE C.COMMENT_ID = ?`,
       [result.insertId]
     );
     res.json(commentRows[0]);
@@ -123,26 +123,26 @@ exports.likeComment = async (req, res) => {
     
     // Check current interaction
     const [currentInteraction] = await pool.query(
-      'SELECT interaction_type FROM comment_interactions WHERE user_id = ? AND comment_id = ?',
+      'SELECT INTERACTION_TYPE FROM COMMENT_INTERACTIONS WHERE USER_ID = ? AND COMMENT_ID = ?',
       [userId, commentId]
     );
     
     if (currentInteraction.length === 0) {
       // No previous interaction - add like
       await pool.query(
-        'INSERT INTO comment_interactions (user_id, comment_id, interaction_type) VALUES (?, ?, ?)',
+        'INSERT INTO COMMENT_INTERACTIONS (USER_ID, COMMENT_ID, INTERACTION_TYPE) VALUES (?, ?, ?)',
         [userId, commentId, 'like']
       );
-    } else if (currentInteraction[0].interaction_type === 'like') {
+    } else if (currentInteraction[0].INTERACTION_TYPE === 'like') {
       // Already liked - remove like
       await pool.query(
-        'DELETE FROM comment_interactions WHERE user_id = ? AND comment_id = ?',
+        'DELETE FROM COMMENT_INTERACTIONS WHERE USER_ID = ? AND COMMENT_ID = ?',
         [userId, commentId]
       );
     } else {
       // Was disliked - change to like
       await pool.query(
-        'UPDATE comment_interactions SET interaction_type = ? WHERE user_id = ? AND comment_id = ?',
+        'UPDATE COMMENT_INTERACTIONS SET INTERACTION_TYPE = ? WHERE USER_ID = ? AND COMMENT_ID = ?',
         ['like', userId, commentId]
       );
     }
@@ -170,26 +170,26 @@ exports.dislikeComment = async (req, res) => {
     
     // Check current interaction
     const [currentInteraction] = await pool.query(
-      'SELECT interaction_type FROM comment_interactions WHERE user_id = ? AND comment_id = ?',
+      'SELECT INTERACTION_TYPE FROM COMMENT_INTERACTIONS WHERE USER_ID = ? AND COMMENT_ID = ?',
       [userId, commentId]
     );
     
     if (currentInteraction.length === 0) {
       // No previous interaction - add dislike
       await pool.query(
-        'INSERT INTO comment_interactions (user_id, comment_id, interaction_type) VALUES (?, ?, ?)',
+        'INSERT INTO COMMENT_INTERACTIONS (USER_ID, COMMENT_ID, INTERACTION_TYPE) VALUES (?, ?, ?)',
         [userId, commentId, 'dislike']
       );
-    } else if (currentInteraction[0].interaction_type === 'dislike') {
+    } else if (currentInteraction[0].INTERACTION_TYPE === 'dislike') {
       // Already disliked - remove dislike
       await pool.query(
-        'DELETE FROM comment_interactions WHERE user_id = ? AND comment_id = ?',
+        'DELETE FROM COMMENT_INTERACTIONS WHERE USER_ID = ? AND COMMENT_ID = ?',
         [userId, commentId]
       );
     } else {
       // Was liked - change to dislike
       await pool.query(
-        'UPDATE comment_interactions SET interaction_type = ? WHERE user_id = ? AND comment_id = ?',
+        'UPDATE COMMENT_INTERACTIONS SET INTERACTION_TYPE = ? WHERE USER_ID = ? AND COMMENT_ID = ?',
         ['dislike', userId, commentId]
       );
     }
@@ -306,20 +306,20 @@ exports.getUserInteractions = async (req, res) => {
   try {
     // Single optimized query to get user interactions for all comments in episode
     const [interactions] = await pool.query(
-      `SELECT ci.comment_id, ci.interaction_type 
-       FROM comment_interactions ci
-       JOIN COMMENT c ON ci.comment_id = c.COMMENT_ID
-       WHERE ci.user_id = ? AND c.SHOW_EPISODE_ID = ? AND c.DELETED = 0`,
+      `SELECT CI.COMMENT_ID, CI.INTERACTION_TYPE 
+       FROM COMMENT_INTERACTIONS CI
+       JOIN COMMENT C ON CI.COMMENT_ID = C.COMMENT_ID
+       WHERE CI.USER_ID = ? AND C.SHOW_EPISODE_ID = ? AND C.DELETED = 0`,
       [userId, episodeId]
     );
     
     const likes = interactions
-      .filter(i => i.interaction_type === 'like')
-      .map(i => i.comment_id);
+      .filter(i => i.INTERACTION_TYPE === 'like')
+      .map(i => i.COMMENT_ID);
       
     const dislikes = interactions
-      .filter(i => i.interaction_type === 'dislike')
-      .map(i => i.comment_id);
+      .filter(i => i.INTERACTION_TYPE === 'dislike')
+      .map(i => i.COMMENT_ID);
     
     res.json({ likes, dislikes });
   } catch (err) {
@@ -381,11 +381,11 @@ exports.editComment = async (req, res) => {
     
     console.log('🔍 Fetching updated comment...');
     const [updated] = await pool.query(
-      `SELECT c.COMMENT_ID, c.TEXT AS COMMENT_TEXT, c.TIME, c.USER_ID, c.EDITED,
-              u.USER_FIRSTNAME AS USERNAME, c.LIKE_COUNT, c.DISLIKE_COUNT, c.PARENT_ID, c.IMG_LINK, u.PROFILE_PICTURE
-       FROM COMMENT c
-       JOIN USER u ON c.USER_ID = u.USER_ID
-       WHERE c.COMMENT_ID = ? AND c.DELETED = 0`,
+      `SELECT C.COMMENT_ID, C.TEXT AS COMMENT_TEXT, C.TIME, C.USER_ID, C.EDITED,
+              U.USER_FIRSTNAME AS USERNAME, C.LIKE_COUNT, C.DISLIKE_COUNT, C.PARENT_ID, C.IMG_LINK, U.PROFILE_PICTURE
+       FROM COMMENT C
+       JOIN USER U ON C.USER_ID = U.USER_ID
+       WHERE C.COMMENT_ID = ? AND C.DELETED = 0`,
       [commentId]
     );
     

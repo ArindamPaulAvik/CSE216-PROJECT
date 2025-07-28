@@ -18,6 +18,8 @@ function AdminActorDetails() {
   const [actor, setActor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
 
   useEffect(() => {
     fetchActorDetails();
@@ -25,19 +27,19 @@ function AdminActorDetails() {
 
   // Helper function to get image path
   const getImagePath = (picture) => {
-    if (!picture) return '/actors/placeholder.jpg';
-    return `/actors/${picture}`;
+    if (!picture) return `${BASE_URL}/actors/placeholder.jpg`;
+    return `${BASE_URL}/actors/${picture}`;
   };
 
   const handleImageError = (e, actorName, picture) => {
     console.error(`Image error for ${actorName}`, picture);
-    e.target.src = '/actors/placeholder.jpg';
+    e.target.src = `${BASE_URL}/actors/placeholder.jpg`;
   };
 
   const fetchActorDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/actors/${id}`, {
+      const response = await axios.get(`${BASE_URL}/actors/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -71,7 +73,7 @@ function AdminActorDetails() {
   };
 
   const handleBack = () => {
-    navigate('/actors-management');
+    navigate(`/actors-management`);
   };
 
   const handleEdit = () => {
@@ -82,14 +84,14 @@ function AdminActorDetails() {
     if (window.confirm(`Are you sure you want to delete ${actor.name}? This action cannot be undone.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/admin/actors/${actor.id}`, {
+        await axios.delete(`${BASE_URL}/admin/actors/${actor.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
         alert('Actor deleted successfully');
-        navigate('/actors-management');
+        navigate(`/actors-management`);
       } catch (error) {
         console.error('Error deleting actor:', error);
         alert('Failed to delete actor. Please try again.');
@@ -405,7 +407,7 @@ function AdminActorDetails() {
                           background: 'rgba(255, 255, 255, 0.1)'
                         }}>
                           <img
-                            src={`/shows/${show.THUMBNAIL}`}
+                            src={`${BASE_URL}/shows/${show.THUMBNAIL}`}
                             alt={show.TITLE}
                             style={{
                               width: '100%',
@@ -413,7 +415,7 @@ function AdminActorDetails() {
                               objectFit: 'cover'
                             }}
                             onError={(e) => {
-                              e.target.src = '/shows/placeholder.jpg';
+                              e.target.src = `${BASE_URL}/shows/placeholder.jpg`;
                             }}
                           />
                         </div>

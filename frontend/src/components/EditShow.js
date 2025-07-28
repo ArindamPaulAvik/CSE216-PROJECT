@@ -42,6 +42,7 @@ function EditShow() {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState('');
   const [selectedEpisode, setSelectedEpisode] = useState(null);
   const [isMovie, setIsMovie] = useState(false);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   
   // Episode form data
   const [episodeFormData, setEpisodeFormData] = useState({
@@ -86,7 +87,7 @@ function EditShow() {
   const fetchShowDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/show/${id}`, {
+      const response = await axios.get(`${BASE_URL}/show/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -124,11 +125,11 @@ function EditShow() {
       
       // Fetch categories, publishers, statuses, age restrictions, and genres
       const [categoriesRes, publishersRes, statusesRes, ageRestrictionsRes, genresRes] = await Promise.all([
-        axios.get('http://localhost:5000/admin/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
-        axios.get('http://localhost:5000/admin/publishers', { headers: { 'Authorization': `Bearer ${token}` } }),
-        axios.get('http://localhost:5000/admin/statuses', { headers: { 'Authorization': `Bearer ${token}` } }),
-        axios.get('http://localhost:5000/admin/age-restrictions', { headers: { 'Authorization': `Bearer ${token}` } }),
-        axios.get('http://localhost:5000/admin/genres', { headers: { 'Authorization': `Bearer ${token}` } })
+        axios.get(`${BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${BASE_URL}/admin/publishers`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${BASE_URL}/admin/statuses`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${BASE_URL}/admin/age-restrictions`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get(`${BASE_URL}/admin/genres`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       setCategories(categoriesRes.data || []);
@@ -145,7 +146,7 @@ function EditShow() {
   const fetchEpisodes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/show/${id}/episodes`, {
+      const response = await axios.get(`${BASE_URL}/show/${id}/episodes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -193,7 +194,7 @@ function EditShow() {
   const fetchGenres = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/admin/shows/${id}/genres`, {
+      const response = await axios.get(`${BASE_URL}/admin/shows/${id}/genres`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -245,7 +246,7 @@ function EditShow() {
       const token = localStorage.getItem('token');
       
       // Save the basic show data
-      await axios.put(`http://localhost:5000/admin/shows/${id}`, formData, {
+      await axios.put(`${BASE_URL}/admin/shows/${id}`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -281,7 +282,7 @@ function EditShow() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:5000/admin/shows/${id}/upload-${type}`, formData, {
+      const response = await axios.post(`${BASE_URL}/admin/shows/${id}/upload-${type}`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -326,7 +327,7 @@ function EditShow() {
       const token = localStorage.getItem('token');
       const genreIds = selectedGenres.map(g => g.GENRE_ID);
       
-      await axios.put(`http://localhost:5000/admin/shows/${id}/genres`, {
+      await axios.put(`${BASE_URL}/admin/shows/${id}/genres`, {
         genreIds: genreIds
       }, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -342,7 +343,7 @@ function EditShow() {
   const fetchActors = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/actors', {
+      const response = await axios.get(`${BASE_URL}/actors`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -362,7 +363,7 @@ function EditShow() {
   const fetchCast = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/admin/shows/${id}/cast`, {
+      const response = await axios.get(`${BASE_URL}/admin/shows/${id}/cast`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -406,7 +407,7 @@ function EditShow() {
         description: c.ROLE_DESCRIPTION
       }));
       
-      await axios.put(`http://localhost:5000/admin/shows/${id}/cast`, {
+      await axios.put(`${BASE_URL}/admin/shows/${id}/cast`, {
         cast: castData
       }, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -423,7 +424,7 @@ function EditShow() {
   const fetchDirectors = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/directors', {
+      const response = await axios.get(`${BASE_URL}/directors`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -443,7 +444,7 @@ function EditShow() {
   const fetchSelectedDirectors = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/admin/shows/${id}/directors`, {
+      const response = await axios.get(`${BASE_URL}/admin/shows/${id}/directors`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -484,7 +485,7 @@ function EditShow() {
         directorId: d.DIRECTOR_ID
       }));
       
-      await axios.put(`http://localhost:5000/admin/shows/${id}/directors`, {
+      await axios.put(`${BASE_URL}/admin/shows/${id}/directors`, {
         directors: directorsData
       }, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -507,7 +508,7 @@ function EditShow() {
         return;
       }
       
-      await axios.put(`http://localhost:5000/episode/${selectedEpisode.SHOW_EPISODE_ID}`, {
+      await axios.put(`${BASE_URL}/episode/${selectedEpisode.SHOW_EPISODE_ID}`, {
         title: episodeData.title,
         description: episodeData.description,
         duration: parseInt(episodeData.duration),
@@ -1159,7 +1160,7 @@ function EditShow() {
                           flexShrink: 0
                         }}>
                           <img
-                            src={actor.picture ? `/actors/${actor.picture}` : '/actors/placeholder.jpg'}
+                            src={actor.picture ? `${BASE_URL}/actors/${actor.picture}` : `${BASE_URL}/actors/placeholder.jpg`}
                             alt={actor.name}
                             style={{
                               width: '100%',
@@ -1167,7 +1168,7 @@ function EditShow() {
                               objectFit: 'cover'
                             }}
                             onError={(e) => {
-                              e.target.src = '/actors/placeholder.jpg';
+                              e.target.src = `${BASE_URL}/actors/placeholder.jpg`;
                             }}
                           />
                         </div>
@@ -1233,7 +1234,7 @@ function EditShow() {
                         background: 'rgba(255, 255, 255, 0.1)'
                       }}>
                         <img
-                          src={castMember.PICTURE ? `/actors/${castMember.PICTURE}` : '/actors/placeholder.jpg'}
+                          src={castMember.PICTURE ? `${BASE_URL}/actors/${castMember.PICTURE}` : `${BASE_URL}/actors/placeholder.jpg`}
                           alt={castMember.NAME}
                           style={{
                             width: '100%',
@@ -1241,7 +1242,7 @@ function EditShow() {
                             objectFit: 'cover'
                           }}
                           onError={(e) => {
-                            e.target.src = '/actors/placeholder.jpg';
+                            e.target.src = `${BASE_URL}/actors/placeholder.jpg`;
                           }}
                         />
                       </div>
@@ -1405,7 +1406,7 @@ function EditShow() {
                           flexShrink: 0
                         }}>
                           <img
-                            src={director.picture ? `/directors/${director.picture}` : '/directors/placeholder.jpg'}
+                            src={director.picture ? `${BASE_URL}/directors/${director.picture}` : `${BASE_URL}/directors/placeholder.jpg`}
                             alt={director.name}
                             style={{
                               width: '100%',
@@ -1478,7 +1479,7 @@ function EditShow() {
                         background: 'rgba(255, 255, 255, 0.1)'
                       }}>
                         <img
-                          src={directorMember.PICTURE ? `/directors/${directorMember.PICTURE}` : '/directors/placeholder.jpg'}
+                          src={directorMember.PICTURE ? `${BASE_URL}/directors/${directorMember.PICTURE}` : '/directors/placeholder.jpg'}
                           alt={directorMember.NAME}
                           style={{
                             width: '100%',

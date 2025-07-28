@@ -18,6 +18,7 @@ const Subscription = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [promoCode, setPromoCode] = useState('');
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   const [showPromoSuccess, setShowPromoSuccess] = useState(false);
@@ -44,12 +45,12 @@ const Subscription = () => {
       const token = localStorage.getItem('token');
       
       // Fetch current subscription
-      const currentResponse = await axios.get('http://localhost:5000/subscriptions/user/current', {
+      const currentResponse = await axios.get(`${BASE_URL}/subscriptions/user/current`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Fetch available subscription types
-      const typesResponse = await axios.get('http://localhost:5000/subscriptions/types');
+      const typesResponse = await axios.get(`${BASE_URL}/subscriptions/types`);
       
       setCurrentSubscription(currentResponse.data.subscription);
       setSubscriptionTypes(typesResponse.data.subscriptionTypes || []);
@@ -62,7 +63,7 @@ const Subscription = () => {
 
   const fetchPaymentMethods = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/methods');
+      const response = await axios.get(`${BASE_URL}/methods`);
       setPaymentMethods(response.data.methods || []);
     } catch (error) {
       console.error('Error fetching payment methods:', error);
@@ -101,7 +102,7 @@ const Subscription = () => {
       try {
         const token = localStorage.getItem('token');
         
-        await axios.post('http://localhost:5000/subscriptions/cancel', {}, {
+        await axios.post(`${BASE_URL}/subscriptions/cancel`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -134,7 +135,7 @@ const Subscription = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/promo/validate', {
+      const response = await axios.post(`${BASE_URL}/promo/validate`, {
         promoCode: promoCode.trim(),
         subscriptionTypeId: selectedPlan.SUBSCRIPTION_TYPE_ID
       }, {
@@ -202,7 +203,7 @@ const Subscription = () => {
       const finalAmount = calculateDiscountedPrice();
       
       // Create transaction
-      const transactionResponse = await axios.post('http://localhost:5000/subscriptions/transaction/create', {
+      const transactionResponse = await axios.post(`${BASE_URL}/subscriptions/transaction/create`, {
         methodId: selectedPaymentMethod.METHOD_ID,
         amount: finalAmount, // Send discounted price
         paymentDetails,
@@ -217,7 +218,7 @@ const Subscription = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Update transaction status to completed and record promo usage
-      await axios.put(`http://localhost:5000/subscriptions/transaction/${transactionId}/status`, {
+      await axios.put(`${BASE_URL}/subscriptions/transaction/${transactionId}/status`, {
         status: 'COMPLETED',
         promotionId: appliedPromo ? appliedPromo.promotionId : null
       }, {
@@ -225,7 +226,7 @@ const Subscription = () => {
       });
       
       // Create subscription
-      await axios.post('http://localhost:5000/subscriptions/create', {
+      await axios.post(`${BASE_URL}/subscriptions/create`, {
         subscriptionTypeId: selectedPlan.SUBSCRIPTION_TYPE_ID,
         transactionId
       }, {

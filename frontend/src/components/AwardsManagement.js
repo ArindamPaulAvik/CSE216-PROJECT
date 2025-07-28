@@ -11,6 +11,8 @@ function AwardsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     fetchAwards();
@@ -23,7 +25,7 @@ function AwardsManagement() {
   const fetchAwards = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/awards', {
+      const response = await axios.get(`${BASE_URL}/awards`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -75,12 +77,12 @@ function AwardsManagement() {
   };
 
   const handleAddAward = () => {
-    navigate('/edit-award/new');
+    navigate('/add-award');
   };
 
   const getImagePath = (image) => {
-    if (!image) return '/placeholder-award.jpg';
-    return `/awards/${image}`;
+    if (!image) return `${BASE_URL}/placeholder-award.jpg`;
+    return `${BASE_URL}/awards/${image}`;
   };
 
   const handleImageError = (e, awardName, image) => {

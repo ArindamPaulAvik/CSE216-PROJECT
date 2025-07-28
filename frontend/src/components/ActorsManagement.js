@@ -11,6 +11,8 @@ function ActorsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || "http://localhost:5000";
+
 
   useEffect(() => {
     fetchActors();
@@ -26,13 +28,13 @@ function ActorsManagement() {
 
   // Helper function to get image path
   const getImagePath = (picture) => {
-    if (!picture) return '/actors/placeholder.jpg';
-    return `/actors/${picture}`;
+    if (!picture) return `${BASE_URL}/actors/placeholder.jpg`;
+    return `${BASE_URL}/actors/${picture}`;
   };
 
   const handleImageError = (e, actorName, picture) => {
     console.error(`Image error for ${actorName}`, picture);
-    e.target.src = '/actors/placeholder.jpg';
+    e.target.src = '${BASE_URL}/actors/placeholder.jpg';
   };
 
   const fetchActors = async () => {
@@ -40,7 +42,7 @@ function ActorsManagement() {
       const token = localStorage.getItem('token');
       console.log('Fetching actors with token:', token ? 'Present' : 'Missing');
       
-      const response = await axios.get('http://localhost:5000/actors', {
+      const response = await axios.get(`${BASE_URL}/actors`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

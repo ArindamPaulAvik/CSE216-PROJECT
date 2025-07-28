@@ -17,6 +17,7 @@ function SimpleFAQManagement() {
   const [faqs, setFaqs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   // Sample FAQs for demonstration (replace with actual API call)
   const sampleFAQs = [
@@ -78,7 +79,7 @@ function SimpleFAQManagement() {
   const fetchFAQs = async () => {
     try {
       // No token needed for public FAQ access
-      const response = await axios.get('http://localhost:5000/faqs');
+      const response = await axios.get(`${BASE_URL}/faqs`);
       
       // Use database FAQs if available, otherwise use sample data
       if (response.data.faqs && response.data.faqs.length > 0) {

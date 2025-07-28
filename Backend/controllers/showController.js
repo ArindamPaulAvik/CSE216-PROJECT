@@ -18,7 +18,7 @@ exports.getShowDetails = async (req, res) => {
              COUNT(DISTINCT fls.USER_ID) as FAVORITES_COUNT,
              COUNT(DISTINCT se.SHOW_EPISODE_ID) as TOTAL_EPISODES,
              s.WATCH_COUNT as TOTAL_VIEWS
-      FROM \`SHOW\` s
+      FROM SHOWS s
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
       LEFT JOIN AGE_RESTRICTION a ON s.AGE_RESTRICTION_ID = a.AGE_RESTRICTION_ID
@@ -93,7 +93,7 @@ exports.getAllShows = async (req, res) => {
              a.AGE_RESTRICTION_NAME as age_restriction,
              GROUP_CONCAT(DISTINCT g.GENRE_NAME ORDER BY g.GENRE_NAME SEPARATOR ', ') as genre,
              COUNT(DISTINCT se.SHOW_EPISODE_ID) as episodes
-      FROM \`SHOW\` s
+      FROM SHOWS s
       LEFT JOIN STATUS st ON s.STATUS_ID = st.STATUS_ID
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
@@ -231,7 +231,7 @@ exports.updateShow = async (req, res) => {
     // Add the show ID to the end of values array
     updateValues.push(showId);
 
-    const updateQuery = `UPDATE \`SHOW\` SET ${updateFields.join(', ')} WHERE SHOW_ID = ?`;
+    const updateQuery = `UPDATE SHOWS SET ${updateFields.join(', ')} WHERE SHOW_ID = ?`;
     
     await pool.query(updateQuery, updateValues);
 
@@ -254,7 +254,7 @@ exports.uploadThumbnail = async (req, res) => {
     const filename = req.file.filename;
     
     // Update the database with the new thumbnail filename
-    await pool.query('UPDATE \`SHOW\` SET THUMBNAIL = ? WHERE SHOW_ID = ?', [filename, showId]);
+    await pool.query('UPDATE SHOWS SET THUMBNAIL = ? WHERE SHOW_ID = ?', [filename, showId]);
     
     res.json({ 
       message: 'Thumbnail uploaded successfully',
@@ -287,7 +287,7 @@ exports.uploadBanner = async (req, res) => {
     const filename = req.file.filename;
     
     // Update the database with the new banner filename
-    await pool.query('UPDATE \`SHOW\` SET BANNER = ? WHERE SHOW_ID = ?', [filename, showId]);
+    await pool.query('UPDATE SHOWS SET BANNER = ? WHERE SHOW_ID = ?', [filename, showId]);
     
     res.json({ 
       message: 'Banner uploaded successfully',
@@ -376,7 +376,7 @@ exports.updateShowGenres = async (req, res) => {
 exports.getDashboardAnalytics = async (req, res) => {
   try {
     // Get total shows count
-    const [showsCount] = await pool.query('SELECT COUNT(*) as total FROM \`SHOW\`');
+    const [showsCount] = await pool.query('SELECT COUNT(*) as total FROM SHOWS');
     
     // Get pending submissions count
     const [pendingSubmissions] = await pool.query(`
@@ -412,7 +412,7 @@ exports.getDashboardAnalytics = async (req, res) => {
     const [showsByCategory] = await pool.query(`
       SELECT c.CATEGORY_NAME, COUNT(s.SHOW_ID) as count
       FROM CATEGORY c
-      LEFT JOIN \`SHOW\` s ON c.CATEGORY_ID = s.CATEGORY_ID
+      LEFT JOIN SHOWS s ON c.CATEGORY_ID = s.CATEGORY_ID
       GROUP BY c.CATEGORY_ID, c.CATEGORY_NAME
     `);
     

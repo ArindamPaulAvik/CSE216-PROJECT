@@ -2,10 +2,11 @@
 const multer = require('multer');
 const path = require('path');
 
+// All paths should point to backend/public folders
 const uploadPath = path.join(__dirname, '../public/images/user');
-const actorUploadPath = path.join(__dirname, '../../frontend/public/actors');
-const directorUploadPath = path.join(__dirname, '../../frontend/public/directors');
-const awardUploadPath = path.join(__dirname, '../../frontend/public/awards');
+const actorUploadPath = path.join(__dirname, '../public/actors');
+const directorUploadPath = path.join(__dirname, '../public/directors');
+const awardUploadPath = path.join(__dirname, '../public/awards');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadPath),
@@ -20,7 +21,6 @@ const storage = multer.diskStorage({
 const actorStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, actorUploadPath),
   filename: (req, file, cb) => {
-    // Always save as .jpg regardless of original format
     const baseName = path.basename(file.originalname, path.extname(file.originalname));
     const uniqueName = `${baseName.toLowerCase().replace(/\s+/g, '_')}-${Date.now()}.jpg`;
     cb(null, uniqueName);
@@ -30,7 +30,6 @@ const actorStorage = multer.diskStorage({
 const directorStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, directorUploadPath),
   filename: (req, file, cb) => {
-    // Always save as .jpg regardless of original format
     const baseName = path.basename(file.originalname, path.extname(file.originalname));
     const uniqueName = `${baseName.toLowerCase().replace(/\s+/g, '_')}-${Date.now()}.jpg`;
     cb(null, uniqueName);
@@ -40,7 +39,6 @@ const directorStorage = multer.diskStorage({
 const awardStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, awardUploadPath),
   filename: (req, file, cb) => {
-    // Always save as .jpg regardless of original format
     const baseName = path.basename(file.originalname, path.extname(file.originalname));
     const uniqueName = `${baseName.toLowerCase().replace(/\s+/g, '_')}-${Date.now()}.jpg`;
     cb(null, uniqueName);

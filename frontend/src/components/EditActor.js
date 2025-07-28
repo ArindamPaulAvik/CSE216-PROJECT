@@ -8,6 +8,7 @@ function EditActor() {
   const navigate = useNavigate();
   const { id } = useParams(); // If id exists, we're editing; otherwise, we're adding
   const isEditing = Boolean(id);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -29,7 +30,7 @@ function EditActor() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/actors/${id}`, {
+      const response = await axios.get(`${BASE_URL}/actors/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -90,7 +91,7 @@ function EditActor() {
 
       if (isEditing) {
         // Update existing actor
-        await axios.put(`http://localhost:5000/admin/actors/${id}`, submitData, {
+        await axios.put(`${BASE_URL}/admin/actors/${id}`, submitData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -100,7 +101,7 @@ function EditActor() {
         navigate(`/admin-actor-details/${id}`);
       } else {
         // Create new actor
-        const response = await axios.post('http://localhost:5000/admin/actors', submitData, {
+        const response = await axios.post(`${BASE_URL}/admin/actors`, submitData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'

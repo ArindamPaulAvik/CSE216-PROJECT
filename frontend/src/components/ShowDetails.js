@@ -30,6 +30,7 @@ function ShowDetails() {
   const [watchStartTime, setWatchStartTime] = useState(null);
   const [isWatchEventRecorded, setIsWatchEventRecorded] = useState(false);
   const watchTimerRef = useRef(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 
   // Check if the show is a movie
@@ -45,7 +46,7 @@ function ShowDetails() {
     if (!token) return;
 
     axios
-      .get(`http://localhost:5000/favorite/${id}`, {
+      .get(`${BASE_URL}/favorite/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -63,7 +64,7 @@ function ShowDetails() {
     if (!token) return;
 
     axios
-      .get('http://localhost:5000/subscriptions/user/current', {
+      .get(`${BASE_URL}/subscriptions/user/current`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -193,7 +194,7 @@ function ShowDetails() {
 
     // Fetch show details
     axios
-      .get(`http://localhost:5000/show/${id}`, {
+      .get(`${BASE_URL}/show/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -214,7 +215,7 @@ function ShowDetails() {
 
     // Fetch episodes for this show (only if not a movie)
     axios
-      .get(`http://localhost:5000/show/${id}/episodes`, {
+      .get(`${BASE_URL}/show/${id}/episodes`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -341,7 +342,7 @@ function ShowDetails() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.post('http://localhost:5000/watch/record', {
+      const response = await axios.post(`${BASE_URL}/watch/record`, {
         showEpisodeId: episodeId
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -376,7 +377,7 @@ function ShowDetails() {
 
     axios
       .post(
-        `http://localhost:5000/favorite/${id}`,
+        `${BASE_URL}/favorite/${id}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -666,7 +667,7 @@ function ShowDetails() {
           >
             {actor.PICTURE && (
               <img 
-                src={`/actors/${actor.PICTURE}`}
+                src={`${BASE_URL}/actors/${actor.PICTURE}`}
                 alt={`${actor.ACTOR_FIRSTNAME} ${actor.ACTOR_LASTNAME}`}
                 style={{
                   width: '100%',
@@ -927,7 +928,7 @@ function ShowDetails() {
             opacity: heroOpacity,
             position: 'relative',
             height: '82vh', // Increased height for more space
-            background: `linear-gradient(rgba(22,33,62,0.55), rgba(26,26,64,0.90)), url(/banners/${show.BANNER}) center/cover`, // Less opaque overlay
+            background: `linear-gradient(rgba(22,33,62,0.55), rgba(26,26,64,0.90)), url(${BASE_URL}/banners/${show.BANNER}) center/cover`, // Less opaque overlay
             display: 'flex',
             alignItems: 'flex-end',
             padding: '0 60px 80px', // More bottom padding

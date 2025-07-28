@@ -224,7 +224,7 @@ exports.getUserComments = async (req, res) => {
         s.CATEGORY_ID AS CATEGORY_ID
       FROM COMMENT c
       JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
-      JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
+      JOIN SHOWS s ON se.SHOW_ID = s.SHOW_ID
       WHERE c.USER_ID = ? AND c.DELETED = 0
       ORDER BY c.TIME DESC
     `, [userId]);
@@ -321,7 +321,7 @@ exports.getUserFavorites = async (req, res) => {
       SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING, s.DESCRIPTION,
              GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
       FROM FAV_LIST_SHOW fls
-      JOIN \`SHOW\` s ON fls.SHOW_ID = s.SHOW_ID
+      JOIN SHOWS s ON fls.SHOW_ID = s.SHOW_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE fls.USER_ID = ?
@@ -365,7 +365,7 @@ exports.getUserCommentsByUserId = async (req, res) => {
         s.CATEGORY_ID AS CATEGORY_ID
       FROM COMMENT c
       JOIN SHOW_EPISODE se ON c.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
-      JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
+      JOIN SHOWS s ON se.SHOW_ID = s.SHOW_ID
       WHERE c.USER_ID = ? AND c.DELETED = 0
       ORDER BY c.TIME DESC
     `, [userId]);
@@ -403,7 +403,7 @@ exports.getUserRatings = async (req, res) => {
 
     // Check if the target user allows their ratings to be shown
     const [prefsRows] = await pool.query(`
-      SELECT SHOW_RATING FROM user_preferences WHERE USER_ID = ?
+      SELECT SHOW_RATING FROM USER_PREFERENCES WHERE USER_ID = ?
     `, [userId]);
 
     const showRatings = prefsRows.length > 0 ? prefsRows[0].SHOW_RATING === 1 : false;
@@ -422,7 +422,7 @@ exports.getUserRatings = async (req, res) => {
       SELECT s.SHOW_ID, s.TITLE AS SHOW_TITLE, s.THUMBNAIL, r.RATING_VALUE, r.RATING_DATE, se.SHOW_EPISODE_TITLE
       FROM RATING r
       JOIN SHOW_EPISODE se ON r.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
-      JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
+      JOIN SHOWS s ON se.SHOW_ID = s.SHOW_ID
       WHERE r.USER_ID = ?
       ORDER BY r.RATING_DATE DESC
     `, [userId]);
@@ -525,13 +525,13 @@ exports.updatePreferences = async (req, res) => {
 
     // Check if preferences exist
     const [existingPrefs] = await pool.query(`
-      SELECT * FROM user_preferences WHERE USER_ID = ?
+      SELECT * FROM USER_PREFERENCES WHERE USER_ID = ?
     `, [userId]);
 
     if (existingPrefs.length > 0) {
       // Update existing preferences
       await pool.query(`
-        UPDATE user_preferences SET 
+        UPDATE USER_PREFERENCES SET 
           HOVER_TRAILER = ?,
           SHOW_RATING = ?
         WHERE USER_ID = ?
@@ -539,7 +539,7 @@ exports.updatePreferences = async (req, res) => {
     } else {
       // Create new preferences
       await pool.query(`
-        INSERT INTO user_preferences 
+        INSERT INTO USER_PREFERENCES 
         (USER_ID, HOVER_TRAILER, SHOW_RATING)
         VALUES (?, ?, ?)
       `, [userId, hoverTrailer, showRating]);
@@ -572,7 +572,7 @@ exports.getPreferences = async (req, res) => {
 
     // Get preferences
     const [prefs] = await pool.query(`
-      SELECT HOVER_TRAILER, SHOW_RATING FROM user_preferences WHERE USER_ID = ?
+      SELECT HOVER_TRAILER, SHOW_RATING FROM USER_PREFERENCES WHERE USER_ID = ?
     `, [userId]);
 
     if (prefs.length === 0) {
@@ -641,7 +641,7 @@ exports.getUserProfileById = async (req, res) => {
     let showRatings = false;
     try {
       const [prefsRows] = await pool.query(`
-        SELECT SHOW_RATING FROM user_preferences WHERE USER_ID = ?
+        SELECT SHOW_RATING FROM USER_PREFERENCES WHERE USER_ID = ?
       `, [targetUserId]);
       showRatings = prefsRows.length > 0 ? prefsRows[0].SHOW_RATING === 1 : false;
     } catch (prefsError) {
@@ -657,7 +657,7 @@ exports.getUserProfileById = async (req, res) => {
                COUNT(DISTINCT ue.SHOW_EPISODE_ID) as episodes_watched
         FROM user_episode ue
         JOIN SHOW_EPISODE se ON ue.SHOW_EPISODE_ID = se.SHOW_EPISODE_ID
-        JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
+        JOIN SHOWS s ON se.SHOW_ID = s.SHOW_ID
         WHERE ue.USER_ID = ? AND ue.WATCHED = 1
         GROUP BY s.SHOW_ID, s.TITLE, s.THUMBNAIL, s.RATING
         ORDER BY MAX(ue.TIMESTAMP) DESC
@@ -678,7 +678,7 @@ exports.getUserProfileById = async (req, res) => {
                f.ADD_DATE AS ADDED_DATE,
                GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
         FROM FAV_LIST_SHOW f
-        JOIN \`SHOW\` s ON f.SHOW_ID = s.SHOW_ID
+        JOIN SHOWS s ON f.SHOW_ID = s.SHOW_ID
         LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
         LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
         WHERE f.USER_ID = ?
@@ -699,7 +699,7 @@ exports.getUserProfileById = async (req, res) => {
         const [ratingsResult] = await pool.query(`
           SELECT s.SHOW_ID, s.TITLE, s.THUMBNAIL, r.RATING, r.REVIEW
           FROM RATING r
-          JOIN \`SHOW\` s ON r.SHOW_ID = s.SHOW_ID
+          JOIN SHOWS s ON r.SHOW_ID = s.SHOW_ID
           WHERE r.USER_ID = ?
           ORDER BY r.RATING_ID DESC
           LIMIT 20

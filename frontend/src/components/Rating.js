@@ -16,6 +16,7 @@ const Rating = ({ episodeId, showAverageRating = true }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [isLoadingUserRating, setIsLoadingUserRating] = useState(true);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     if (episodeId) {
@@ -34,7 +35,7 @@ const Rating = ({ episodeId, showAverageRating = true }) => {
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/ratings/user/episode/${episodeId}`, {
+      const response = await axios.get(`${BASE_URL}/ratings/user/episode/${episodeId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -65,7 +66,7 @@ const Rating = ({ episodeId, showAverageRating = true }) => {
 
   const fetchAverageRating = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/ratings/episode/${episodeId}/average`);
+      const response = await axios.get(`${BASE_URL}/ratings/episode/${episodeId}/average`);
       
       if (response.data.success) {
         setAverageRating(parseFloat(response.data.averageRating));
@@ -89,7 +90,7 @@ const Rating = ({ episodeId, showAverageRating = true }) => {
 
       setIsSubmitting(true);
       
-      await axios.post(`http://localhost:5000/ratings/episode/${episodeId}`, {
+      await axios.post(`${BASE_URL}/ratings/episode/${episodeId}`, {
         ratingValue: selectedRating
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -120,7 +121,7 @@ const Rating = ({ episodeId, showAverageRating = true }) => {
 
       setIsSubmitting(true);
       
-      await axios.delete(`http://localhost:5000/ratings/episode/${episodeId}`, {
+      await axios.delete(`${BASE_URL}/ratings/episode/${episodeId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

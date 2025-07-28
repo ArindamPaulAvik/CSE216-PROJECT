@@ -15,7 +15,7 @@ const recordWatchEvent = async (req, res) => {
 
     // Insert new watch record
     const insertQuery = `
-      INSERT INTO user_episode (USER_ID, SHOW_EPISODE_ID, WATCHED, TIMESTAMP)
+      INSERT INTO USER_EPISODE (USER_ID, SHOW_EPISODE_ID, WATCHED, TIMESTAMP)
       VALUES (?, ?, 1, NOW())
     `;
     

@@ -21,14 +21,16 @@ function AdminDirectorDetails() {
   const [director, setDirector] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
 
   useEffect(() => {
     fetchDirectorDetails();
   }, [id]);
 
   const getImagePath = (picture) => {
-    if (!picture) return '/placeholder-director.jpg';
-    return `/directors/${picture}`;
+    if (!picture) return `${BASE_URL}/placeholder-director.jpg`;
+    return `${BASE_URL}/directors/${picture}`;
   };
 
   const handleImageError = (e, directorName, picture) => {
@@ -39,7 +41,7 @@ function AdminDirectorDetails() {
   const fetchDirectorDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/directors/${id}`, {
+      const response = await axios.get(`${BASE_URL}/directors/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -112,7 +114,7 @@ function AdminDirectorDetails() {
     if (window.confirm('Are you sure you want to delete this director? This action cannot be undone.')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/directors/${director.id}`, {
+        await axios.delete(`${BASE_URL}/directors/${director.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -556,7 +558,7 @@ function AdminDirectorDetails() {
                           flexShrink: 0
                         }}>
                           <img
-                            src={`/shows/${show.THUMBNAIL}`}
+                            src={`${BASE_URL}/shows/${show.THUMBNAIL}`}
                             alt={show.TITLE}
                             onError={(e) => {
                               e.target.style.display = 'none';

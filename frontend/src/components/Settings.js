@@ -14,6 +14,7 @@ const Settings = () => {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [highlightedRequestId, setHighlightedRequestId] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   // Personal Details State
   const [personalData, setPersonalData] = useState({
@@ -78,8 +79,20 @@ const Settings = () => {
       setActiveSection('billing');
     } else if (sectionParam === 'personal') {
       setActiveSection('personal');
+    } else if (sectionParam === 'customer-care') {
+      setActiveSection('support');
+      
+      // Scroll to customer care section after a short delay
+      setTimeout(() => {
+        if (customerCareRef.current) {
+          customerCareRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+      }, 100);
     } else if (customerCareParam === 'true') {
-      setActiveSection('customer-care');
+      setActiveSection('support');
       
       // Scroll to customer care section after a short delay
       setTimeout(() => {
@@ -104,7 +117,7 @@ const Settings = () => {
 
   const fetchFAQs = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/faqs');
+      const response = await axios.get(`${BASE_URL}/faqs`);
       setFaqData(response.data.faqs || []);
     } catch (error) {
       console.error('Error fetching FAQs:', error);
@@ -116,7 +129,7 @@ const Settings = () => {
   const fetchUserRequests = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/customer-care/user/requests', {
+      const response = await axios.get(`${BASE_URL}/customer-care/user/requests`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUserRequests(response.data);
@@ -136,7 +149,7 @@ const Settings = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/customer-care/user/requests', customerCareData, {
+      await axios.post(`${BASE_URL}/customer-care/user/requests`, customerCareData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -165,7 +178,7 @@ const Settings = () => {
       const token = localStorage.getItem('token');
       
       // Fetch user profile data with profile picture
-      const response = await axios.get('http://localhost:5000/user/profile', {
+      const response = await axios.get(`${BASE_URL}/user/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -182,12 +195,12 @@ const Settings = () => {
 
         // Set image preview if profile picture exists
         if (response.data.profilePicture) {
-          setImagePreview(`http://localhost:5000/images/user/${response.data.profilePicture}`);
+          setImagePreview(`${BASE_URL}/images/user/${response.data.profilePicture}`);
         }
       }
 
       // Fetch user preferences
-      const prefsResponse = await axios.get('http://localhost:5000/users/preferences', {
+      const prefsResponse = await axios.get(`${BASE_URL}/users/preferences`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -271,7 +284,7 @@ const Settings = () => {
         formData.append('newPassword', personalData.newPassword);
       }
 
-      const response = await axios.put('http://localhost:5000/user/profile', formData, {
+      const response = await axios.put(`${BASE_URL}/user/profile`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -286,7 +299,7 @@ const Settings = () => {
           ...prev,
           profilePicture: response.data.user.profilePicture
         }));
-        setImagePreview(`http://localhost:5000/images/user/${response.data.user.profilePicture}`);
+        setImagePreview(`${BASE_URL}/images/user/${response.data.user.profilePicture}`);
       }
       
       // Clear password fields and selected file
@@ -312,7 +325,7 @@ const Settings = () => {
     try {
       const token = localStorage.getItem('token');
       
-      await axios.put('http://localhost:5000/users/billing', billingData, {
+      await axios.put(`${BASE_URL}/users/billing`, billingData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -331,7 +344,7 @@ const Settings = () => {
     try {
       const token = localStorage.getItem('token');
       
-      await axios.put('http://localhost:5000/users/preferences', personalizationData, {
+      await axios.put(`${BASE_URL}/users/preferences`, personalizationData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

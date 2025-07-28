@@ -7,6 +7,8 @@ function ActorDetailPage() {
   const { id } = useParams();
   const [actor, setActor] = useState(null);
   const navigate = useNavigate();
+  const BASE_URL = process.env.REACT_APP_API_BASE || "http://localhost:5000";
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -16,7 +18,7 @@ function ActorDetailPage() {
       return;
     }
 
-    axios.get(`http://localhost:5000/actors/${id}`, {
+    axios.get(`${BASE_URL}/actors/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setActor(res.data))
@@ -68,7 +70,7 @@ function ActorDetailPage() {
           alignItems: 'flex-start',
         }}>
           <img
-            src={`/actors/${actor.PICTURE}`}
+            src={`${BASE_URL}/actors/${actor.PICTURE}`}
             alt={actor.NAME}
             style={{
               width: 250,
@@ -161,7 +163,7 @@ function ActorDetailPage() {
               }}
             >
               <img
-                src={`/showS/${show.THUMBNAIL}`}
+                src={`${BASE_URL}/shows/${show.THUMBNAIL}`}
                 alt={show.TITLE}
                 style={{
                   width: '100%',

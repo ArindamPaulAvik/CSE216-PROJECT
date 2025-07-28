@@ -29,6 +29,7 @@ function UserProfile() {
   const [ratings, setRatings] = useState([]);
   const [loadingRatings, setLoadingRatings] = useState(false);
   const [ratingsError, setRatingsError] = useState('');
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   const navigate = useNavigate();
 
@@ -44,7 +45,7 @@ function UserProfile() {
         }
 
         console.log('Fetching user profile...'); // Debug log
-        const response = await fetch('http://localhost:5000/user/profile', {
+        const response = await fetch(`${BASE_URL}/user/profile`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -83,7 +84,7 @@ function UserProfile() {
 
         // Set image preview if profile picture exists
         if (data.profilePicture) {
-          setImagePreview(`http://localhost:5000/images/user/${data.profilePicture}`);
+          setImagePreview(`${BASE_URL}/images/user/${data.profilePicture}`);
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);
@@ -106,7 +107,7 @@ function UserProfile() {
       setFavoritesError('');
       const token = localStorage.getItem('token');
       
-      const response = await axios.get('http://localhost:5000/favorites', {
+      const response = await axios.get(`${BASE_URL}/favorites`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -126,7 +127,7 @@ function UserProfile() {
       setCommentsError('');
       const token = localStorage.getItem('token');
       
-      const response = await axios.get('http://localhost:5000/user/comments', {
+      const response = await axios.get(`${BASE_URL}/user/comments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -146,7 +147,7 @@ function UserProfile() {
       setFavoritesError('');
       const token = localStorage.getItem('token');
       
-      await axios.post(`http://localhost:5000/favorite/${showId}`, {}, {
+      await axios.post(`${BASE_URL}/favorite/${showId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -184,7 +185,7 @@ function UserProfile() {
       setRatingsError('');
       const token = localStorage.getItem('token');
       
-      const response = await axios.get('http://localhost:5000/ratings/user/all', {
+      const response = await axios.get(`${BASE_URL}/ratings/user/all`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -442,7 +443,7 @@ function UserProfile() {
                 style={{ cursor: 'pointer' }}
               >
                 <img 
-                  src={`/shows/${show.THUMBNAIL}`} 
+                  src={`${BASE_URL}/shows/${show.THUMBNAIL}`} 
                   alt={show.TITLE}
                   onError={(e) => {
                     e.target.src = '/placeholder.jpg';
@@ -539,7 +540,7 @@ function UserProfile() {
                   <div className="show-info">
                     <div className="show-thumbnail">
                       <img 
-                        src={`/shows/${comment.SHOW_THUMBNAIL}`} 
+                        src={`${BASE_URL}/shows/${comment.SHOW_THUMBNAIL}`} 
                         alt={comment.SHOW_TITLE}
                         onError={(e) => {
                           e.target.src = '/placeholder.jpg';
@@ -569,7 +570,7 @@ function UserProfile() {
                   </p>
                   {comment.IMG_LINK && (
                     <div className="comment-image">
-                      <img src={`http://localhost:5000${comment.IMG_LINK}`} alt="Comment attachment" />
+                      <img src={`${BASE_URL}${comment.IMG_LINK}`} alt="Comment attachment" />
                     </div>
                   )}
                 </div>
@@ -627,7 +628,7 @@ function UserProfile() {
             <div key={`${rating.SHOW_ID}-${rating.SHOW_EPISODE_ID}`} className="rating-item">
               <div className="show-thumbnail">
                 <img 
-                  src={`/shows/${rating.THUMBNAIL}`} 
+                  src={`${BASE_URL}/shows/${rating.THUMBNAIL}`} 
                   alt={rating.SHOW_TITLE}
                   onError={(e) => {
                     e.target.src = '/placeholder.jpg';
@@ -716,7 +717,7 @@ function UserProfile() {
               <div className="modal-body">
                 <div className="modal-show-info">
                   <img 
-                    src={`/shows/${showToDelete.THUMBNAIL}`} 
+                    src={`${BASE_URL}/shows/${showToDelete.THUMBNAIL}`} 
                     alt={showToDelete.TITLE}
                     className="modal-thumbnail"
                     onError={(e) => {

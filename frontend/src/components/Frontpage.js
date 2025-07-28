@@ -18,6 +18,7 @@ function FrontPage() {
   const [comedyShows, setComedyShows] = useState([]);
   const [dramaShows, setDramaShows] = useState([]);
   const [familyShows, setFamilyShows] = useState([]);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   
   // User preferences state
   const [userPreferences, setUserPreferences] = useState({
@@ -55,7 +56,7 @@ function FrontPage() {
     }
 
     // Fetch frontpage data
-    axios.get('http://localhost:5000/frontpage', {
+    axios.get(`${BASE_URL}/frontpage`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
@@ -72,7 +73,7 @@ function FrontPage() {
         setFamilyShows(data.familyShows || []);
         setUserName(data.userName || 'User');
         if (data.profilePicture) {
-          setProfilePicture(`http://localhost:5000/images/user/${data.profilePicture}`);
+          setProfilePicture(`${BASE_URL}/images/user/${data.profilePicture}`);
         }
       })
       .catch(err => {
@@ -84,21 +85,24 @@ function FrontPage() {
           console.error('Error fetching frontpage:', err);
         }
       });
+  }, []);
 
-    // Fetch user preferences
-    axios.get('http://localhost:5000/users/preferences', {
+  // Fetch user preferences on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    axios.get(`${BASE_URL}/users/preferences`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => {
-        setUserPreferences({
-          playTrailerOnHover: res.data.playTrailerOnHover || false,
-          showMyRatingsToOthers: res.data.showMyRatingsToOthers || false
-        });
-      })
-      .catch(err => {
-        console.error('Error fetching user preferences:', err);
-        // Keep default preferences if fetch fails
+    .then(res => {
+      setUserPreferences({
+        playTrailerOnHover: res.data.playTrailerOnHover,
+        showMyRatingsToOthers: res.data.showMyRatingsToOthers
       });
+    })
+    .catch(err => {
+      console.error('Error fetching user preferences:', err);
+    });
   }, []);
 
   // Scroll animations setup - Fixed dependency array
@@ -390,13 +394,13 @@ function FrontPage() {
   }, []);
 
   const getImagePath = (thumbnail) => {
-    if (!thumbnail) return 'http://localhost:5000/shows/placeholder.jpg';
-    return `/shows/${thumbnail}`;
+    if (!thumbnail) return `${BASE_URL}/shows/placeholder.jpg`;
+    return `${BASE_URL}/shows/${thumbnail}`;
   };
 
   const handleImageError = (e, showTitle, thumbnail) => {
     console.error(`Image error for ${showTitle}`, thumbnail);
-    e.target.src = '/placeholder.jpg';
+    e.target.src = `${BASE_URL}/placeholder.jpg`;
   };
 
 

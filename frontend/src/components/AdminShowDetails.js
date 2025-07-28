@@ -22,6 +22,8 @@ function AdminShowDetails() {
   const [show, setShow] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     fetchShowDetails();
@@ -29,8 +31,8 @@ function AdminShowDetails() {
 
   // Helper function to get image path like in user frontpage
   const getImagePath = (thumbnail) => {
-    if (!thumbnail) return 'http://localhost:5000/shows/placeholder.jpg';
-    return `/shows/${thumbnail}`;
+    if (!thumbnail) return `${BASE_URL}/shows/placeholder.jpg`;
+    return `${BASE_URL}/shows/${thumbnail}`;
   };
 
   const handleImageError = (e, showTitle, thumbnail) => {
@@ -41,7 +43,7 @@ function AdminShowDetails() {
   const fetchShowDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/show/${id}`, {
+      const response = await axios.get(`${BASE_URL}/show/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -596,7 +598,7 @@ function AdminShowDetails() {
                         }}>
                           {actor.PICTURE ? (
                             <img 
-                              src={`/actors/${actor.PICTURE}`}
+                              src={`${BASE_URL}/actors/${actor.PICTURE}`}
                               alt={`${actor.ACTOR_FIRSTNAME} ${actor.ACTOR_LASTNAME}`}
                               style={{
                                 width: '100%',

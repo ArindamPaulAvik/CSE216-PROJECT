@@ -17,6 +17,7 @@ import axios from 'axios';
 function FAQManagement() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   const [faqs, setFaqs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFaq, setEditingFaq] = useState(null);
@@ -47,7 +48,7 @@ function FAQManagement() {
   const fetchFAQs = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/faqs', {
+      const response = await axios.get(`${BASE_URL}/faqs`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFaqs(response.data.faqs || []);
@@ -75,13 +76,13 @@ function FAQManagement() {
       
       if (editingFaq) {
         // Update existing FAQ
-        await axios.put(`http://localhost:5000/faqs/${editingFaq.FAQ_ID}`, formData, {
+        await axios.put(`${BASE_URL}/faqs/${editingFaq.FAQ_ID}`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSuccessMessage('FAQ updated successfully!');
       } else {
         // Create new FAQ
-        await axios.post('http://localhost:5000/faqs', formData, {
+        await axios.post(`${BASE_URL}/faqs`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSuccessMessage('FAQ created successfully!');
@@ -114,7 +115,7 @@ function FAQManagement() {
   const confirmDelete = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/faqs/${faqToDelete}`, {
+      await axios.delete(`${BASE_URL}/faqs/${faqToDelete}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

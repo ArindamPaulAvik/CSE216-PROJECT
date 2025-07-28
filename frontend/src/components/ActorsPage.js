@@ -9,11 +9,13 @@ function ActorsPage() {
   const [filteredActors, setFilteredActors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const BASE_URL = process.env.REACT_APP_API_BASE || "http://localhost:5000";
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     axios
-      .get('http://localhost:5000/actors', {
+      .get(`${BASE_URL}/actors`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -64,13 +66,13 @@ function ActorsPage() {
         <div className="actor-card-inner">
           <div className="actor-image-container">
             <motion.img
-              src={`/actors/${actor.PICTURE}`}
+              src={`${BASE_URL}/actors/${actor.PICTURE}`}
               alt={actor.NAME}
               className="actor-image"
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.4 }}
               onError={(e) => {
-                e.target.src = '/images/default-actor.png';
+                e.target.src = `${BASE_URL}/actors/${actor.PICTURE}`;
               }}
             />
             <div className="actor-overlay">
@@ -219,7 +221,7 @@ function ActorsPage() {
         </motion.div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .actors-page {
           min-height: 100vh;
           position: relative;

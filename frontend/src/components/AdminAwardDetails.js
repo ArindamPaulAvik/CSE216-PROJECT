@@ -19,6 +19,8 @@ function AdminAwardDetails() {
   const [award, setAward] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
 
   useEffect(() => {
     fetchAwardDetails();
@@ -26,7 +28,7 @@ function AdminAwardDetails() {
 
   const getImagePath = (image) => {
     if (!image) return '/placeholder-award.jpg';
-    return `/awards/${image}`;
+    return `${BASE_URL}/awards/${image}`;
   };
 
   const handleImageError = (e, awardName, image) => {
@@ -37,7 +39,7 @@ function AdminAwardDetails() {
   const fetchAwardDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/awards/${id}`, {
+      const response = await axios.get(`${BASE_URL}/awards/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -90,7 +92,7 @@ function AdminAwardDetails() {
     if (window.confirm('Are you sure you want to delete this award? This action cannot be undone.')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/awards/${award.id}`, {
+        await axios.delete(`${BASE_URL}/awards/${award.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

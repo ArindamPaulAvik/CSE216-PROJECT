@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 function BillingAndPaymentsPage() {
   const navigate = useNavigate();
-
+  
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
   const handleLogout = () => {
     console.log('Logout clicked');
   };

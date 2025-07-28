@@ -11,6 +11,7 @@ function DirectorsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     fetchDirectors();
@@ -23,7 +24,7 @@ function DirectorsManagement() {
   const fetchDirectors = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/directors', {
+      const response = await axios.get(`${BASE_URL}/directors`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -79,8 +80,8 @@ function DirectorsManagement() {
   };
 
   const getImagePath = (picture) => {
-    if (!picture) return '/placeholder-director.jpg';
-    return `/directors/${picture}`;
+    if (!picture) return `${BASE_URL}/placeholder-director.jpg`;
+    return `${BASE_URL}/directors/${picture}`;
   };
 
   const handleImageError = (e, directorName, picture) => {

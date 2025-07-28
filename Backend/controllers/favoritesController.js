@@ -63,7 +63,7 @@ exports.getFavorites = async (req, res) => {
              f.ADD_DATE AS ADDED_DATE,
              GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
       FROM FAV_LIST_SHOW f
-      JOIN \`SHOW\` s ON f.SHOW_ID = s.SHOW_ID
+      JOIN SHOWS s ON f.SHOW_ID = s.SHOW_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE f.USER_ID = ? AND s.REMOVED = 0

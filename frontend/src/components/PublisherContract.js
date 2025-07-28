@@ -24,12 +24,13 @@ function PublisherContract() {
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [publisherRequests, setPublisherRequests] = useState([]);
   const [acceptingId, setAcceptingId] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   // Fetch publisher-requested renewal requests
   const fetchPublisherRequests = async (publisherId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/publishers/contract-renewal-requests?requestedBy=PUBLISHER&publisherId=${publisherId}`, {
+      const res = await axios.get(`${BASE_URL}/publishers/contract-renewal-requests?requestedBy=PUBLISHER&publisherId=${publisherId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPublisherRequests(res.data);
@@ -55,7 +56,7 @@ function PublisherContract() {
     setContractError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/publishers/my-contract', {
+      const res = await axios.get(`${BASE_URL}/publishers/my-contract`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setContract(res.data);
@@ -72,7 +73,7 @@ function PublisherContract() {
     setRequestsError('');
     try {
       const token = localStorage.getItem('token');
-      const reqRes = await axios.get(`http://localhost:5000/publishers/contract-renewal-requests?requestedBy=ADMIN&publisherId=${publisherId}`, {
+      const reqRes = await axios.get(`${BASE_URL}/publishers/contract-renewal-requests?requestedBy=ADMIN&publisherId=${publisherId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAdminRequests(reqRes.data);
@@ -88,7 +89,7 @@ function PublisherContract() {
     setRejecting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/publishers/contract-renewal-requests/${requestId}/reject`, {}, {
+      await axios.put(`${BASE_URL}/publishers/contract-renewal-requests/${requestId}/reject`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       window.location.reload();
@@ -103,7 +104,7 @@ function PublisherContract() {
     setAcceptingId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/publishers/contract-renewal-requests/${requestId}/accept-pub`, {}, {
+      await axios.put(`${BASE_URL}/publishers/contract-renewal-requests/${requestId}/accept-pub`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       window.location.reload();
@@ -349,7 +350,7 @@ function PublisherContract() {
               setRenewError('');
               try {
                 const token = localStorage.getItem('token');
-                await axios.post('http://localhost:5000/publishers/contract-renewal-requests', {
+                await axios.post(`${BASE_URL}/publishers/contract-renewal-requests`, {
                   publisherId: contract.PUBLISHER_ID,
                   renewalYears: renewForm.renewalYears,
                   newMinGuarantee: renewForm.newMinGuarantee,

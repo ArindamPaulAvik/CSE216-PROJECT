@@ -7,6 +7,7 @@ function AwardDetailPage() {
   const { id } = useParams();
   const [award, setAward] = useState(null);
   const navigate = useNavigate();
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -16,7 +17,7 @@ function AwardDetailPage() {
       return;
     }
 
-    axios.get(`http://localhost:5000/awards/${id}`, {
+    axios.get(`${BASE_URL}/awards/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setAward(res.data))
@@ -194,7 +195,7 @@ function AwardDetailPage() {
                     🏆
                   </div>
                   <img
-                    src={`/shows/${show.THUMBNAIL}`}
+                    src={`${BASE_URL}/shows/${show.THUMBNAIL}`}
                     alt={show.TITLE}
                     style={{
                       width: '100%',

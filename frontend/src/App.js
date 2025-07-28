@@ -27,6 +27,7 @@ import EditDirector from './components/EditDirector';
 import AwardsManagement from './components/AwardsManagement';
 import AdminAwardDetails from './components/AdminAwardDetails';
 import EditAward from './components/EditAward';
+import AddAward from './components/AddAward';
 import SubmissionsManagement from './components/SubmissionsManagement';
 import ReportsManagement from './components/ReportsManagement';
 import Subscription from './components/Subscription';
@@ -80,7 +81,7 @@ function App() {
           <Route path="/awards-management" element={<AwardsManagement />} />
           <Route path="/admin-award-details/:id" element={<AdminAwardDetails />} />
           <Route path="/edit-award/:id" element={<EditAward />} />
-          <Route path="/add-award" element={<EditAward />} />
+          <Route path="/add-award" element={<AddAward />} />
           <Route path="/submissions-management" element={<SubmissionsManagement />} />
           <Route path="/reports-management" element={<ReportsManagement />} />
           <Route path="/faq-management" element={<FAQManagement />} />

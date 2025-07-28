@@ -39,23 +39,41 @@ exports.getDirectorById = async (req, res) => {
         s.THUMBNAIL, 
         s.RATING,
         s.RELEASE_DATE,
+        s.REMOVED,
         GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES,
         s.DESCRIPTION,
         s.RELEASE_DATE,
         c.CATEGORY_NAME
       FROM DIRECTOR d
       LEFT JOIN SHOW_DIRECTOR sd ON d.DIRECTOR_ID = sd.DIRECTOR_ID
-      LEFT JOIN \`SHOW\` s ON sd.SHOW_ID = s.SHOW_ID
+      LEFT JOIN SHOWS s ON sd.SHOW_ID = s.SHOW_ID
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-      WHERE d.DIRECTOR_ID = ? AND s.REMOVED = 0
-      GROUP BY s.SHOW_ID, d.DIRECTOR_ID, d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME, d.BIOGRAPHY, d.PICTURE, s.TITLE, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.DESCRIPTION, s.RELEASE_DATE, c.CATEGORY_NAME
+      WHERE d.DIRECTOR_ID = ?
+      GROUP BY s.SHOW_ID, d.DIRECTOR_ID, d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME, d.BIOGRAPHY, d.PICTURE, s.TITLE, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.DESCRIPTION, s.RELEASE_DATE, c.CATEGORY_NAME, s.REMOVED
       ORDER BY s.RELEASE_DATE DESC
     `, [directorId]);
 
     if (!rows.length) {
-      return res.status(404).json({ error: 'Director not found' });
+      // Try to fetch just the director (no shows at all)
+      const [directorRows] = await pool.query(
+        'SELECT DIRECTOR_ID, DIRECTOR_FIRSTNAME, DIRECTOR_LASTNAME, BIOGRAPHY, PICTURE FROM DIRECTOR WHERE DIRECTOR_ID = ?',
+        [directorId]
+      );
+      if (!directorRows.length) {
+        return res.status(404).json({ error: 'Director not found' });
+      }
+      const director = {
+        DIRECTOR_ID: directorRows[0].DIRECTOR_ID,
+        DIRECTOR_FIRSTNAME: directorRows[0].DIRECTOR_FIRSTNAME,
+        DIRECTOR_LASTNAME: directorRows[0].DIRECTOR_LASTNAME,
+        DIRECTOR_NAME: directorRows[0].DIRECTOR_FIRSTNAME + ' ' + directorRows[0].DIRECTOR_LASTNAME,
+        BIO: directorRows[0].BIOGRAPHY,
+        PICTURE: directorRows[0].PICTURE,
+        SHOWS: []
+      };
+      return res.json(director);
     }
 
     // Group shows
@@ -68,9 +86,8 @@ exports.getDirectorById = async (req, res) => {
       PICTURE: rows[0].PICTURE,
       SHOWS: []
     };
-    
     for (const row of rows) {
-      if (row.SHOW_ID) {
+      if (row.SHOW_ID && row.REMOVED === 0) {
         director.SHOWS.push({
           SHOW_ID: row.SHOW_ID,
           TITLE: row.TITLE,
@@ -95,7 +112,7 @@ exports.getShowsByDirector = async (req, res) => {
   const directorId = req.params.directorId;
   try {
     const [shows] = await pool.query(
-      `SELECT s.* FROM \`SHOW\` s
+      `SELECT s.* FROM SHOWS s
        JOIN SHOW_DIRECTOR sd ON s.SHOW_ID = sd.SHOW_ID
        WHERE sd.DIRECTOR_ID = ? AND s.REMOVED = 0`,
       [directorId]

@@ -21,6 +21,7 @@ function SubmissionsManagement() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState({ submissionId: null, verdict: null });
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -61,9 +62,9 @@ function SubmissionsManagement() {
         throw new Error('No authentication token found');
       }
       
-      console.log('Making request to:', 'http://localhost:5000/api/submissions');
+      console.log('Making request to:', `${BASE_URL}/api/submissions`);
       
-      const response = await axios.get('http://localhost:5000/api/submissions', {
+      const response = await axios.get(`${BASE_URL}/api/submissions`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -119,7 +120,7 @@ function SubmissionsManagement() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:5000/api/submissions/${submissionId}/verdict`,
+        `${BASE_URL}/api/submissions/${submissionId}/verdict`,
         { verdict },
         { headers: { Authorization: `Bearer ${token}` } }
       );

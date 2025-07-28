@@ -18,6 +18,7 @@ function ContentAdminFrontpage() {
     totalAwards: 0
   });
   const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -38,7 +39,7 @@ function ContentAdminFrontpage() {
   const fetchAnalytics = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/admin/dashboard-analytics', {
+      const response = await axios.get(`${BASE_URL}/admin/dashboard-analytics`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setAnalytics(response.data);

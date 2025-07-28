@@ -33,7 +33,7 @@ exports.getFrontpage = async (req, res) => {
       WHEN fls.USER_ID IS NOT NULL THEN 1 
       ELSE 0 
     END AS IS_FAVORITE
-  FROM \`SHOW\` s
+  FROM SHOWS s
   LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
   LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
   LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
@@ -46,7 +46,7 @@ exports.getFrontpage = async (req, res) => {
 
 
     const [allshows] = await pool.query(`
-      SELECT SHOW_ID, TITLE, THUMBNAIL, RATING FROM \`SHOW\` WHERE REMOVED = 0
+      SELECT SHOW_ID, TITLE, THUMBNAIL, RATING FROM SHOWS WHERE REMOVED = 0
     `);
 
     const [watchagainshows] = await pool.query(`
@@ -62,7 +62,7 @@ exports.getFrontpage = async (req, res) => {
       JOIN USER u ON p.PERSON_ID = u.PERSON_ID
       JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
       JOIN SHOW_EPISODE se ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID
-      JOIN \`SHOW\` s ON s.SHOW_ID = se.SHOW_ID
+      JOIN SHOWS s ON s.SHOW_ID = se.SHOW_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE p.EMAIL = ? AND s.REMOVED = 0
@@ -100,7 +100,7 @@ exports.getFrontpage = async (req, res) => {
 
       user_content AS (
         SELECT DISTINCT s.SHOW_ID
-        FROM \`SHOW\` s
+        FROM SHOWS s
         LEFT JOIN FAV_LIST_SHOW fls ON s.SHOW_ID = fls.SHOW_ID AND fls.USER_ID = ?
         LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
         LEFT JOIN USER_EPISODE ue ON se.SHOW_EPISODE_ID = ue.SHOW_EPISODE_ID AND ue.USER_ID = ?
@@ -121,7 +121,7 @@ exports.getFrontpage = async (req, res) => {
           (COALESCE(s.RATING, 0) * 0.3 + 
            (COALESCE(s.WATCH_COUNT, 0) / 1000) * 0.2 + 
            COUNT(DISTINCT tug.GENRE_ID) * 0.5) as recommendation_score
-      FROM \`SHOW\` s
+      FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       JOIN top_user_genres tug ON g.GENRE_ID = tug.GENRE_ID
@@ -149,7 +149,7 @@ exports.getFrontpage = async (req, res) => {
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
         END AS IS_FAVORITE
-      FROM \`SHOW\` s
+      FROM SHOWS s
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
       WHERE s.RATING IS NOT NULL AND s.RATING > 0 AND s.REMOVED = 0
       GROUP BY 
@@ -175,7 +175,7 @@ exports.getFrontpage = async (req, res) => {
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
         END AS IS_FAVORITE
-      FROM \`SHOW\` s
+      FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
@@ -203,7 +203,7 @@ exports.getFrontpage = async (req, res) => {
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
         END AS IS_FAVORITE
-      FROM \`SHOW\` s
+      FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
@@ -231,7 +231,7 @@ exports.getFrontpage = async (req, res) => {
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
         END AS IS_FAVORITE
-      FROM \`SHOW\` s
+      FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
@@ -263,7 +263,7 @@ exports.getFrontpage = async (req, res) => {
             WHEN fls.USER_ID IS NOT NULL THEN 1 
             ELSE 0 
           END AS IS_FAVORITE
-        FROM \`SHOW\` s
+        FROM SHOWS s
         LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
         GROUP BY 
           s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
@@ -289,7 +289,7 @@ exports.getFrontpage = async (req, res) => {
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
         END AS IS_FAVORITE
-      FROM \`SHOW\` s
+      FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
@@ -317,7 +317,7 @@ exports.getFrontpage = async (req, res) => {
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
         END AS IS_FAVORITE
-      FROM \`SHOW\` s
+      FROM SHOWS s
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?

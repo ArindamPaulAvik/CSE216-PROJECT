@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPlus } from 'react-icons/fi';
 
-const API_BASE = "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 function AdminPromotions() {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ function AdminPromotions() {
 
   const fetchPromotions = async () => {
     try {
-      const response = await fetch(`${API_BASE}/promotions`);
+      const response = await fetch(`${BASE_URL}/promotions`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -59,7 +59,7 @@ function AdminPromotions() {
     try {
       
       // Try the main endpoint first
-      let response = await fetch(`${API_BASE}/promotions/subscription-types`);
+      let response = await fetch(`${BASE_URL}/promotions/subscription-types`);
       
       if (!response.ok) {
         setSubscriptionTypes([]);
@@ -77,8 +77,8 @@ function AdminPromotions() {
     e.preventDefault();
     try {
       const url = editingPromo 
-        ? `${API_BASE}/promotions/${editingPromo.PROMOTION_ID}`
-        : `${API_BASE}/promotions`;
+        ? `${BASE_URL}/promotions/${editingPromo.PROMOTION_ID}`
+        : `${BASE_URL}/promotions`;
       
       const method = editingPromo ? 'PUT' : 'POST';
       
@@ -104,7 +104,7 @@ function AdminPromotions() {
     if (!window.confirm('Are you sure you want to delete this promotion?')) return;
     
     try {
-      const response = await fetch(`${API_BASE}/promotions/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${BASE_URL}/promotions/${id}`, { method: 'DELETE' });
       
       if (response.ok) {
         await fetchPromotions();

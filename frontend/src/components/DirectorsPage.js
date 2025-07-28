@@ -9,11 +9,12 @@ function DirectorsPage() {
   const [filteredDirectors, setFilteredDirectors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     axios
-      .get('http://localhost:5000/directors', {
+      .get(`${BASE_URL}/directors`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -69,7 +70,7 @@ function DirectorsPage() {
         <div className="actor-card-inner">
           <div className="actor-image-container">
             <motion.img
-              src={`/directors/${director.PICTURE}`}
+              src={`${BASE_URL}/directors/${director.PICTURE}`}
               alt={director.DIRECTOR_NAME}
               className="actor-image"
               whileHover={{ scale: 1.1 }}

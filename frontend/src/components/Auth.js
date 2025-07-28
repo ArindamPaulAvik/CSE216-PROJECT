@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
+const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+
 // Animation Variants
 const formVariants = {
   enter: (direction) => ({
@@ -154,7 +156,7 @@ function Auth() {
     setError(null);
     setIsLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/login', loginData);
+      const res = await axios.post(`${BASE_URL}/login`, loginData);
       if (res.status === 200) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user_id', res.data.userId || res.data.adminId || res.data.publisherId);
@@ -180,7 +182,7 @@ function Auth() {
     setError(null);
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/register', registerData);
+      const response = await axios.post(`${BASE_URL}/register`, registerData);
       if (response.status === 201) {
         setShowSuccessModal(true);
       }
@@ -268,7 +270,7 @@ function Auth() {
     right: '-10%',  // Extend right of the viewport
     bottom: '-10%', // Extend below the viewport
     zIndex: 0,
-    background: `url('/images/authpage.png') center center / cover no-repeat`,
+    backgroundImage: `url(${BASE_URL}/images/authpage.png)`,
     filter: 'blur(1.5px)',
     transform: `translate(${bgOffset.x}px, ${bgOffset.y}px)`,
     backgroundSize: 'cover',

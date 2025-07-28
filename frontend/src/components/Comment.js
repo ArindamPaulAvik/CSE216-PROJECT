@@ -86,6 +86,7 @@ function CommentSection({ episodeId }) {
   const [reportTarget, setReportTarget] = useState(null); // { commentId, isReply, parentId }
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showAlreadyReportedModal, setShowAlreadyReportedModal] = useState(false);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   // Add state for reply image and preview (per reply box)
   const [replyImage, setReplyImage] = useState(null);
@@ -145,7 +146,7 @@ function CommentSection({ episodeId }) {
     try {
       // Check if user has already reported this comment
       const response = await axios.get(
-        `http://localhost:5000/violations/check/${currentUserId}/${commentId}`,
+        `${BASE_URL}/violations/check/${currentUserId}/${commentId}`,
         { headers }
       );
 
@@ -165,7 +166,7 @@ function CommentSection({ episodeId }) {
     setLoading(true);
     try {
       const res = await axios.get(
-        `http://localhost:5000/comments/episode/${episodeId}`,
+        `${BASE_URL}/comments/episode/${episodeId}`,
         { headers }
       );
       setComments(res.data);
@@ -178,7 +179,7 @@ function CommentSection({ episodeId }) {
   const fetchUserInteractions = useCallback(async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/comments/episode/${episodeId}/user-interactions`,
+        `${BASE_URL}/comments/episode/${episodeId}/user-interactions`,
         { headers }
       );
       
@@ -210,7 +211,7 @@ function CommentSection({ episodeId }) {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/comments/${commentId}/edit`, {
+      const response = await fetch(`${BASE_URL}/comments/${commentId}/edit`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -296,7 +297,7 @@ function CommentSection({ episodeId }) {
       const formData = new FormData();
       formData.append('image', selectedImage);
       try {
-        const res = await axios.post('http://localhost:5000/comments/upload-image', formData, {
+        const res = await axios.post(`${BASE_URL}/comments/upload-image`, formData, {
           headers: { ...headers, 'Content-Type': 'multipart/form-data' },
         });
         imgLink = res.data.imgLink;
@@ -322,7 +323,7 @@ function CommentSection({ episodeId }) {
     setImagePreview(null);
     try {
       const res = await axios.post(
-        `http://localhost:5000/comments`,
+        `${BASE_URL}/comments`,
         { episode_id: episodeId, comment_text: newComment, img_link: imgLink },
         { headers }
       );
@@ -364,7 +365,7 @@ function CommentSection({ episodeId }) {
       const formData = new FormData();
       formData.append('image', replyImage);
       try {
-        const res = await axios.post('http://localhost:5000/comments/upload-image', formData, {
+        const res = await axios.post(`${BASE_URL}/comments/upload-image`, formData, {
           headers: { ...headers, 'Content-Type': 'multipart/form-data' },
         });
         imgLink = res.data.imgLink;
@@ -395,7 +396,7 @@ function CommentSection({ episodeId }) {
     setReplyingTo(null);
     try {
       const res = await axios.post(
-        `http://localhost:5000/comments`,
+        `${BASE_URL}/comments`,
         { episode_id: episodeId, comment_text: tempReply.COMMENT_TEXT, parent_id: parentId, img_link: imgLink },
         { headers }
       );
@@ -481,7 +482,7 @@ function CommentSection({ episodeId }) {
     
     try {
       await axios.put(
-        `http://localhost:5000/comments/${commentId}/like`,
+        `${BASE_URL}/comments/${commentId}/like`,
         {},
         { headers }
       );
@@ -565,7 +566,7 @@ function CommentSection({ episodeId }) {
     
     try {
       await axios.put(
-        `http://localhost:5000/comments/${commentId}/dislike`,
+        `${BASE_URL}/comments/${commentId}/dislike`,
         {},
         { headers }
       );
@@ -598,7 +599,7 @@ function CommentSection({ episodeId }) {
     setActionLoading(prev => new Set([...prev, commentId]));
 
     try {
-      await axios.delete(`http://localhost:5000/comments/${commentId}`, { headers });
+      await axios.delete(`${BASE_URL}/comments/${commentId}`, { headers });
       // After deletion, always fetch latest comments and user interactions from backend
       await fetchComments();
       await fetchUserInteractions();
@@ -629,7 +630,7 @@ function CommentSection({ episodeId }) {
     }
 
     try {
-      await axios.post('http://localhost:5000/violations/report', {
+      await axios.post(`${BASE_URL}/violations/report`, {
         userId: parseInt(currentUserId),
         commentId: commentId,
         reportText: reportText,
@@ -884,8 +885,8 @@ function CommentSection({ episodeId }) {
                     src={
                       !comment.DELETED
                         ? (comment.PROFILE_PICTURE
-                            ? `http://localhost:5000/images/user/${comment.PROFILE_PICTURE}`
-                            : 'http://localhost:5000/images/user/default-user.jpg')
+                            ? `${BASE_URL}/images/user/${comment.PROFILE_PICTURE}`
+                            : `${BASE_URL}/images/user/default-user.jpg`)
                         : undefined
                     }
                     alt="Profile"
@@ -1109,7 +1110,7 @@ function CommentSection({ episodeId }) {
               {/* Show image in comment if exists */}
               {comment.IMG_LINK && (
                 <div style={{ margin: '10px 0' }}>
-                  <img src={`http://localhost:5000${comment.IMG_LINK}`} alt="Comment" style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
+                  <img src={`${BASE_URL}${comment.IMG_LINK}`} alt="Comment" style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
                 </div>
               )}
               {/* Like/Dislike Buttons + Reply Button */}
@@ -1319,9 +1320,9 @@ function CommentSection({ episodeId }) {
                               !reply.DELETED
                                 ? (reply.PROFILE_PICTURE
                                     ? (reply.PROFILE_PICTURE.startsWith('/images/user/')
-                                        ? `http://localhost:5000${reply.PROFILE_PICTURE}`
-                                        : `http://localhost:5000/images/user/${reply.PROFILE_PICTURE}`)
-                                    : 'http://localhost:5000/images/user/default-user.jpg')
+                                        ? `${BASE_URL}${reply.PROFILE_PICTURE}`
+                                        : `${BASE_URL}/images/user/${reply.PROFILE_PICTURE}`)
+                                    : `${BASE_URL}/images/user/default-user.jpg`)
                                 : undefined
                             }
                             alt="Profile"
@@ -1599,7 +1600,7 @@ function CommentSection({ episodeId }) {
                       {/* In the reply display, show image if present */}
                       {reply.IMG_LINK && (
                         <div style={{ margin: '8px 0' }}>
-                          <img src={`http://localhost:5000${reply.IMG_LINK}`} alt="Reply" style={{ maxWidth: 120, maxHeight: 80, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
+                          <img src={`${BASE_URL}${reply.IMG_LINK}`} alt="Reply" style={{ maxWidth: 120, maxHeight: 80, borderRadius: 8, border: '1.5px solid #7f5af0' }} />
                         </div>
                       )}
                     </motion.div>

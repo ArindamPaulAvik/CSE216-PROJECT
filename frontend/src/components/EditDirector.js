@@ -18,6 +18,7 @@ function EditDirector() {
   });
   const [currentPicture, setCurrentPicture] = useState(null);
   const [newPicture, setNewPicture] = useState(null);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   // File input ref
   const pictureInputRef = useRef();
@@ -31,7 +32,7 @@ function EditDirector() {
   const fetchDirectorDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/directors/${id}`, {
+      const response = await axios.get(`${BASE_URL}/directors/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -98,7 +99,7 @@ function EditDirector() {
       
       if (isNewDirector) {
         // Create new director
-        const response = await axios.post('http://localhost:5000/directors', submitData, {
+        const response = await axios.post(`${BASE_URL}/directors`, submitData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -107,7 +108,7 @@ function EditDirector() {
         navigate(`/admin-director-details/${response.data.director.DIRECTOR_ID}`);
       } else {
         // Update existing director
-        await axios.put(`http://localhost:5000/directors/${id}`, submitData, {
+        await axios.put(`${BASE_URL}/directors/${id}`, submitData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'

@@ -34,6 +34,8 @@ function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statType, setStatType] = useState('user'); // 'user' or 'income'
+  
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     setLoading(true);
@@ -41,9 +43,9 @@ function AnalyticsPage() {
     const days = mode === 'monthly' ? 30 : 7;
     const token = localStorage.getItem('token');
     
-    let url = 'http://localhost:5000/user-join-stats';
+    let url = `${BASE_URL}/user-join-stats`;
     if (statType === 'income') {
-      url = 'http://localhost:5000/income-stats';
+      url = `${BASE_URL}/income-stats`;
     }
     
     axios.post(url, { days }, {

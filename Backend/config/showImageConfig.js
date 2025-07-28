@@ -5,7 +5,7 @@ const path = require('path');
 // Storage configuration for show thumbnails - saving to frontend directory
 const thumbnailStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../frontend/public/shows');
+    const uploadPath = path.join(__dirname, '../../backend/public/shows');
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -20,7 +20,7 @@ const thumbnailStorage = multer.diskStorage({
 // Storage configuration for show banners - saving to frontend directory
 const bannerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../frontend/public/banners');
+    const uploadPath = path.join(__dirname, '../../backend/public/banners');
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {

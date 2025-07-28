@@ -7,18 +7,18 @@ exports.getEpisodeInfo = async (req, res) => {
   try {
     const [episode] = await pool.query(`
       SELECT 
-        se.SHOW_EPISODE_ID,
-        se.SHOW_EPISODE_TITLE,
-        se.EPISODE_NUMBER,
-        se.SHOW_EPISODE_DESCRIPTION,
-        se.SHOW_EPISODE_DURATION,
-        se.SHOW_EPISODE_RELEASE_DATE,
-        se.VIDEO_URL,
-        s.TITLE as SHOW_TITLE,
-        s.SHOW_ID
-      FROM SHOW_EPISODE se
-      JOIN \`SHOW\` s ON se.SHOW_ID = s.SHOW_ID
-      WHERE se.SHOW_EPISODE_ID = ? AND s.REMOVED = 0
+        SE.SHOW_EPISODE_ID,
+        SE.SHOW_EPISODE_TITLE,
+        SE.EPISODE_NUMBER,
+        SE.SHOW_EPISODE_DESCRIPTION,
+        SE.SHOW_EPISODE_DURATION,
+        SE.SHOW_EPISODE_RELEASE_DATE,
+        SE.VIDEO_URL,
+        S.TITLE as SHOW_TITLE,
+        S.SHOW_ID
+      FROM SHOW_EPISODE SE
+      JOIN SHOWS S ON SE.SHOW_ID = S.SHOW_ID
+      WHERE SE.SHOW_EPISODE_ID = ? AND S.REMOVED = 0
     `, [episodeId]);
 
     if (episode.length === 0) {

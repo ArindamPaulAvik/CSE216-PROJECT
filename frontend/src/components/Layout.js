@@ -18,6 +18,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   const [recentSearches, setRecentSearches] = useState([]);
   const [viewingActivity, setViewingActivity] = useState([]);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,7 +59,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
 
     // Fetching notifications...
     try {
-      const response = await fetch('http://localhost:5000/notifications', {
+      const response = await fetch(`${BASE_URL}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -114,7 +115,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
     fetchNotifications();
     
     // Test the notification routes
-    fetch('http://localhost:5000/notifications/test')
+    fetch(`${BASE_URL}/notifications/test`)
       .then(res => res.json())
       .then(data => {/* Test endpoint response: data */})
       .catch(err => console.error('❌ Test endpoint error:', err));
@@ -139,8 +140,11 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   };
 
   useEffect(() => {
-    fetch('http://localhost:5000/search/genres')
-      .then(res => res.json())
+    fetch(`${BASE_URL}/search/genres`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch genres');
+        return res.json();
+      })
       .then(data => {
         const genreState = {};
         (data.genres || []).forEach(g => {
@@ -182,7 +186,19 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
           }, 100);
         }
       })
-      .catch(err => console.error('Error loading genres:', err));
+      .catch(err => {
+        console.error('Error loading genres:', err);
+        // Set default genres if fetch fails
+        const defaultGenres = ['Action', 'Comedy', 'Drama', 'Thriller', 'Romance', 'Horror', 'Sci-Fi', 'Documentary'];
+        const genreState = {};
+        defaultGenres.forEach(g => {
+          genreState[g] = false;
+        });
+        setFilters(prev => ({
+          ...prev,
+          genre: genreState
+        }));
+      });
   }, []);
 
   const handleGenreChange = (genreName) => {
@@ -199,7 +215,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetch('http://localhost:5000/frontpage', {
+      fetch(`${BASE_URL}/frontpage`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -252,7 +268,7 @@ useEffect(() => {
     // Frontend search params:
     // query: queryParam, movie, series, genres: genreParam
     
-    fetch(`http://localhost:5000/search?query=${encodeURIComponent(queryParam)}&movie=${movie}&series=${series}&genres=${genreParam}`, {
+    fetch(`${BASE_URL}/search?query=${encodeURIComponent(queryParam)}&movie=${movie}&series=${series}&genres=${genreParam}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
@@ -370,7 +386,7 @@ useEffect(() => {
         }}
       >
         <img
-          src={`/shows/${thumbnail}`}
+          src={`${BASE_URL}/shows/${thumbnail}`}
           alt={title}
           className="movie-thumbnail"
           loading="lazy"
@@ -442,7 +458,7 @@ useEffect(() => {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/notifications/${id}/read`, {
+      const response = await fetch(`${BASE_URL}/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -465,7 +481,7 @@ useEffect(() => {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/notifications/read-all', {
+      const response = await fetch(`${BASE_URL}/notifications/read-all`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -500,6 +516,11 @@ useEffect(() => {
       // Navigate to Settings with personal details mode
       // Navigating to personal settings
       navigate('/settings?section=personal');
+      return;
+    } else if (notification.type === 'admin_notice') {
+      // Navigate to Settings with customer care mode
+      // Navigating to customer care settings
+      navigate('/settings?section=customer-care');
       return;
     }
     
@@ -669,7 +690,7 @@ useEffect(() => {
                   {viewingActivity.map((item, index) => (
                     <div key={index} className="continue-item">
                       <div className="continue-thumbnail">
-                        <img src={`/shows/${item.thumbnail}`} alt={item.title} />
+                        <img src={`${BASE_URL}/shows/${item.thumbnail}`} alt={item.title} />
                         <div className="progress-indicator">
                           <div 
                             className="progress-fill" 
@@ -863,7 +884,7 @@ useEffect(() => {
               <div className="user-info" title="Profile Menu">
                 {userImage ? (
                   <img
-                    src={`http://localhost:5000/images/user/${userImage}`}
+                    src={`${BASE_URL}/images/user/${userImage}`}
                     alt="Profile"
                     className="user-avatar-img"
                     onError={(e) => { e.target.src = '/images/user/default-avatar.png'; }}

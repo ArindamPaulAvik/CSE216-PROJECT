@@ -9,11 +9,12 @@ function AwardsPage() {
   const [filteredAwards, setFilteredAwards] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     axios
-      .get('http://localhost:5000/awards', {
+      .get(`${BASE_URL}/awards`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -221,7 +222,7 @@ function AwardsPage() {
         </motion.div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .awards-page {
           min-height: 100vh;
           position: relative;

@@ -20,15 +20,11 @@ const BannerPlayerVideo = ({
   const videoRef = useRef(null);
   const progressRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
-
-  const getTeaserPath = (teaser) => {
-    if (!teaser) return null;
-    return `http://localhost:5000/BannerVideos/${teaser}`;
-  };
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   const getBannerPath = (banner) => {
-    if (!banner) return 'http://localhost:5000/banners/placeholder.jpg';
-    return `http://localhost:5000/banners/${banner}`;
+    if (!banner) return `${BASE_URL}/banners/placeholder.jpg`;
+    return `${BASE_URL}/banners/${banner}`;
   };
 
   // Handle video visibility and autoplay

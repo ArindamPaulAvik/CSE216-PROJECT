@@ -13,6 +13,7 @@ function MarketingAdminFrontpage() {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('user_type');
     const adminType = localStorage.getItem('admin_type');
+    const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
     
     if (!token || userType !== 'admin' || adminType !== 'Marketing') {
       alert('Access denied. Please login as a marketing admin.');

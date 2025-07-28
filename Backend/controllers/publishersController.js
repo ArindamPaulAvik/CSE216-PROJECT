@@ -8,7 +8,7 @@ async function getAllPublishers(req, res) {
     return res.status(403).json({ error: 'Access denied. Only marketing admins can manage publishers.' });
   }
   try {
-    const [rows] = await pool.query('SELECT * FROM publisher');
+    const [rows] = await pool.query('SELECT * FROM PUBLISHER');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch publishers' });
@@ -27,7 +27,7 @@ async function extendContract(req, res) {
     return res.status(400).json({ error: 'Invalid extend days' });
   }
   try {
-    await pool.query('UPDATE publisher SET CONTRACT_DURATION_DAYS = CONTRACT_DURATION_DAYS + ? WHERE PUBLISHER_ID = ?', [parseInt(extendDays), req.params.id]);
+    await pool.query('UPDATE PUBLISHER SET CONTRACT_DURATION_DAYS = CONTRACT_DURATION_DAYS + ? WHERE PUBLISHER_ID = ?', [parseInt(extendDays), req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to extend contract' });
@@ -47,7 +47,7 @@ async function updateContract(req, res) {
   }
   try {
     await pool.query(
-      'UPDATE publisher SET PUBLISHER_NAME=?, CONTRACT_ID=?, CONTRACT_DATE=?, CONTRACT_DURATION_DAYS=?, ROYALTY=?, MIN_GUARANTEE=? WHERE PUBLISHER_ID=?',
+      'UPDATE PUBLISHER SET PUBLISHER_NAME=?, CONTRACT_ID=?, CONTRACT_DATE=?, CONTRACT_DURATION_DAYS=?, ROYALTY=?, MIN_GUARANTEE=? WHERE PUBLISHER_ID=?',
       [publisherName, contractId, contractDate, contractDurationDays, royalty, minGuarantee, req.params.id]
     );
     res.json({ success: true });
@@ -67,7 +67,7 @@ async function createContractRenewalRequest(req, res) {
     }
     try {
       await pool.query(
-        `INSERT INTO contract_renewal_request 
+        `INSERT INTO CONTRACT_RENEWAL_REQUEST 
           (PUBLISHER_ID, REQUEST_DATE, STATUS, RESPONSE_DATE, RENEWAL_YEARS, NEW_MIN_GUARANTEE, NEW_ROYALTY, REQUESTED_BY, IS_SEEN_ADMIN, IS_SEEN_PUB)
          VALUES (?, CURDATE(), 'PENDING', NULL, ?, ?, ?, 'ADMIN', 0, 0)`,
         [publisherId, renewalYears, newMinGuarantee, newRoyalty]
@@ -83,7 +83,7 @@ async function createContractRenewalRequest(req, res) {
     }
     try {
       await pool.query(
-        `INSERT INTO contract_renewal_request 
+        `INSERT INTO CONTRACT_RENEWAL_REQUEST 
           (PUBLISHER_ID, REQUEST_DATE, STATUS, RESPONSE_DATE, RENEWAL_YEARS, NEW_MIN_GUARANTEE, NEW_ROYALTY, REQUESTED_BY, IS_SEEN_ADMIN, IS_SEEN_PUB)
          VALUES (?, CURDATE(), 'PENDING', NULL, ?, ?, ?, 'PUBLISHER', 0, 0)`,
         [myPublisherId, renewalYears, newMinGuarantee, newRoyalty]
@@ -103,7 +103,7 @@ async function getContractRenewalRequests(req, res) {
   const adminType = req.user?.adminType;
   const { status, requestedBy, publisherId } = req.query;
   try {
-    let query = 'SELECT * FROM contract_renewal_request';
+    let query = 'SELECT * FROM CONTRACT_RENEWAL_REQUEST';
     let params = [];
     if (userType === 'publisher') {
       // Allow publisher to see their own admin-requested or publisher-requested requests
@@ -158,7 +158,7 @@ async function markPublisherRequestedSeen(req, res) {
   }
   try {
     await pool.query(
-      `UPDATE contract_renewal_request SET IS_SEEN_ADMIN=1 WHERE STATUS='PENDING' AND REQUESTED_BY='PUBLISHER' AND IS_SEEN_ADMIN=0`
+      `UPDATE CONTRACT_RENEWAL_REQUEST SET IS_SEEN_ADMIN=1 WHERE STATUS='PENDING' AND REQUESTED_BY='PUBLISHER' AND IS_SEEN_ADMIN=0`
     );
     res.json({ success: true });
   } catch (err) {
@@ -175,7 +175,7 @@ async function markAdminRequestedAcceptedSeen(req, res) {
   }
   try {
     await pool.query(
-      `UPDATE contract_renewal_request SET IS_SEEN_ADMIN=1 WHERE STATUS != 'PENDING' AND REQUESTED_BY='ADMIN' AND IS_SEEN_ADMIN=0`
+      `UPDATE CONTRACT_RENEWAL_REQUEST SET IS_SEEN_ADMIN=1 WHERE STATUS != 'PENDING' AND REQUESTED_BY='ADMIN' AND IS_SEEN_ADMIN=0`
     );
     res.json({ success: true });
   } catch (err) {
@@ -193,14 +193,14 @@ async function rejectContractRenewalRequest(req, res) {
     try {
       // Only allow rejecting if the request is for this publisher and is pending
       const [rows] = await pool.query(
-        'SELECT * FROM contract_renewal_request WHERE REQUEST_ID = ? AND PUBLISHER_ID = ? AND STATUS = \'PENDING\'',
+        'SELECT * FROM CONTRACT_RENEWAL_REQUEST WHERE REQUEST_ID = ? AND PUBLISHER_ID = ? AND STATUS = \'PENDING\'',
         [requestId, publisherId]
       );
       if (rows.length === 0) {
         return res.status(404).json({ error: 'Pending request not found for this publisher.' });
       }
       await pool.query(
-        "UPDATE contract_renewal_request SET STATUS = 'REJECTED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?",
+        "UPDATE CONTRACT_RENEWAL_REQUEST SET STATUS = 'REJECTED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?",
         [requestId]
       );
       res.json({ success: true });
@@ -211,14 +211,14 @@ async function rejectContractRenewalRequest(req, res) {
     try {
       // Only allow rejecting publisher-requested pending requests
       const [rows] = await pool.query(
-        "SELECT * FROM contract_renewal_request WHERE REQUEST_ID = ? AND STATUS = 'PENDING' AND REQUESTED_BY = 'PUBLISHER'",
+        "SELECT * FROM CONTRACT_RENEWAL_REQUEST WHERE REQUEST_ID = ? AND STATUS = 'PENDING' AND REQUESTED_BY = 'PUBLISHER'",
         [requestId]
       );
       if (rows.length === 0) {
         return res.status(404).json({ error: 'Pending publisher request not found.' });
       }
       await pool.query(
-        "UPDATE contract_renewal_request SET STATUS = 'REJECTED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?",
+        "UPDATE CONTRACT_RENEWAL_REQUEST SET STATUS = 'REJECTED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?",
         [requestId]
       );
       res.json({ success: true });
@@ -241,14 +241,14 @@ async function markSeenPub(req, res) {
   try {
     // Only allow if the request belongs to this publisher
     const [rows] = await pool.query(
-      'SELECT * FROM contract_renewal_request WHERE REQUEST_ID = ? AND PUBLISHER_ID = ?',
+      'SELECT * FROM CONTRACT_RENEWAL_REQUEST WHERE REQUEST_ID = ? AND PUBLISHER_ID = ?',
       [requestId, publisherId]
     );
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Request not found for this publisher.' });
     }
     await pool.query(
-      'UPDATE contract_renewal_request SET IS_SEEN_PUB=1 WHERE REQUEST_ID = ?',
+      'UPDATE CONTRACT_RENEWAL_REQUEST SET IS_SEEN_PUB=1 WHERE REQUEST_ID = ?',
       [requestId]
     );
     res.json({ success: true });
@@ -268,7 +268,7 @@ async function acceptPublisherRequestedRenewal(req, res) {
   try {
     // Get the request and publisher
     const [rows] = await pool.query(
-      `SELECT * FROM contract_renewal_request WHERE REQUEST_ID = ? AND STATUS = 'PENDING' AND REQUESTED_BY = 'PUBLISHER'`,
+      `SELECT * FROM CONTRACT_RENEWAL_REQUEST WHERE REQUEST_ID = ? AND STATUS = 'PENDING' AND REQUESTED_BY = 'PUBLISHER'`,
       [requestId]
     );
     if (rows.length === 0) {
@@ -277,11 +277,11 @@ async function acceptPublisherRequestedRenewal(req, res) {
     const reqRow = rows[0];
     // Update the request status
     await pool.query(
-      `UPDATE contract_renewal_request SET STATUS = 'APPROVED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?`,
+      `UPDATE CONTRACT_RENEWAL_REQUEST SET STATUS = 'APPROVED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?`,
       [requestId]
     );
     // Update the publisher contract
-    const [pubRows] = await pool.query('SELECT * FROM publisher WHERE PUBLISHER_ID = ?', [reqRow.PUBLISHER_ID]);
+    const [pubRows] = await pool.query('SELECT * FROM PUBLISHER WHERE PUBLISHER_ID = ?', [reqRow.PUBLISHER_ID]);
     if (pubRows.length === 0) {
       return res.status(404).json({ error: 'Publisher not found.' });
     }
@@ -290,7 +290,7 @@ async function acceptPublisherRequestedRenewal(req, res) {
     const newRoyalty = reqRow.NEW_ROYALTY !== null ? reqRow.NEW_ROYALTY : pub.ROYALTY;
     const newMinGuarantee = reqRow.NEW_MIN_GUARANTEE !== null ? reqRow.NEW_MIN_GUARANTEE : pub.MIN_GUARANTEE;
     await pool.query(
-      'UPDATE publisher SET CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
+      'UPDATE PUBLISHER SET CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
       [newDuration, newRoyalty, newMinGuarantee, pub.PUBLISHER_ID]
     );
     res.json({ success: true });
@@ -310,7 +310,7 @@ async function acceptAdminRequestedRenewal(req, res) {
   try {
     // Get the request and publisher
     const [rows] = await pool.query(
-      `SELECT * FROM contract_renewal_request WHERE REQUEST_ID = ? AND STATUS = 'PENDING' AND REQUESTED_BY = 'ADMIN' AND PUBLISHER_ID = ?`,
+      `SELECT * FROM CONTRACT_RENEWAL_REQUEST WHERE REQUEST_ID = ? AND STATUS = 'PENDING' AND REQUESTED_BY = 'ADMIN' AND PUBLISHER_ID = ?`,
       [requestId, publisherId]
     );
     if (rows.length === 0) {
@@ -319,11 +319,11 @@ async function acceptAdminRequestedRenewal(req, res) {
     const reqRow = rows[0];
     // Update the request status
     await pool.query(
-      `UPDATE contract_renewal_request SET STATUS = 'APPROVED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?`,
+      `UPDATE CONTRACT_RENEWAL_REQUEST SET STATUS = 'APPROVED', RESPONSE_DATE = CURDATE() WHERE REQUEST_ID = ?`,
       [requestId]
     );
     // Update the publisher contract
-    const [pubRows] = await pool.query('SELECT * FROM publisher WHERE PUBLISHER_ID = ?', [publisherId]);
+    const [pubRows] = await pool.query('SELECT * FROM PUBLISHER WHERE PUBLISHER_ID = ?', [publisherId]);
     if (pubRows.length === 0) {
       return res.status(404).json({ error: 'Publisher not found.' });
     }
@@ -332,7 +332,7 @@ async function acceptAdminRequestedRenewal(req, res) {
     const newRoyalty = reqRow.NEW_ROYALTY !== null ? reqRow.NEW_ROYALTY : pub.ROYALTY;
     const newMinGuarantee = reqRow.NEW_MIN_GUARANTEE !== null ? reqRow.NEW_MIN_GUARANTEE : pub.MIN_GUARANTEE;
     await pool.query(
-      'UPDATE publisher SET CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
+      'UPDATE PUBLISHER SET CONTRACT_DURATION_DAYS = ?, ROYALTY = ?, MIN_GUARANTEE = ? WHERE PUBLISHER_ID = ?',
       [newDuration, newRoyalty, newMinGuarantee, pub.PUBLISHER_ID]
     );
     res.json({ success: true });
@@ -349,7 +349,7 @@ async function getMyContract(req, res) {
     return res.status(403).json({ error: 'Access denied. Only publishers can view their contract.' });
   }
   try {
-    const [rows] = await pool.query('SELECT * FROM publisher WHERE PERSON_ID = ?', [personId]);
+    const [rows] = await pool.query('SELECT * FROM PUBLISHER WHERE PERSON_ID = ?', [personId]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'No contract found for this publisher.' });
     }
@@ -395,17 +395,17 @@ async function getPublisherShows(req, res) {
   try {
     const [rows] = await pool.query(`
       SELECT 
-        s.SHOW_ID,
-        s.TITLE,
-        s.THUMBNAIL,
-        s.RATING,
-        s.WATCH_COUNT,
-        p.ROYALTY,
-        (s.WATCH_COUNT * p.ROYALTY) as INCOME
-      FROM \`SHOW\` s
-      JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
-      WHERE s.PUBLISHER_ID = ? AND s.REMOVED = 0
-      ORDER BY s.WATCH_COUNT DESC
+        S.SHOW_ID,
+        S.TITLE,
+        S.THUMBNAIL,
+        S.RATING,
+        S.WATCH_COUNT,
+        P.ROYALTY,
+        (S.WATCH_COUNT * P.ROYALTY) as INCOME
+      FROM SHOWS S
+      JOIN PUBLISHER P ON S.PUBLISHER_ID = P.PUBLISHER_ID
+      WHERE S.PUBLISHER_ID = ? AND S.REMOVED = 0
+      ORDER BY S.WATCH_COUNT DESC
     `, [publisherId]);
     
     res.json(rows);

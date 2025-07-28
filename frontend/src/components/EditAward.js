@@ -17,7 +17,7 @@ import axios from 'axios';
 function EditAward() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const isEditing = !!id;
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -34,16 +34,14 @@ function EditAward() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (isEditing) {
-      fetchAwardData();
-    }
-  }, [id, isEditing]);
+    fetchAwardData();
+  }, [id]);
 
   const fetchAwardData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/awards/${id}`, {
+      const response = await axios.get(`${BASE_URL}/awards/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -137,10 +135,6 @@ function EditAward() {
       newErrors.description = 'Description is required';
     }
 
-    if (!isEditing && !formData.image) {
-      newErrors.image = 'Image is required for new awards';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -166,22 +160,12 @@ function EditAward() {
         submitData.append('image', formData.image);
       }
 
-      let response;
-      if (isEditing) {
-        response = await axios.put(`http://localhost:5000/awards/${id}`, submitData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-      } else {
-        response = await axios.post('http://localhost:5000/awards', submitData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-      }
+      const response = await axios.put(`${BASE_URL}/awards/${id}`, submitData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
       console.log('Award saved successfully:', response.data);
       navigate('/awards-management');
@@ -297,10 +281,10 @@ function EditAward() {
           </motion.button>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>
-              {isEditing ? 'Edit Award' : 'Add New Award'}
+              Edit Award
             </h1>
             <p style={{ margin: '5px 0 0 0', opacity: 0.7 }}>
-              {isEditing ? 'Update award information' : 'Create a new award entry'}
+              Update award information
             </p>
           </div>
         </div>
@@ -624,7 +608,7 @@ function EditAward() {
               ) : (
                 <>
                   <FiSave size={16} />
-                  {isEditing ? 'Update Award' : 'Create Award'}
+                  Update Award
                 </>
               )}
             </motion.button>

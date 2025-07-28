@@ -26,6 +26,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 function ThumbnailImage({ src, alt, hasValidThumbnail }) {
   const [imageError, setImageError] = useState(false);
@@ -124,7 +125,7 @@ function PublisherAnalyticsPage() {
     setError('');
     const days = mode === 'monthly' ? 30 : 7;
     const token = localStorage.getItem('token');
-    axios.post('http://localhost:5000/publishers/publisher-earnings', {
+    axios.post(`${BASE_URL}/publishers/publisher-earnings`, {
         days
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -143,7 +144,7 @@ function PublisherAnalyticsPage() {
     setShowsLoading(true);
     setShowsError('');
     const token = localStorage.getItem('token');
-    axios.get('http://localhost:5000/publishers/my-shows', {
+    axios.get(`${BASE_URL}/publishers/my-shows`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => {
@@ -577,7 +578,7 @@ function PublisherAnalyticsPage() {
     } else {
       // Relative path - construct full URL
       const cleanPath = show.THUMBNAIL.replace(/^\/+/, '');
-      thumbnailSrc = `http://localhost:5000/shows/${cleanPath}`;
+      thumbnailSrc = `${BASE_URL}/shows/${cleanPath}`;
       hasValidThumbnail = true;
     }
   }

@@ -5,22 +5,22 @@ const getAllRequests = async (req, res) => {
   try {
     const query = `
       SELECT 
-        ccr.REQUEST_ID,
-        ccr.USER_ID,
-        ccr.SUBJECT,
-        ccr.MESSAGE,
-        ccr.STATUS,
-        ccr.CREATED_AT,
-        ccr.UPDATED_AT,
-        ccr.ADMIN_REPLY,
-        ccr.REPLIED_AT,
-        u.USER_FIRSTNAME,
-        u.USER_LASTNAME,
-        p.EMAIL
-      FROM CUSTOMER_CARE_REQUEST ccr
-      JOIN USER u ON ccr.USER_ID = u.USER_ID
-      JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
-      ORDER BY ccr.CREATED_AT DESC
+        CCR.REQUEST_ID,
+        CCR.USER_ID,
+        CCR.SUBJECT,
+        CCR.MESSAGE,
+        CCR.STATUS,
+        CCR.CREATED_AT,
+        CCR.UPDATED_AT,
+        CCR.ADMIN_REPLY,
+        CCR.REPLIED_AT,
+        U.USER_FIRSTNAME,
+        U.USER_LASTNAME,
+        P.EMAIL
+      FROM CUSTOMER_CARE_REQUEST CCR
+      JOIN USER U ON CCR.USER_ID = U.USER_ID
+      JOIN PERSON P ON U.PERSON_ID = P.PERSON_ID
+      ORDER BY CCR.CREATED_AT DESC
     `;
     
     const [requests] = await db.execute(query);
@@ -38,22 +38,22 @@ const getRequestById = async (req, res) => {
     
     const query = `
       SELECT 
-        ccr.REQUEST_ID,
-        ccr.USER_ID,
-        ccr.SUBJECT,
-        ccr.MESSAGE,
-        ccr.STATUS,
-        ccr.CREATED_AT,
-        ccr.UPDATED_AT,
-        ccr.ADMIN_REPLY,
-        ccr.REPLIED_AT,
-        u.USER_FIRSTNAME,
-        u.USER_LASTNAME,
-        p.EMAIL
-      FROM CUSTOMER_CARE_REQUEST ccr
-      JOIN USER u ON ccr.USER_ID = u.USER_ID
-      JOIN PERSON p ON u.PERSON_ID = p.PERSON_ID
-      WHERE ccr.REQUEST_ID = ?
+        CCR.REQUEST_ID,
+        CCR.USER_ID,
+        CCR.SUBJECT,
+        CCR.MESSAGE,
+        CCR.STATUS,
+        CCR.CREATED_AT,
+        CCR.UPDATED_AT,
+        CCR.ADMIN_REPLY,
+        CCR.REPLIED_AT,
+        U.USER_FIRSTNAME,
+        U.USER_LASTNAME,
+        P.EMAIL
+      FROM CUSTOMER_CARE_REQUEST CCR
+      JOIN USER U ON CCR.USER_ID = U.USER_ID
+      JOIN PERSON P ON U.PERSON_ID = P.PERSON_ID
+      WHERE CCR.REQUEST_ID = ?
     `;
     
     const [requests] = await db.execute(query, [id]);
