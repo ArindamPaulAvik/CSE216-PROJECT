@@ -24,7 +24,13 @@ if (!fs.existsSync(showThumbnailPath)) fs.mkdirSync(showThumbnailPath, { recursi
 if (!fs.existsSync(showBannerPath)) fs.mkdirSync(showBannerPath, { recursive: true });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',      // Local development
+    'https://rnbdom.vercel.app'   // Your Vercel deployment
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
 
