@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glassmorphism Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glass-card {
+            width: 300px;
+            height: 400px;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12) 0%, 
+                rgba(255, 255, 255, 0.06) 50%, 
+                rgba(0, 0, 0, 0.15) 100%
+            );
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.18) 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                rgba(0, 0, 0, 0.1) 100%
+            );
+            backdrop-filter: blur(25px) saturate(200%) brightness(110%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%) brightness(110%);
+            transform: translateY(-5px);
+            box-shadow: 
+                0 15px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .glass-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        h2 {
+            color: white;
+            margin: 0 0 15px 0;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        p {
+            color: #e5e5e5;
+            line-height: 1.5;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .tag {
+            display: inline-block;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.15) 0%, 
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin: 5px 5px 0 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+        }
+
+        /* Fallback for browsers without backdrop-filter support */
+        @supports not (backdrop-filter: blur(1px)) {
+            .glass-card {
+                background: rgba(255, 255, 255, 0.15) !important;
+            }
+            .tag {
+                background: rgba(255, 255, 255, 0.2) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-card">
+        <div class="glass-content">
+            <h2>Glassmorphism Test</h2>
+            <p>This is a test of the glassmorphism effect. The background should appear frosted and translucent, with a blur effect that makes it look like glass.</p>
+            <p>Hover over this card to see the enhanced effect.</p>
+            <div>
+                <span class="tag">Glass</span>
+                <span class="tag">Modern</span>
+                <span class="tag">UI</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

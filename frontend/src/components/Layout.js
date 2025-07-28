@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiMenu, FiSearch, FiCreditCard, FiUsers, FiX, FiFilter, FiBell, FiSettings, FiTrendingUp, FiClock, FiStar, FiWifi, FiWifiOff, FiChevronRight, FiAward } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ShowCard from './ShowCard';
+import './ShowCard.css';
 
 export default function Layout({ children, activeSection, hasWatchAgain = true, hasTopRated = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -385,7 +387,7 @@ useEffect(() => {
     };
   }, []);
 
-  const renderShowBox = useCallback((show) => {
+  const renderShowBox = useCallback((show, index = 0) => {
     // Safely access properties with fallbacks
     const showId = show.SHOW_ID || show.id || show.showId;
     const thumbnail = show.THUMBNAIL || show.thumbnail || show.poster || 'placeholder.jpg';
@@ -398,54 +400,33 @@ useEffect(() => {
       return null;
     }
 
+    // Create a normalized show object for ShowCard
+    const normalizedShow = {
+      SHOW_ID: showId,
+      THUMBNAIL: thumbnail,
+      TITLE: title,
+      RATING: rating,
+      DESCRIPTION: description,
+      GENRES: show.GENRES || show.genres || '',
+      YEAR: show.YEAR || show.year || '',
+      DURATION: show.DURATION || show.duration || '',
+      MATURITY_RATING: show.MATURITY_RATING || show.maturityRating || '',
+      CAST: show.CAST || show.cast || '',
+      DIRECTOR: show.DIRECTOR || show.director || '',
+      TEASER: show.TEASER || show.teaser || '',
+      IS_FAVORITE: show.IS_FAVORITE || show.isFavorite || false,
+      WATCH_PROGRESS: show.WATCH_PROGRESS || show.watchProgress || null
+    };
+
     return (
-      <div
-        className="movie-box"
-        key={showId}
-        role="button"
-        tabIndex={0}
-        onClick={() => {
-          navigate(`/show/${showId}`);
-          setSearchOpen(false);     // <-- close search on navigation
-          setSearchTerm('');        // <-- clear search input to remove results
-          setSearchResults([]);     // <-- clear results too
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            navigate(`/show/${showId}`);
-            setSearchOpen(false);
-            setSearchTerm('');
-            setSearchResults([]);
-          }
-        }}
-      >
-        <img
-          src={`${BASE_URL}/shows/${thumbnail}`}
-          alt={title}
-          className="movie-thumbnail"
-          loading="lazy"
-          onError={(e) => {
-            e.target.src = '/placeholder.jpg'; // Fallback image
-          }}
-        />
-        <div className="movie-bottom-overlay">
-          <h3>{title}</h3>
-          <p>⭐ {rating}</p>
-        </div>
-        <div className="movie-hover-description" style={{ textAlign: 'left', wordWrap: 'break-word', whiteSpace: 'normal', maxWidth: '90%' }}>
-          <p>
-            <strong>Title:</strong> {title}
-          </p>
-          <p>
-            <strong>Synopsis:</strong> {description}
-          </p>
-          <p style={{ marginBottom: '6px' }}>
-            <strong>Genres:</strong> {show.GENRES || 'N/A'}
-          </p>
-        </div>
-      </div>
+      <ShowCard 
+        key={showId} 
+        show={normalizedShow} 
+        index={index}
+        userPreferences={{ playTrailerOnHover: true }}
+      />
     );
-  }, [navigate]);
+  }, []);
 
   const handleFilterToggle = () => {
     setFilterOpen(prev => !prev);
@@ -1025,7 +1006,7 @@ useEffect(() => {
               </h2>
               <div className="movie-grid">
                 {searchResults.length > 0
-                  ? searchResults.map(show => renderShowBox(show)).filter(Boolean)
+                  ? searchResults.map((show, index) => renderShowBox(show, index)).filter(Boolean)
                   : !isSearching && <p className="no-results">No results found</p>}
               </div>
             </>
@@ -2211,8 +2192,8 @@ useEffect(() => {
         /* Movie Grid Enhanced */
         .movie-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 24px;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 30px;
           padding: 24px 0;
         }
 

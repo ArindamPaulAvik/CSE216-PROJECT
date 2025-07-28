@@ -1,5 +1,24 @@
 /* Modern ShowCard Component Styles with Glassmorphism */
 
+/* Feature detection for backdrop-filter support */
+@supports not (backdrop-filter: blur(1px)) {
+  .show-card {
+    background: linear-gradient(145deg, 
+      rgba(26, 26, 26, 0.95) 0%, 
+      rgba(45, 45, 45, 0.9) 50%,
+      rgba(20, 20, 20, 0.98) 100%
+    ) !important;
+  }
+  
+  .card-content {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.15) 0%, 
+      rgba(255, 255, 255, 0.08) 50%, 
+      rgba(0, 0, 0, 0.2) 100%
+    ) !important;
+  }
+}
+
 /* Floating particles animation */
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -13,10 +32,16 @@
   100% { transform: translateX(200%) skewX(-15deg); }
 }
 
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 .show-card {
   position: relative;
   width: 100%;
-  min-height: 400px;
+  height: 500px; /* Increased from 480px to 500px */
+  max-height: 500px; /* Ensure consistent height */
   background: linear-gradient(145deg, 
     rgba(26, 26, 26, 0.9) 0%, 
     rgba(45, 45, 45, 0.8) 50%,
@@ -31,6 +56,9 @@
   transform-origin: center;
   scale: var(--hover-scale, 1);
   z-index: var(--hover-z, 1);
+  contain: layout style paint;
+  isolation: isolate;
+  will-change: transform, filter;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 4px 16px rgba(0, 0, 0, 0.2),
@@ -96,12 +124,12 @@
 
 .show-card.hovered {
   box-shadow: 
-    0 35px 80px rgba(0, 0, 0, 0.4),
-    0 15px 35px rgba(0, 0, 0, 0.25),
-    0 5px 15px rgba(138, 43, 226, 0.2),
+    0 20px 50px rgba(0, 0, 0, 0.25),
+    0 8px 20px rgba(0, 0, 0, 0.15),
+    0 3px 10px rgba(138, 43, 226, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 -1px 0 rgba(255, 255, 255, 0.1);
-  transform: scale(1.2) translateY(-15px);
+  transform: scale(1.03) translateY(-6px);
   background: linear-gradient(145deg, 
     rgba(26, 26, 26, 0.95) 0%, 
     rgba(45, 45, 45, 0.9) 50%,
@@ -109,6 +137,7 @@
   );
   backdrop-filter: blur(20px) saturate(180%) brightness(110%);
   -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(110%);
+  z-index: 2;
 }
 
 /* Show holographic border on hover */
@@ -120,7 +149,7 @@
 .card-image-container {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 260px; /* Fixed height for consistency */
   overflow: hidden;
   border-radius: 20px 20px 0 0;
   background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
@@ -183,7 +212,7 @@
     rgba(0, 0, 0, 0.8) 50%,
     transparent 100%
   );
-  z-index: 10;
+  z-index: 2;
   pointer-events: none;
 }
 
@@ -199,7 +228,7 @@
     rgba(0, 0, 0, 0.8) 50%,
     transparent 100%
   );
-  z-index: 10;
+  z-index: 2;
   pointer-events: none;
 }
 
@@ -208,7 +237,7 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 15;
+  z-index: 4;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -248,7 +277,7 @@
   opacity: 0;
   transform: translateY(10px);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index: 15;
+  z-index: 4;
 }
 
 .card-actions.visible {
@@ -384,22 +413,49 @@
   transition: width 0.3s ease;
 }
 
-/* Card Content - Glassmorphism Design */
+/* Card Content - Enhanced Glassmorphism Design */
 .card-content {
-  padding: 20px;
+  padding: 14px; /* Reduced from 18px to 14px */
+  height: 240px; /* Increased from 220px to 240px to match new card height */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Changed from space-between to flex-start */
+  /* Fallback for browsers without backdrop-filter support */
+  background: rgba(255, 255, 255, 0.08);
   background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0.05) 50%, 
-    rgba(0, 0, 0, 0.1) 100%
+    rgba(255, 255, 255, 0.12) 0%, 
+    rgba(255, 255, 255, 0.06) 50%, 
+    rgba(0, 0, 0, 0.15) 100%
   );
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-  min-height: 120px;
   overflow: hidden;
+  contain: layout style;
+  isolation: isolate;
+  /* Add subtle box shadow for depth */
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Frosted glass texture overlay */
+.card-content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 1;
 }
 
 /* Glass reflection effect */
@@ -413,11 +469,12 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.15) 50%,
     transparent 100%
   );
   transition: left 0.6s ease;
   pointer-events: none;
+  z-index: 2;
 }
 
 /* Glass highlight on hover */
@@ -428,16 +485,17 @@
 /* Enhanced glass effect on hover */
 .show-card.hovered .card-content {
   background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15) 0%, 
-    rgba(255, 255, 255, 0.08) 50%, 
-    rgba(0, 0, 0, 0.05) 100%
+    rgba(255, 255, 255, 0.18) 0%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(0, 0, 0, 0.1) 100%
   );
   backdrop-filter: blur(25px) saturate(200%) brightness(110%);
   -webkit-backdrop-filter: blur(25px) saturate(200%) brightness(110%);
-  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .card-content.expanded {
@@ -446,27 +504,40 @@
 
 .content-main {
   transition: all 0.3s ease;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Changed from space-between to flex-start */
+  min-height: 0; /* Allow content to shrink */
+  gap: 0; /* Remove any implicit gaps */
 }
 
 .card-title {
   font-size: 18px;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 12px 0;
-  line-height: 1.3;
+  margin: 0 0 6px 0; /* Reduced from 8px to 6px */
+  line-height: 1.2;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2;
+  height: 2.4em; /* Fixed height based on line-height */
+  flex-shrink: 0; /* Prevent title from shrinking */
 }
 
 .card-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 6px; /* Reduced from 8px to 6px */
   flex-wrap: wrap;
+  flex-shrink: 0; /* Prevent meta from shrinking */
+  min-height: 20px; /* Ensure consistent height */
 }
 
 .meta-item {
@@ -486,20 +557,30 @@
 
 .card-description {
   font-size: 14px;
-  color: #d1d1d1;
-  line-height: 1.5;
-  margin: 0 0 16px 0;
+  color: #e5e5e5;
+  line-height: 1.3; /* Reduced from 1.4 to 1.3 */
+  margin: 0 0 8px 0; /* Reduced from 10px to 8px */
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2; /* Limit to 2 lines for consistency */
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis; /* Add ellipsis for truncated text */
+  word-wrap: break-word;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 2;
+  height: 2.6em; /* Reduced height based on new line-height */
+  flex-shrink: 0; /* Prevent description from shrinking */
 }
 
 .card-genres {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  flex-shrink: 0; /* Prevent genres from shrinking */
+  min-height: 28px; /* Reduced from 32px to 28px */
+  align-items: flex-start;
 }
 
 .genre-tag {
@@ -631,29 +712,35 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .show-card {
-    min-height: 350px;
+    height: 440px; /* Increased from 420px to 440px */
+    max-height: 440px;
   }
   
   .card-image-container {
-    height: 220px;
+    height: 200px;
+  }
+  
+  .card-content {
+    height: 240px; /* Maintain same content height */
+    padding: 12px; /* Reduced from 14px to 12px */
   }
   
   .show-card.hovered {
     transform: scale(1.05) translateY(-5px);
   }
   
-  .card-content {
-    padding: 16px;
-  }
-  
   .card-title {
     font-size: 16px;
+    height: 2em; /* Adjust for smaller font */
+    margin-bottom: 4px; /* Reduced spacing for mobile */
   }
   
   .card-description {
     font-size: 13px;
     -webkit-line-clamp: 2;
     line-clamp: 2;
+    height: 2.6em; /* Adjust for smaller font */
+    margin-bottom: 6px; /* Reduced spacing for mobile */
   }
 }
 

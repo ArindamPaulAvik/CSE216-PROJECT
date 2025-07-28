@@ -2,10 +2,10 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Play, Volume2, VolumeX, Star } from 'lucide-react';
 
-const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: false } }) => {
+const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: false }, onCardClick }) => {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Sound always on
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(show?.IS_FAVORITE || false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -34,8 +34,13 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
     e.target.src = `${BASE_URL}/placeholder.jpg`;
   };
 
-  const handleMouseEnter = useCallback(() => {
+  const handleMouseEnter = useCallback((e) => {
     setIsHovered(true);
+    
+    // Optimize rendering performance during hover
+    if (e.currentTarget) {
+      e.currentTarget.style.willChange = 'transform, filter, backdrop-filter';
+    }
     
     // Preload video after a short delay - only if user preference allows it
     if (show.TEASER && userPreferences.playTrailerOnHover) {
@@ -46,8 +51,14 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
     }
   }, [show.TEASER, userPreferences.playTrailerOnHover]);
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeave = useCallback((e) => {
     setIsHovered(false);
+    
+    // Reset will-change to auto for better performance
+    if (e.currentTarget) {
+      e.currentTarget.style.willChange = 'auto';
+    }
+    
     clearTimeout(timerRef.current);
     setShowVideo(false);
     setVideoReady(false);
@@ -115,8 +126,8 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
       tabIndex={0}
       style={{ 
         animationDelay: `${index * 0.1}s`,
-        '--hover-scale': isHovered ? '1.2' : '1',
-        '--hover-z': isHovered ? '100' : '1'
+        '--hover-scale': isHovered ? '1.08' : '1',
+        '--hover-z': isHovered ? '10' : '1'
       }}
       onClick={handleCardClick}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleCardClick()}

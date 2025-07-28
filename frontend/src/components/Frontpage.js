@@ -654,13 +654,20 @@ function FrontPage() {
         .shows-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          grid-template-rows: repeat(auto-fit, 480px); /* Fixed row height */
           gap: 30px;
+          overflow: visible;
+          contain: layout;
+          position: relative;
+          z-index: 1;
+          align-items: start; /* Align cards to start of grid area */
         }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
           .shows-grid {
             grid-template-columns: 1fr;
+            grid-template-rows: repeat(auto-fit, 420px); /* Fixed mobile height */
             gap: 20px;
           }
 
