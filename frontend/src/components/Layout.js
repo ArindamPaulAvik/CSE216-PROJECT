@@ -18,6 +18,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   const [recentSearches, setRecentSearches] = useState([]);
   const [viewingActivity, setViewingActivity] = useState([]);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
   const navigate = useNavigate();
@@ -231,8 +232,41 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
           setUserName('User');
           setUserImage(null);
         });
+
+      // Fetch subscription status
+      fetchSubscriptionStatus();
     }
   }, []);
+
+  // Fetch user subscription status
+  const fetchSubscriptionStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/subscriptions/user/current`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.subscription) {
+          // User has an active subscription
+          const status = data.subscription.DESCRIPTION;
+          setSubscriptionStatus(status);
+        } else {
+          // No active subscription
+          setSubscriptionStatus(null);
+        }
+      } else {
+        setSubscriptionStatus(null);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      setSubscriptionStatus(null);
+    }
+  };
 
   const [filters, setFilters] = useState({
     category: {
@@ -896,7 +930,9 @@ useEffect(() => {
                 )}
                 <div className="user-details">
                   <span className="user-name">{userName || 'User'}</span>
-                  <span className="user-status">Premium Member</span>
+                  {subscriptionStatus && (
+                    <span className="user-status">{subscriptionStatus}</span>
+                  )}
                 </div>
                 <div className="user-status-indicator online" />
                 <FiChevronRight className={`dropdown-arrow ${profileDropdownOpen ? 'open' : ''}`} />
