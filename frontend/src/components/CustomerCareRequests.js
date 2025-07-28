@@ -14,7 +14,7 @@ import {
   FiSearch
 } from 'react-icons/fi';
 import axios from 'axios';
-const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
 function CustomerCareRequests() {
   const navigate = useNavigate();

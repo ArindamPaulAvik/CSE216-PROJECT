@@ -7,7 +7,7 @@ function DirectorDetailPage() {
   const { id } = useParams();
   const [director, setDirector] = useState(null);
   const navigate = useNavigate();
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('token');

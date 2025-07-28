@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPlus } from 'react-icons/fi';
 
-const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
 function AdminPromotions() {
   const navigate = useNavigate();

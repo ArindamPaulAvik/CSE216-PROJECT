@@ -35,7 +35,7 @@ function AnalyticsPage() {
   const [error, setError] = useState('');
   const [statType, setStatType] = useState('user'); // 'user' or 'income'
   
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     setLoading(true);

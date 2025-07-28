@@ -26,7 +26,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
 function ThumbnailImage({ src, alt, hasValidThumbnail }) {
   const [imageError, setImageError] = useState(false);

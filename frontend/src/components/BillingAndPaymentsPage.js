@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 function BillingAndPaymentsPage() {
   const navigate = useNavigate();
   
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
   const handleLogout = () => {
     console.log('Logout clicked');
   };

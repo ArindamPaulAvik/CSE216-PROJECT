@@ -30,7 +30,7 @@ function ShowDetails() {
   const [watchStartTime, setWatchStartTime] = useState(null);
   const [isWatchEventRecorded, setIsWatchEventRecorded] = useState(false);
   const watchTimerRef = useRef(null);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
 
   // Check if the show is a movie

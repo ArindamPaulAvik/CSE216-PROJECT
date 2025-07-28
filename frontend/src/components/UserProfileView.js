@@ -27,7 +27,7 @@ function UserProfileView() {
   const [ratings, setRatings] = useState([]);
   const [loadingRatings, setLoadingRatings] = useState(false);
   const [ratingsError, setRatingsError] = useState('');
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     fetchUserProfile();

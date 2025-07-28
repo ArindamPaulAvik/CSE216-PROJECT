@@ -17,7 +17,7 @@ import axios from 'axios';
 function FAQManagement() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
   const [faqs, setFaqs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFaq, setEditingFaq] = useState(null);

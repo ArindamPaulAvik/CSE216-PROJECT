@@ -10,7 +10,7 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
   const [isFavorite, setIsFavorite] = useState(show?.IS_FAVORITE || false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
   
   const timerRef = useRef(null);
   const cardRef = useRef(null);

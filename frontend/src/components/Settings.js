@@ -14,7 +14,7 @@ const Settings = () => {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [highlightedRequestId, setHighlightedRequestId] = useState(null);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   // Personal Details State
   const [personalData, setPersonalData] = useState({

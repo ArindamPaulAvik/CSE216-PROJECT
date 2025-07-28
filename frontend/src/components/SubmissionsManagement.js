@@ -21,7 +21,7 @@ function SubmissionsManagement() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState({ submissionId: null, verdict: null });
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('token');

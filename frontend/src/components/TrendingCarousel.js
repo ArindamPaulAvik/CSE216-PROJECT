@@ -15,7 +15,7 @@ const TrendingCarousel = ({ shows = [], onShowClick, userPreferences = { playTra
   const [imageLoaded, setImageLoaded] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   const autoplayRef = useRef(null);
   const previewTimeoutRef = useRef(null);

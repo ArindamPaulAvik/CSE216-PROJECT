@@ -17,7 +17,7 @@ import axios from 'axios';
 function EditAward() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   const [formData, setFormData] = useState({
     name: '',

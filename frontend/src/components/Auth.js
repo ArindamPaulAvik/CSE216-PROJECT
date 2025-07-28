@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
 // Animation Variants
 const formVariants = {

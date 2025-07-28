@@ -10,7 +10,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
     const [submitLoading, setSubmitLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
-    const BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+    const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
     // Fetch violations from backend
     useEffect(() => {
