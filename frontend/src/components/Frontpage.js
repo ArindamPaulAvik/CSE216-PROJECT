@@ -574,17 +574,6 @@ function FrontPage() {
           }
         }
 
-        @keyframes cardStagger {
-          from {
-            opacity: 0;
-            transform: translateY(40px) scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
         .shows-section {
           margin-bottom: 60px;
           opacity: 0;
@@ -599,10 +588,6 @@ function FrontPage() {
 
         .shows-section.animate-in .section-title {
           animation: slideInLeft 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-
-        .shows-section.animate-in .show-card {
-          animation: cardStagger 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) both;
         }
 
         .section-title {
@@ -672,141 +657,6 @@ function FrontPage() {
           gap: 30px;
         }
 
-        .show-card {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
-          overflow: hidden;
-          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-          backdrop-filter: blur(10px);
-          cursor: pointer;
-          transform: translateY(20px);
-          opacity: 0;
-        }
-
-        .show-card:hover {
-          transform: translateY(-12px) scale(1.15);
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .card-image-container {
-          position: relative;
-          height: 400px;
-          overflow: hidden;
-        }
-
-        .card-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-
-        .show-card:hover .card-image {
-          transform: scale(1.1);
-        }
-
-        .card-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.1) 0%,
-            rgba(0, 0, 0, 0.3) 50%,
-            rgba(0, 0, 0, 0.8) 100%
-          );
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          opacity: 0;
-          transition: opacity 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-
-        .show-card:hover .card-overlay {
-          opacity: 1;
-        }
-
-       
-
-     
-
-        .card-content {
-          padding: 25px;
-        }
-
-        .card-title {
-          font-size: 1.3rem;
-          font-weight: 700;
-          color: #e0e0e0;
-          margin: 0 0 12px 0;
-          line-height: 1.3;
-          transition: color 0.3s ease;
-        }
-
-        .show-card:hover .card-title {
-          color: #fff;
-        }
-
-        .card-rating {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-bottom: 15px;
-        }
-
-        .rating-star {
-          font-size: 1.1rem;
-          transition: transform 0.3s ease;
-        }
-
-        .show-card:hover .rating-star {
-          transform: scale(1.2);
-        }
-
-        .rating-value {
-          font-weight: 600;
-          color: #ffd700;
-          font-size: 1rem;
-        }
-
-        .card-description {
-          color: #b0b0b0;
-          font-size: 0.95rem;
-          line-height: 1.5;
-          margin: 0 0 15px 0;
-          transition: color 0.3s ease;
-        }
-
-        .show-card:hover .card-description {
-          color: #d0d0d0;
-        }
-
-        .card-genres {
-          color: #9a9a9a;
-          font-size: 0.9rem;
-          font-style: italic;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
-          padding-top: 12px;
-          transition: color 0.3s ease;
-        }
-
-        .show-card:hover .card-genres {
-          color: #bbb;
-        }
-
-        .empty-message {
-          color: #888;
-          text-align: center;
-          font-size: 1.1rem;
-          margin-top: 40px;
-          opacity: 0;
-          animation: fadeInUp 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
-        }
-
         /* Responsive adjustments */
         @media (max-width: 768px) {
           .shows-grid {
@@ -814,20 +664,8 @@ function FrontPage() {
             gap: 20px;
           }
 
-          .card-image-container {
-            height: 300px;
-          }
-
-          .card-content {
-            padding: 20px;
-          }
-
           .section-title {
             font-size: 1.5rem;
-          }
-
-          .show-card:hover {
-            transform: translateY(-8px) scale(1.01);
           }
         }
 
