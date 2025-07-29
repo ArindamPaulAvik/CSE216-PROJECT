@@ -32,23 +32,53 @@ exports.getEpisodeInfo = async (req, res) => {
   }
 };
 
-// Fetches episodes with VIDEO_URL
 exports.getEpisodesByShow = async (req, res) => {
   const showId = req.params.showId;
-  
-  const [episodes] = await pool.query(`
-    SELECT 
-      SHOW_EPISODE_ID,
-      EPISODE_NUMBER,
-      SHOW_EPISODE_TITLE,
-      SHOW_EPISODE_DESCRIPTION,
-      SHOW_EPISODE_DURATION,
-      SHOW_EPISODE_RELEASE_DATE,
-      VIDEO_URL  // ← This is where the video URL comes from
-    FROM SHOW_EPISODE
-    WHERE SHOW_ID = ?
-    ORDER BY EPISODE_NUMBER ASC
-  `, [showId]);
+
+  try {
+    console.log('Fetching episodes for show ID:', showId);
+    
+    // First, let's check if the show exists
+    const [showCheck] = await pool.query(`
+      SELECT SHOW_ID, TITLE FROM SHOWS WHERE SHOW_ID = ?
+    `, [showId]);
+    
+    if (showCheck.length === 0) {
+      console.log('Show not found with ID:', showId);
+      return res.status(404).json({ error: 'Show not found' });
+    }
+    
+    console.log('Show found:', showCheck[0]);
+
+    const [episodes] = await pool.query(`
+      SELECT 
+        SHOW_EPISODE_ID,
+        EPISODE_NUMBER,
+        SHOW_EPISODE_TITLE,
+        SHOW_EPISODE_DESCRIPTION,
+        SHOW_EPISODE_DURATION,
+        SHOW_EPISODE_RELEASE_DATE,
+        VIDEO_URL
+      FROM SHOW_EPISODE
+      WHERE SHOW_ID = ?
+      ORDER BY EPISODE_NUMBER ASC
+    `, [showId]);
+
+    console.log('Episodes found:', episodes.length);
+    if (episodes.length > 0) {
+      console.log('Sample episode:', episodes[0]);
+    }
+
+    res.json(episodes);
+  } catch (err) {
+    console.error('Error fetching episodes:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Database error', 
+      message: err.message,
+      stack: err.stack 
+    });
+  }
 };
 
 exports.updateEpisode = async (req, res) => {

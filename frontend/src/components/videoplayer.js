@@ -14,23 +14,37 @@ function VideoPlayer({
 }) {
   if (!showVideoPlayer || !selectedEpisode) return null;
 
-  // Get the video source URL - expects selectedEpisode to be an episode object
+  // Get the video source URL - assumes VIDEO_URL contains Google Drive file ID
   const getVideoSrc = () => {
-    console.log('Episode object:', selectedEpisode);
-    console.log('VIDEO_URL:', selectedEpisode.VIDEO_URL);
-
-    if (selectedEpisode.VIDEO_URL) {
-      const videoUrl = selectedEpisode.VIDEO_URL.trim();
-      
-      // If it looks like a Google Drive file ID
-      if (/^[a-zA-Z0-9_-]+$/.test(videoUrl) && videoUrl.length > 10) {
-        const driveUrl = `https://drive.google.com/file/d/${videoUrl}/preview`;
-        console.log('Generated Google Drive URL:', driveUrl);
-        return driveUrl;
-      }
-      // Otherwise, use local file path
-      return `/movies/${videoUrl}`;
+    console.log('selectedEpisode:', selectedEpisode); // Debug log
+    
+    // Check for VIDEO_URL in selectedEpisode (if it's an episode object)
+    let videoId = selectedEpisode?.VIDEO_URL;
+    
+    // If selectedEpisode is a show object, look for the current episode's video ID
+    if (!videoId && selectedEpisode?.EPISODES && selectedEpisode.EPISODES.length > 0) {
+      // Assuming we want the first episode's video, or you can modify this logic
+      videoId = selectedEpisode.EPISODES[0]?.VIDEO_URL;
     }
+    
+    console.log('Found video ID:', videoId); // Debug log
+    
+    if (videoId) {
+      const trimmedId = videoId.toString().trim(); // Remove any whitespace and convert to string
+      console.log('Trimmed video ID:', trimmedId); // Debug log
+      
+      // If it looks like a Google Drive file ID (alphanumeric with dashes/underscores)
+      if (/^[a-zA-Z0-9_-]+$/.test(trimmedId) && trimmedId.length > 10) {
+        const finalUrl = `https://drive.google.com/file/d/${trimmedId}/preview`;
+        console.log('Generated Google Drive URL:', finalUrl); // Debug log
+        return finalUrl;
+      }
+      // Otherwise, use the original path structure for local files
+      const localUrl = `/movies/${trimmedId}`;
+      console.log('Generated local URL:', localUrl); // Debug log
+      return localUrl;
+    }
+    console.log('No video ID found in any location'); // Debug log
     return '';
   };
 
