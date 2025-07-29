@@ -1113,7 +1113,7 @@ function SubmissionsManagement() {
                       <FiUser size={16} style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Admin ID:</span>
                       <span style={{ fontSize: '14px', fontWeight: '500' }}>
-                        {submissionDetails.ADMIN_NAME}
+                        {submissionDetails.ADMIN_ID}
                       </span>
                     </div>
                   )}
