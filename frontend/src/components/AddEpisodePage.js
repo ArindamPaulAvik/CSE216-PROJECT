@@ -20,37 +20,22 @@ function AddEpisodePage() {
     const fetchSeries = async () => {
       try {
         const token = localStorage.getItem('token');
-        console.log('Fetching series with token:', !!token);
         
         const response = await fetch(`${BASE_URL}/publishers/my-shows`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        console.log('Series response status:', response.status);
-        
         if (response.ok) {
           const shows = await response.json();
-          console.log('All shows received:', shows);
           
-          // Log category IDs to see what they represent
-          const categoryIds = [...new Set(shows.map(show => show.CATEGORY_ID))];
-          console.log('Available category IDs:', categoryIds);
-          
-          // Show all shows with their category IDs
-          shows.forEach(show => {
-            console.log(`Show: ${show.TITLE}, Category ID: ${show.CATEGORY_ID}`);
-          });
-          
-          // Filter for series (category_id = 2) and not removed
+          // Filter for series (assuming CATEGORY_ID 2 represents series)
           const seriesShows = shows.filter(show => 
             show.CATEGORY_ID === 2 && show.REMOVED === 0
           );
-          console.log('Filtered series shows:', seriesShows);
+          
           setSeries(seriesShows);
         } else {
           console.error('Failed to fetch shows:', response.status);
-          const errorText = await response.text();
-          console.error('Error response:', errorText);
         }
       } catch (error) {
         console.error('Error fetching series:', error);
@@ -223,6 +208,48 @@ function AddEpisodePage() {
           boxSizing: 'border-box',
           width: '100%'
         }}>
+          
+          {/* Debug Panel - Remove this after fixing the issue */}
+          {series.length === 0 && (
+            <div style={{
+              background: 'rgba(255, 165, 0, 0.1)',
+              border: '1px solid rgba(255, 165, 0, 0.3)',
+              borderRadius: '10px',
+              padding: '15px',
+              marginBottom: '20px',
+              color: '#ffa500'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#ffa500' }}>🔍 Debug Information</h4>
+              <p style={{ margin: '5px 0', fontSize: '14px' }}>
+                No series found for episode creation. This could happen if:
+              </p>
+              <ul style={{ margin: '10px 0', paddingLeft: '20px', fontSize: '14px' }}>
+                <li>You haven't submitted any series yet</li>
+                <li>Your submitted shows haven't been approved yet</li>
+                <li>There's a category mapping issue in the database</li>
+              </ul>
+              <p style={{ margin: '5px 0', fontSize: '14px' }}>
+                <strong>Solution:</strong> First go to "Add Show" and submit a series, then return here to add episodes.
+              </p>
+              <div style={{ marginTop: '10px' }}>
+                <button
+                  onClick={() => navigate('/add-show')}
+                  style={{
+                    background: 'rgba(255, 165, 0, 0.2)',
+                    border: '1px solid rgba(255, 165, 0, 0.5)',
+                    borderRadius: '5px',
+                    padding: '8px 15px',
+                    color: '#ffa500',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Go to Add Show →
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             {/* Episode Information Section */}
             <div style={{ marginBottom: '30px' }}>

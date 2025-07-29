@@ -395,12 +395,7 @@ async function getPublisherShows(req, res) {
   }
   
   try {
-    // First, let's check what columns exist in the SHOWS table
-    console.log('Checking SHOWS table structure...');
-    const [columns] = await pool.query('DESCRIBE SHOWS');
-    console.log('SHOWS table columns:', columns);
-    
-    // Now get the shows with all available fields
+    // Get the shows with essential fields for frontend filtering
     const query = `
       SELECT 
         S.SHOW_ID,
@@ -409,17 +404,10 @@ async function getPublisherShows(req, res) {
         S.RATING,
         S.WATCH_COUNT,
         S.CATEGORY_ID,
-        S.STATUS_ID,
-        S.PUBLISHER_ID,
-        S.AGE_RESTRICTION_ID,
+        S.REMOVED,
         S.DESCRIPTION,
         S.TEASER,
         S.RELEASE_DATE,
-        S.SEASON,
-        S.LICENSE,
-        S.ADMIN_ID,
-        S.BANNER,
-        S.REMOVED,
         P.ROYALTY,
         (S.WATCH_COUNT * P.ROYALTY) as INCOME
       FROM SHOWS S
@@ -432,8 +420,10 @@ async function getPublisherShows(req, res) {
     const [rows] = await pool.query(query, [publisherId]);
     
     console.log('Query result - number of rows:', rows.length);
-    console.log('First row sample:', rows[0]);
-    console.log('All rows:', rows);
+    if (rows.length > 0) {
+      console.log('First row sample:', rows[0]);
+      console.log('Series found:', rows.filter(r => r.CATEGORY_ID === 2).length);
+    }
     
     res.json(rows);
   } catch (err) {

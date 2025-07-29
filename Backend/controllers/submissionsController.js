@@ -92,6 +92,71 @@ const updateSubmissionVerdict = async (req, res) => {
 
     await pool.execute(updateQuery, [verdict, adminId, id]);
 
+    // If verdict is APPROVED, create a show entry in SHOWS table
+    if (verdict === 'APPROVED') {
+      // Get full submission details first
+      const [fullSubmission] = await pool.execute(`
+        SELECT * FROM SUBMISSION WHERE SUBMISSION_ID = ?
+      `, [id]);
+      
+      if (fullSubmission.length > 0) {
+        const submission = fullSubmission[0];
+        
+        // Map category string to category ID
+        let categoryId = 1; // Default to Movie
+        if (submission.CATEGORY) {
+          switch (submission.CATEGORY.toLowerCase()) {
+            case 'series':
+            case 'tv series':
+            case 'tv show':
+              categoryId = 2;
+              break;
+            case 'movie':
+            case 'film':
+            default:
+              categoryId = 1;
+              break;
+          }
+        }
+        
+        // Insert into SHOWS table
+        const showInsertQuery = `
+          INSERT INTO SHOWS (
+            TITLE,
+            THUMBNAIL,
+            RATING,
+            WATCH_COUNT,
+            CATEGORY_ID,
+            STATUS_ID,
+            PUBLISHER_ID,
+            AGE_RESTRICTION_ID,
+            DESCRIPTION,
+            TEASER,
+            RELEASE_DATE,
+            SEASON,
+            LICENSE,
+            ADMIN_ID,
+            BANNER,
+            REMOVED
+          ) VALUES (?, ?, 0, 0, ?, 1, ?, 1, ?, ?, CURDATE(), 1, ?, ?, ?, 0)
+        `;
+        
+        await pool.execute(showInsertQuery, [
+          submission.TITLE,
+          submission.THUMB_IMG,
+          categoryId,
+          submission.PUBLISHER_ID,
+          submission.DESCRIPTION,
+          submission.TEASER,
+          submission.LINK_TO_SHOW,
+          adminId,
+          submission.BANNER_IMG
+        ]);
+        
+        console.log(`Successfully created show entry for approved submission ${id}`);
+      }
+    }
+
     // Get updated submission with publisher info
     const [updatedSubmission] = await pool.execute(`
       SELECT 

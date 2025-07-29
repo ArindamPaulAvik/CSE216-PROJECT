@@ -746,7 +746,9 @@ useEffect(() => {
             </div>
           </div>
         </div>
-      </div>      {/* Main Content Area */}
+      </div>
+
+      {/* Main Content Area */}
       <div className="main-content">
         {/* Enhanced Fixed Header */}
         <div className={`header ${notificationOpen ? 'notifications-expanded' : ''}`}>
@@ -1026,8 +1028,8 @@ useEffect(() => {
           background: var(--primary-bg);
           color: var(--text-primary);
           font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-          display: flex;
           position: relative;
+          /* Remove flex to prevent sidebar affecting main content */
           transition: all 0.3s var(--transition-smooth);
         }
 
@@ -1624,21 +1626,21 @@ useEffect(() => {
 
         /* Main Content Area */
         .main-content {
-          flex: 1;
-          transition: all 0.3s var(--transition-smooth);
+          width: 100%; /* Full width since no flex container */
+          min-height: 100vh;
           display: flex;
           flex-direction: column;
-          min-height: 100vh;
           background: rgba(0, 0, 0, 0.02);
-          margin-left: 0; /* Remove margin to prevent content pushing */
+          margin-left: 0; /* Always 0 margin - sidebar overlays */
         }
 
+        /* Remove old sidebar margin classes - not needed for overlay */
         .main-content-closed {
-          /* Remove margin - sidebar will overlay */
+          margin-left: 0;
         }
 
         .main-content-open {
-          /* Remove margin - sidebar will overlay */
+          margin-left: 0;
         }
 
         /* Enhanced Header with Premium Glass Effects */
@@ -3380,19 +3382,18 @@ useEffect(() => {
           padding-left: 12px;
         }
 
-        /* MAIN CONTENT WITH PROPER MARGINS */
+        /* MAIN CONTENT WITH OVERLAY BEHAVIOR */
         .main-content {
-          flex: 1;
+          width: 100%; /* Full width for overlay behavior */
+          min-height: 100vh;
           display: flex;
           flex-direction: column;
-          min-height: 100vh;
-          margin-left: 0; /* Remove margin - sidebar will overlay */
-          transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          margin-left: 0; /* Always 0 - sidebar overlays */
         }
 
-        /* Remove margin adjustment - sidebar will overlay */
+        /* Remove margin adjustment - sidebar overlays content */
         .sidebar-open ~ .main-content {
-          margin-left: 0;
+          margin-left: 0; /* Keep at 0 for overlay */
         }
 
         /* FIXED HEADER */
@@ -3407,14 +3408,14 @@ useEffect(() => {
           position: fixed;
           top: 0;
           right: 0;
-          left: 0; /* Full width - sidebar will overlay */
+          left: 0; /* Full width - sidebar overlays */
           z-index: 100;
-          transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          /* Remove transition - no adjustment needed for overlay */
         }
 
-        /* Keep header full width when sidebar is open */
+        /* Header stays full width - sidebar overlays */
         .sidebar-open ~ .main-content .header {
-          left: 0;
+          left: 0; /* Always full width */
         }
 
         .user-info {
