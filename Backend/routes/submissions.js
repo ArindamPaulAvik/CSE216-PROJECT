@@ -61,6 +61,9 @@ router.get('/test', (req, res) => {
 // Get all submissions (admin only)
 router.get('/', authenticateToken, submissionsController.getAllSubmissions);
 
+// Get submission by ID (admin only)
+router.get('/:id', authenticateToken, submissionsController.getSubmissionById);
+
 // Update submission verdict (admin only)
 router.put('/:id/verdict', authenticateToken, submissionsController.updateSubmissionVerdict);
 
