@@ -5,6 +5,8 @@ exports.getEpisodeInfo = async (req, res) => {
   const episodeId = req.params.episodeId;
 
   try {
+    console.log('Getting episode info for ID:', episodeId); // Debug log
+    
     const [episode] = await pool.query(`
       SELECT 
         SE.SHOW_EPISODE_ID,
@@ -25,31 +27,29 @@ exports.getEpisodeInfo = async (req, res) => {
       return res.status(404).json({ error: 'Episode not found' });
     }
 
+    console.log('Retrieved episode:', episode[0]); // Debug log
     res.json(episode[0]);
   } catch (err) {
     console.error('Error fetching episode:', err);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: err.message });
   }
 };
 
+// Fetches episodes with VIDEO_URL
 exports.getEpisodesByShow = async (req, res) => {
   const showId = req.params.showId;
 
   try {
-    console.log('Fetching episodes for show ID:', showId);
+    console.log('=== getEpisodesByShow called ===');
+    console.log('Show ID:', showId);
     
-    // First, let's check if the show exists
-    const [showCheck] = await pool.query(`
-      SELECT SHOW_ID, TITLE FROM SHOWS WHERE SHOW_ID = ?
-    `, [showId]);
-    
-    if (showCheck.length === 0) {
-      console.log('Show not found with ID:', showId);
-      return res.status(404).json({ error: 'Show not found' });
+    // Validate showId
+    if (!showId || isNaN(showId)) {
+      return res.status(400).json({ error: 'Invalid show ID' });
     }
     
-    console.log('Show found:', showCheck[0]);
-
+    console.log('Executing database query...');
+    
     const [episodes] = await pool.query(`
       SELECT 
         SHOW_EPISODE_ID,
@@ -62,21 +62,32 @@ exports.getEpisodesByShow = async (req, res) => {
       FROM SHOW_EPISODE
       WHERE SHOW_ID = ?
       ORDER BY EPISODE_NUMBER ASC
-    `, [showId]);
+    `, [parseInt(showId)]);
 
+    console.log('Query executed successfully');
     console.log('Episodes found:', episodes.length);
+    
     if (episodes.length > 0) {
-      console.log('Sample episode:', episodes[0]);
+      episodes.forEach((episode, index) => {
+        console.log(`Episode ${index + 1}:`, {
+          id: episode.SHOW_EPISODE_ID,
+          title: episode.SHOW_EPISODE_TITLE,
+          episode_number: episode.EPISODE_NUMBER,
+          video_url: episode.VIDEO_URL
+        });
+      });
+    } else {
+      console.log('No episodes found for show ID:', showId);
     }
 
     res.json(episodes);
   } catch (err) {
-    console.error('Error fetching episodes:', err);
-    console.error('Error stack:', err.stack);
+    console.error('=== ERROR in getEpisodesByShow ===');
+    console.error('Error details:', err);
     res.status(500).json({ 
       error: 'Database error', 
-      message: err.message,
-      stack: err.stack 
+      details: err.message,
+      showId: showId 
     });
   }
 };
@@ -86,6 +97,8 @@ exports.updateEpisode = async (req, res) => {
   const { title, description, duration, videoUrl } = req.body;
 
   try {
+    console.log('Updating episode', episodeId, 'with VIDEO_URL:', videoUrl); // Debug log
+    
     const [result] = await pool.query(`
       UPDATE SHOW_EPISODE 
       SET 
@@ -103,6 +116,24 @@ exports.updateEpisode = async (req, res) => {
     res.json({ message: 'Episode updated successfully' });
   } catch (err) {
     console.error('Error updating episode:', err);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: err.message });
+  }
+};
+
+// Simple test endpoint that doesn't use database
+exports.testEndpoint = async (req, res) => {
+  try {
+    console.log('Test endpoint called');
+    console.log('Params:', req.params);
+    console.log('Query:', req.query);
+    
+    res.json({ 
+      message: 'Test endpoint working', 
+      showId: req.params.showId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Error in test endpoint:', err);
+    res.status(500).json({ error: 'Test endpoint error', details: err.message });
   }
 };
