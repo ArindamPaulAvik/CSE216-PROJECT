@@ -29,6 +29,7 @@ const getAllSubmissions = async (req, res) => {
         COALESCE(s.VERDICT, 'PENDING') as VERDICT,
         s.CREATED_AT,
         s.UPDATED_AT,
+        s.TYPE,
         COALESCE(p.PUBLISHER_NAME, CONCAT('Publisher #', s.PUBLISHER_ID)) as PUBLISHER_NAME
       FROM SUBMISSION s
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID

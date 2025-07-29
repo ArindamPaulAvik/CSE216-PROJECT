@@ -9,7 +9,8 @@ import {
   FiExternalLink,
   FiUser,
   FiCalendar,
-  FiFilter
+  FiFilter,
+  FiTag
 } from 'react-icons/fi';
 import axios from 'axios';
 
@@ -377,7 +378,6 @@ function SubmissionsManagement() {
                   }}>
                     Submission #{submission.SUBMISSION_ID}
                   </h3>
-
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FiUser size={16} style={{ opacity: 0.7 }} />
@@ -393,6 +393,16 @@ function SubmissionsManagement() {
                         <span style={{ fontSize: '14px', opacity: 0.8 }}>Submitted:</span>
                         <span style={{ fontSize: '14px', fontWeight: '500' }}>
                           {new Date(submission.CREATED_AT).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {submission.TYPE && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FiTag size={16} style={{ opacity: 0.7 }} />
+                        <span style={{ fontSize: '14px', opacity: 0.8 }}>Type:</span>
+                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {submission.TYPE}
                         </span>
                       </div>
                     )}

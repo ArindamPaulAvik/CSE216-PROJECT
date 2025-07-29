@@ -97,7 +97,7 @@ function AddEpisodePage() {
     }
     
     setIsSubmitting(true);
-
+  
     try {
       const token = localStorage.getItem('token');
       
@@ -105,31 +105,28 @@ function AddEpisodePage() {
         alert('Authentication required. Please log in.');
         return;
       }
-
-      // Create FormData for the episode submission
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('episodeLink', formData.episodeLink);
-      formDataToSend.append('seriesId', selectedSeries);
-
-      console.log('Submitting episode data:', {
+  
+      // Send as JSON instead of FormData
+      const episodeData = {
         title: formData.title,
         description: formData.description,
         episodeLink: formData.episodeLink,
         seriesId: selectedSeries
-      });
-
+      };
+  
+      console.log('Submitting episode data:', episodeData);
+  
       const response = await fetch(`${BASE_URL}/api/submissions/episode`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'  // This is crucial
         },
-        body: formDataToSend
+        body: JSON.stringify(episodeData)  // Send as JSON string
       });
-
+  
       console.log('Episode submission response status:', response.status);
-
+  
       if (response.ok) {
         const result = await response.json();
         console.log('Episode submitted successfully:', result);
