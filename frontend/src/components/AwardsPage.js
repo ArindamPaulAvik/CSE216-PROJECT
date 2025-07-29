@@ -228,6 +228,7 @@ function AwardsPage() {
           position: relative;
           overflow: hidden;
           padding: 40px 20px;
+          margin-top: 100px;
         }
 
         .page-header {

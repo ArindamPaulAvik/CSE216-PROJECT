@@ -21,15 +21,26 @@ function VideoPlayer({
     console.log('selectedEpisode:', selectedEpisode);
     console.log('selectedEpisode keys:', selectedEpisode ? Object.keys(selectedEpisode) : 'null');
     
-    // Check for VIDEO_URL in selectedEpisode (if it's an episode object)
-    let videoId = selectedEpisode?.VIDEO_URL;
-    console.log('Direct VIDEO_URL:', videoId);
+    // Check for various possible video URL properties in selectedEpisode
+    let videoId = selectedEpisode?.VIDEO_URL || 
+                  selectedEpisode?.SHOW_EPISODE_VIDEO_URL || 
+                  selectedEpisode?.EPISODE_VIDEO_URL ||
+                  selectedEpisode?.VIDEO_FILE ||
+                  selectedEpisode?.FILE_PATH ||
+                  selectedEpisode?.MOVIE_FILE;
+    console.log('Direct video URL found:', videoId);
     
     // If selectedEpisode is a show object, look for the current episode's video ID
     if (!videoId && selectedEpisode?.EPISODES && selectedEpisode.EPISODES.length > 0) {
       console.log('Checking EPISODES array, length:', selectedEpisode.EPISODES.length);
       console.log('First episode:', selectedEpisode.EPISODES[0]);
-      videoId = selectedEpisode.EPISODES[0]?.VIDEO_URL;
+      const episode = selectedEpisode.EPISODES[0];
+      videoId = episode?.VIDEO_URL || 
+                episode?.SHOW_EPISODE_VIDEO_URL || 
+                episode?.EPISODE_VIDEO_URL ||
+                episode?.VIDEO_FILE ||
+                episode?.FILE_PATH ||
+                episode?.MOVIE_FILE;
       console.log('VIDEO_URL from first episode:', videoId);
     }
     
@@ -37,7 +48,13 @@ function VideoPlayer({
     if (!videoId && Array.isArray(selectedEpisode) && selectedEpisode.length > 0) {
       console.log('selectedEpisode is an array, length:', selectedEpisode.length);
       console.log('First item in array:', selectedEpisode[0]);
-      videoId = selectedEpisode[0]?.VIDEO_URL;
+      const episode = selectedEpisode[0];
+      videoId = episode?.VIDEO_URL || 
+                episode?.SHOW_EPISODE_VIDEO_URL || 
+                episode?.EPISODE_VIDEO_URL ||
+                episode?.VIDEO_FILE ||
+                episode?.FILE_PATH ||
+                episode?.MOVIE_FILE;
       console.log('VIDEO_URL from first array item:', videoId);
     }
     

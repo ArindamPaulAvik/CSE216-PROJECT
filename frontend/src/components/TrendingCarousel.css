@@ -14,15 +14,15 @@
   transform: scale(1.002);
 }
 
-/* Featured Section - Reduced height */
+/* Featured Section */
 .featured-section {
   position: relative;
-  height: 70vh; /* Reduced from 90vh to 70vh */
-  min-height: 500px; /* Reduced from 700px to 500px */
+  height: 90vh;
+  min-height: 700px;
   display: flex;
   align-items: center;
   overflow: hidden;
-  border-radius: 0 0 20px 20px; /* Slightly smaller border radius */
+  border-radius: 0 0 24px 24px;
 }
 
 /* Background Layers */
