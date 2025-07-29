@@ -79,11 +79,19 @@ exports.searchShows = async (req, res) => {
     // Use DISTINCT to avoid duplicates when joining with genres
     const sql = `
   SELECT DISTINCT S.*, 
-         GROUP_CONCAT(DISTINCT G2.GENRE_NAME ORDER BY G2.GENRE_NAME SEPARATOR ', ') AS GENRES
+         GROUP_CONCAT(DISTINCT G2.GENRE_NAME ORDER BY G2.GENRE_NAME SEPARATOR ', ') AS GENRES,
+         CASE 
+           WHEN COUNT(DISTINCT SE.SHOW_EPISODE_ID) = 1 THEN 
+             CONCAT(MIN(SE.SHOW_EPISODE_DURATION), ' min')
+           WHEN COUNT(DISTINCT SE.SHOW_EPISODE_ID) > 1 THEN 
+             CONCAT(COUNT(DISTINCT SE.SHOW_EPISODE_ID), ' episodes')
+           ELSE 'N/A'
+         END as DURATION
   FROM SHOWS S
   ${genreJoin}
   LEFT JOIN SHOW_GENRE SG2 ON S.SHOW_ID = SG2.SHOW_ID
   LEFT JOIN GENRE G2 ON SG2.GENRE_ID = G2.GENRE_ID
+  LEFT JOIN SHOW_EPISODE SE ON S.SHOW_ID = SE.SHOW_ID
   ${whereSQL} ${whereSQL ? 'AND' : 'WHERE'} S.REMOVED = 0
   GROUP BY S.SHOW_ID
   ${genreHaving}

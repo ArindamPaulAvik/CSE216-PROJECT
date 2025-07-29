@@ -61,11 +61,19 @@ exports.getFavorites = async (req, res) => {
     const [favorites] = await pool.query(`
       SELECT s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING,
              f.ADD_DATE AS ADDED_DATE,
-             GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES
+             GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') AS GENRES,
+             CASE 
+               WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+                 CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+               WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+                 CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+               ELSE 'N/A'
+             END as DURATION
       FROM FAV_LIST_SHOW f
       JOIN SHOWS s ON f.SHOW_ID = s.SHOW_ID
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE f.USER_ID = ? AND s.REMOVED = 0
       GROUP BY s.SHOW_ID, f.ADD_DATE
       ORDER BY f.ADD_DATE DESC

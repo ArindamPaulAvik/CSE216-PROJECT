@@ -316,15 +316,6 @@ useEffect(() => {
         // Handle different possible response structures
         setSearchResults(data.results || data.shows || data || []);
         setIsSearching(false);
-
-        // Show suggestions for empty search
-        if (!searchTerm.trim()) {
-          setSearchSuggestions([
-            { type: 'trending', value: 'Breaking Bad' },
-            { type: 'trending', value: 'Stranger Things' },
-            { type: 'trending', value: 'The Office' }
-          ]);
-        }
       })
       .catch(err => {
         console.error('❌ Frontend search error:', err);
@@ -558,6 +549,26 @@ useEffect(() => {
     }
   };
 
+  const [disableHover, setDisableHover] = useState(false);
+
+  const handleSearchKeyPress = (e) => {
+    console.log('Key pressed:', e.key, e.keyCode, e.which);
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      console.log('Enter detected, closing sidebar');
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Temporarily disable hover and close sidebar
+      setDisableHover(true);
+      setMenuOpen(false);
+      
+      // Re-enable hover after a short delay
+      setTimeout(() => {
+        setDisableHover(false);
+      }, 500);
+    }
+  };
+
   const handleSuggestionClick = (suggestion) => {
     setSearchTerm(suggestion.value);
     setSearchSuggestions([]);
@@ -607,7 +618,7 @@ useEffect(() => {
 
       {/* Glassmorphism Sidebar */}
       <div
-        className="glass-sidebar"
+        className={`glass-sidebar ${disableHover ? 'disable-hover' : ''}`}
       >
         <div className="sidebar-header">
           <div className="menu-icon-wrapper">
@@ -645,29 +656,14 @@ useEffect(() => {
                     <FiSearch size={16} className="search-input-icon" />
                     <input
                       type="text"
-                      placeholder="Search shows, actors, directors..."
+                      placeholder="Search shows, actors, directors... (Press Enter to search)"
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
+                      onKeyDown={handleSearchKeyPress}
                       className="search-input"
                       autoFocus
                     />
                   </div>
-
-                  {/* Search Suggestions */}
-                  {searchSuggestions.length > 0 && (
-                    <div className="search-suggestions">
-                      {searchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          className={`suggestion-item ${suggestion.type}`}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                        >
-                          {suggestion.type === 'trending' && <FiTrendingUp size={14} />}
-                          <span>{suggestion.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   {isSearching && (
                     <div className="search-loading">
@@ -1159,6 +1155,11 @@ useEffect(() => {
 
         .sidebar:hover .sidebar-header::before {
           left: 100%;
+        }
+
+        /* Disable hover effects when class is applied */
+        .glass-sidebar.disable-hover:hover .sidebar-header::before {
+          left: -100% !important;
         }
 
         .menu-icon-wrapper {
@@ -1658,9 +1659,9 @@ useEffect(() => {
 
         /* Enhanced Header with Premium Glass Effects */
         .header {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(20px) saturate(180%) brightness(105%);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(20px) saturate(180%) brightness(120%);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
           padding: 9.6px 32px;
           display: flex;
           align-items: center;
@@ -1670,8 +1671,9 @@ useEffect(() => {
           z-index: 100;
           box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            0 2px 15px rgba(0, 0, 0, 0.02),
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
           gap: 48px;
           position: relative;
           overflow: visible;
@@ -3723,6 +3725,21 @@ useEffect(() => {
         .glass-sidebar:hover .logo-text {
           opacity: 1;
           pointer-events: auto;
+        }
+
+        /* Disable all hover effects when disable-hover class is applied */
+        .glass-sidebar.disable-hover:hover {
+          width: 60px !important;
+        }
+
+        .glass-sidebar.disable-hover:hover .sidebar-content {
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+
+        .glass-sidebar.disable-hover:hover .logo-text {
+          opacity: 0 !important;
+          pointer-events: none !important;
         }
       `}</style>
     </div>

@@ -94,7 +94,14 @@ exports.getAllShows = async (req, res) => {
              p.PUBLISHER_NAME as publisher,
              a.AGE_RESTRICTION_NAME as age_restriction,
              GROUP_CONCAT(DISTINCT g.GENRE_NAME ORDER BY g.GENRE_NAME SEPARATOR ', ') as genre,
-             COUNT(DISTINCT se.SHOW_EPISODE_ID) as episodes
+             COUNT(DISTINCT se.SHOW_EPISODE_ID) as episodes,
+             CASE 
+               WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+                 CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+               WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+                 CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+               ELSE 'N/A'
+             END as duration
       FROM SHOWS s
       LEFT JOIN STATUS st ON s.STATUS_ID = st.STATUS_ID
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID

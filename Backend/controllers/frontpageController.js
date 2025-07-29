@@ -28,15 +28,23 @@ exports.getFrontpage = async (req, res) => {
     s.RATING, 
     s.TEASER, 
     s.BANNER, 
-    GROUP_CONCAT(g.GENRE_NAME SEPARATOR ', ') AS GENRES,
+    GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') AS GENRES,
     CASE 
       WHEN fls.USER_ID IS NOT NULL THEN 1 
       ELSE 0 
-    END AS IS_FAVORITE
+    END AS IS_FAVORITE,
+    CASE 
+      WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+        CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+      WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+        CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+      ELSE 'N/A'
+    END as DURATION
   FROM SHOWS s
   LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
   LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
   LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+  LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
   WHERE s.REMOVED = 0
   GROUP BY 
     s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, s.BANNER, IS_FAVORITE
@@ -57,7 +65,14 @@ exports.getFrontpage = async (req, res) => {
         s.THUMBNAIL, 
         s.RATING, 
         s.TEASER,
-        GROUP_CONCAT(DISTINCT g.GENRE_NAME ORDER BY g.GENRE_NAME SEPARATOR ', ') AS GENRES
+        GROUP_CONCAT(DISTINCT g.GENRE_NAME ORDER BY g.GENRE_NAME SEPARATOR ', ') AS GENRES,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM PERSON p
       JOIN USER u ON p.PERSON_ID = u.PERSON_ID
       JOIN USER_EPISODE ue ON ue.USER_ID = u.USER_ID
@@ -120,11 +135,19 @@ exports.getFrontpage = async (req, res) => {
           COUNT(DISTINCT tug.GENRE_ID) as matching_genres_count,
           (COALESCE(s.RATING, 0) * 0.3 + 
            (COALESCE(s.WATCH_COUNT, 0) / 1000) * 0.2 + 
-           COUNT(DISTINCT tug.GENRE_ID) * 0.5) as recommendation_score
+           COUNT(DISTINCT tug.GENRE_ID) * 0.5) as recommendation_score,
+          CASE 
+            WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+              CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+            WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+              CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+            ELSE 'N/A'
+          END as DURATION
       FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       JOIN top_user_genres tug ON g.GENRE_ID = tug.GENRE_ID
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE s.SHOW_ID NOT IN (SELECT SHOW_ID FROM user_content) AND s.REMOVED = 0
       GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.WATCH_COUNT
       HAVING matching_genres_count > 0
@@ -148,9 +171,17 @@ exports.getFrontpage = async (req, res) => {
         CASE 
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
-        END AS IS_FAVORITE
+        END AS IS_FAVORITE,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM SHOWS s
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE s.RATING IS NOT NULL AND s.RATING > 0 AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
@@ -174,11 +205,19 @@ exports.getFrontpage = async (req, res) => {
         CASE 
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
-        END AS IS_FAVORITE
+        END AS IS_FAVORITE,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%action%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
@@ -202,11 +241,19 @@ exports.getFrontpage = async (req, res) => {
         CASE 
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
-        END AS IS_FAVORITE
+        END AS IS_FAVORITE,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%thriller%' OR LOWER(g.GENRE_NAME) LIKE '%suspense%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
@@ -230,11 +277,19 @@ exports.getFrontpage = async (req, res) => {
         CASE 
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
-        END AS IS_FAVORITE
+        END AS IS_FAVORITE,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%comedy%' OR LOWER(g.GENRE_NAME) LIKE '%humor%' OR LOWER(g.GENRE_NAME) LIKE '%comic%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
@@ -262,9 +317,18 @@ exports.getFrontpage = async (req, res) => {
           CASE 
             WHEN fls.USER_ID IS NOT NULL THEN 1 
             ELSE 0 
-          END AS IS_FAVORITE
+          END AS IS_FAVORITE,
+          CASE 
+            WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+              CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+            WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+              CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+            ELSE 'N/A'
+          END as DURATION
         FROM SHOWS s
         LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+        LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
+        WHERE s.REMOVED = 0
         GROUP BY 
           s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
         ORDER BY RAND()
@@ -288,11 +352,19 @@ exports.getFrontpage = async (req, res) => {
         CASE 
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
-        END AS IS_FAVORITE
+        END AS IS_FAVORITE,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM SHOWS s
       JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%drama%' AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
@@ -316,11 +388,19 @@ exports.getFrontpage = async (req, res) => {
         CASE 
           WHEN fls.USER_ID IS NOT NULL THEN 1 
           ELSE 0 
-        END AS IS_FAVORITE
+        END AS IS_FAVORITE,
+        CASE 
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+            CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+          WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+            CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+          ELSE 'N/A'
+        END as DURATION
       FROM SHOWS s
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       LEFT JOIN FAV_LIST_SHOW fls ON fls.SHOW_ID = s.SHOW_ID AND fls.USER_ID = ?
+      LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE (LOWER(g.GENRE_NAME) LIKE '%family%' OR s.AGE_RESTRICTION_ID IN (1, 2, 3)) AND s.REMOVED = 0
       GROUP BY 
         s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
