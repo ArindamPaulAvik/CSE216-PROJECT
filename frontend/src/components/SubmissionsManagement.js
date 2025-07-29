@@ -164,6 +164,9 @@ function SubmissionsManagement() {
       setDetailsLoading(true);
       const token = localStorage.getItem('token');
       
+      console.log('Fetching submission details for ID:', submissionId);
+      console.log('Using token:', token ? 'Token exists' : 'No token');
+      
       const response = await axios.get(`${BASE_URL}/api/submissions/${submissionId}`, {
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -171,17 +174,86 @@ function SubmissionsManagement() {
         }
       });
       
+      console.log('Submission details fetched successfully:', response.data);
       setSubmissionDetails(response.data);
       setShowDetailsModal(true);
+      
     } catch (error) {
       console.error('Error fetching submission details:', error);
-      alert(`Error fetching submission details: ${error.response?.data?.message || error.message}`);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = 'Error fetching submission details';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const serverMessage = error.response.data?.message;
+        const serverError = error.response.data?.error;
+        const serverCode = error.response.data?.code;
+        
+        console.log('Server error details:', {
+          status,
+          message: serverMessage,
+          error: serverError,
+          code: serverCode
+        });
+        
+        switch (status) {
+          case 403:
+            errorMessage = 'Access denied. Please check your permissions.';
+            break;
+          case 404:
+            errorMessage = 'Submission not found.';
+            break;
+          case 500:
+            if (serverCode === 'ER_NO_SUCH_TABLE') {
+              errorMessage = 'Database configuration error. Please contact administrator.';
+            } else if (serverCode === 'ER_BAD_FIELD_ERROR') {
+              errorMessage = 'Database schema error. Please contact administrator.';
+            } else if (serverMessage) {
+              errorMessage = `Server error: ${serverMessage}`;
+            } else {
+              errorMessage = 'Internal server error occurred.';
+            }
+            break;
+          default:
+            errorMessage = serverMessage || `Server error (${status})`;
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else {
+        // Something else happened
+        errorMessage = error.message || 'Unknown error occurred';
+      }
+      
+      // Show user-friendly error message
+      alert(errorMessage);
+      
+      // For debugging, also log the technical details
+      console.error('Technical error details:', {
+        originalError: error.message,
+        serverMessage: error.response?.data?.message,
+        serverCode: error.response?.data?.code,
+        sqlMessage: error.response?.data?.sqlMessage,
+        userFriendlyMessage: errorMessage
+      });
+      
     } finally {
       setDetailsLoading(false);
     }
   };
 
   const handleCheckSubmission = (submission) => {
+    console.log('Checking submission:', submission);
+    
+    if (!submission || !submission.SUBMISSION_ID) {
+      alert('Invalid submission data');
+      return;
+    }
+    
     fetchSubmissionDetails(submission.SUBMISSION_ID);
   };
 
@@ -1036,10 +1108,10 @@ function SubmissionsManagement() {
                     </span>
                   </div>
 
-                  {submissionDetails.ADMIN_NAME && (
+                  {submissionDetails.ADMIN_ID && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FiUser size={16} style={{ opacity: 0.7 }} />
-                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Admin:</span>
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Admin ID:</span>
                       <span style={{ fontSize: '14px', fontWeight: '500' }}>
                         {submissionDetails.ADMIN_NAME}
                       </span>

@@ -66,7 +66,7 @@ function AwardsPage() {
         <div className="award-card-inner">
           <div className="award-image-container">
             <motion.img
-              src={`/awards/${award.IMG}`}
+              src={`${BASE_URL}/awards/${award.IMG}`}
               alt={award.AWARD_NAME}
               className="award-image"
               whileHover={{ scale: 1.1 }}

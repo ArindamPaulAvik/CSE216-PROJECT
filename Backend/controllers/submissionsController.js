@@ -409,6 +409,7 @@ const getSubmissionById = async (req, res) => {
 
     console.log('Fetching submission with ID:', id);
 
+    // Query without ADMIN_NAME since it doesn't exist
     const query = `
       SELECT 
         s.SUBMISSION_ID,
@@ -426,13 +427,14 @@ const getSubmissionById = async (req, res) => {
         s.BANNER_IMG,
         s.THUMB_IMG,
         s.SHOW_ID,
-        COALESCE(p.PUBLISHER_NAME, CONCAT('Publisher #', s.PUBLISHER_ID)) as PUBLISHER_NAME,
-        COALESCE(ca.ADMIN_NAME, CONCAT('Admin #', s.ADMIN_ID)) as ADMIN_NAME
+        COALESCE(p.PUBLISHER_NAME, CONCAT('Publisher #', s.PUBLISHER_ID)) as PUBLISHER_NAME
       FROM SUBMISSION s
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
-      LEFT JOIN CONTENT_ADMIN ca ON s.ADMIN_ID = ca.ADMIN_ID
       WHERE s.SUBMISSION_ID = ?
     `;
+
+    console.log('Executing query:', query);
+    console.log('With parameters:', [id]);
 
     const [rows] = await pool.execute(query, [id]);
     
@@ -447,7 +449,11 @@ const getSubmissionById = async (req, res) => {
   } catch (error) {
     console.error('Error in getSubmissionById:', error);
     console.error('Error stack:', error.stack);
-    res.status(500).json({ message: 'Error fetching submission details', error: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching submission details', 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 };
 
