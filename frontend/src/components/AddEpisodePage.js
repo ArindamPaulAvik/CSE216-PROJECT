@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function AddEpisodePage() {
@@ -14,36 +14,63 @@ function AddEpisodePage() {
   const [series, setSeries] = useState([]);
   const [selectedSeries, setSelectedSeries] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Fetch series for the current publisher
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchSeries = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
         
+        if (!token) {
+          setError('Authentication required. Please log in.');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Fetching series from:', `${BASE_URL}/publishers/my-shows`);
+        
         const response = await fetch(`${BASE_URL}/publishers/my-shows`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
+        
+        console.log('Response status:', response.status);
         
         if (response.ok) {
           const shows = await response.json();
+          console.log('All shows received:', shows);
           
-          // Filter for series (assuming CATEGORY_ID 2 represents series)
+          // Filter for series (CATEGORY_ID 2 represents series)
           const seriesShows = shows.filter(show => 
             show.CATEGORY_ID === 2 && show.REMOVED === 0
           );
           
+          console.log('Filtered series:', seriesShows);
           setSeries(seriesShows);
+          
+          if (seriesShows.length === 0) {
+            setError('No series found. Please submit and get approval for a series first before adding episodes.');
+          }
         } else {
-          console.error('Failed to fetch shows:', response.status);
+          const errorText = await response.text();
+          console.error('Failed to fetch shows:', response.status, errorText);
+          setError(`Failed to fetch series: ${response.status} - ${errorText}`);
         }
       } catch (error) {
         console.error('Error fetching series:', error);
+        setError(`Network error: ${error.message}`);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchSeries();
-  }, []);
+  }, [BASE_URL]);
 
   const handleBack = () => {
     navigate('/manage-content');
@@ -63,64 +90,36 @@ function AddEpisodePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!selectedSeries) {
+      alert('Please select a series for the episode.');
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
       const token = localStorage.getItem('token');
       
-      // Debug logging
-      console.log('BASE_URL:', BASE_URL);
-      console.log('Token exists:', !!token);
-      console.log('Form data:', formData);
-      
-      // First test if the main server is accessible
-      const mainTestResponse = await fetch(`${BASE_URL}/api/submissions-test`, {
-        method: 'GET'
-      });
-      
-      console.log('Main server test status:', mainTestResponse.status);
-      if (mainTestResponse.status !== 200) {
-        console.error('Main server not accessible');
-        const mainTestText = await mainTestResponse.text();
-        console.error('Main test response:', mainTestText);
-        alert('Server not accessible. Please check server status.');
+      if (!token) {
+        alert('Authentication required. Please log in.');
         return;
       }
 
-      // Now test if the submissions endpoint is accessible
-      const testResponse = await fetch(`${BASE_URL}/api/submissions/test-simple`, {
-        method: 'GET',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      });
-      
-      console.log('Test endpoint status:', testResponse.status);
-      if (testResponse.status !== 200) {
-        console.error('Submissions router not accessible');
-        const debugText = await testResponse.text();
-        console.error('Test response:', debugText);
-        
-        // Try the catch-all route to see if requests reach the router at all
-        const catchAllResponse = await fetch(`${BASE_URL}/api/submissions/anything`, {
-          method: 'GET'
-        });
-        console.log('Catch-all route status:', catchAllResponse.status);
-        const catchAllText = await catchAllResponse.text();
-        console.log('Catch-all response:', catchAllText);
-        
-        alert('Submissions endpoint not accessible. Please check server status.');
-        return;
-      }
-
-      // Now try the actual episode submission
+      // Create FormData for the episode submission
       const formDataToSend = new FormData();
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('episodeLink', formData.episodeLink);
-      formDataToSend.append('seriesId', selectedSeries); // Add seriesId to the FormData
+      formDataToSend.append('seriesId', selectedSeries);
 
-      console.log('Making episode submission request...');
+      console.log('Submitting episode data:', {
+        title: formData.title,
+        description: formData.description,
+        episodeLink: formData.episodeLink,
+        seriesId: selectedSeries
+      });
+
       const response = await fetch(`${BASE_URL}/api/submissions/episode`, {
         method: 'POST',
         headers: {
@@ -130,19 +129,16 @@ function AddEpisodePage() {
       });
 
       console.log('Episode submission response status:', response.status);
-      console.log('Response headers:', [...response.headers.entries()]);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Success:', result);
+        console.log('Episode submitted successfully:', result);
+        alert('Episode submitted successfully!');
         navigate('/manage-content');
       } else {
         const errorText = await response.text();
-        console.error('Failed to add episode. Status:', response.status);
-        console.error('Error response:', errorText);
-        
-        // Show user-friendly error
-        alert(`Failed to add episode: ${response.status} - ${errorText}`);
+        console.error('Failed to submit episode:', response.status, errorText);
+        alert(`Failed to submit episode: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Network error:', error);
@@ -209,44 +205,69 @@ function AddEpisodePage() {
           width: '100%'
         }}>
           
-          {/* Debug Panel - Remove this after fixing the issue */}
-          {series.length === 0 && (
+          {/* Loading State */}
+          {loading && (
             <div style={{
-              background: 'rgba(255, 165, 0, 0.1)',
-              border: '1px solid rgba(255, 165, 0, 0.3)',
+              background: 'rgba(0, 123, 255, 0.1)',
+              border: '1px solid rgba(0, 123, 255, 0.3)',
               borderRadius: '10px',
               padding: '15px',
               marginBottom: '20px',
-              color: '#ffa500'
+              color: '#007bff',
+              textAlign: 'center'
             }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#ffa500' }}>🔍 Debug Information</h4>
+              <div style={{ fontSize: '18px', marginBottom: '10px' }}>🔄 Loading your series...</div>
+              <div style={{ fontSize: '14px' }}>Please wait while we fetch your available series.</div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <div style={{
+              background: 'rgba(220, 53, 69, 0.1)',
+              border: '1px solid rgba(220, 53, 69, 0.3)',
+              borderRadius: '10px',
+              padding: '15px',
+              marginBottom: '20px',
+              color: '#dc3545'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#dc3545' }}>⚠️ Error</h4>
+              <p style={{ margin: '5px 0', fontSize: '14px' }}>{error}</p>
+              {series.length === 0 && (
+                <div style={{ marginTop: '15px' }}>
+                  <button
+                    onClick={() => navigate('/add-show')}
+                    style={{
+                      background: 'rgba(220, 53, 69, 0.2)',
+                      border: '1px solid rgba(220, 53, 69, 0.5)',
+                      borderRadius: '5px',
+                      padding: '8px 15px',
+                      color: '#dc3545',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Go to Add Show →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Success State - Series Found */}
+          {!loading && !error && series.length > 0 && (
+            <div style={{
+              background: 'rgba(40, 167, 69, 0.1)',
+              border: '1px solid rgba(40, 167, 69, 0.3)',
+              borderRadius: '10px',
+              padding: '15px',
+              marginBottom: '20px',
+              color: '#28a745'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#28a745' }}>✅ Series Available</h4>
               <p style={{ margin: '5px 0', fontSize: '14px' }}>
-                No series found for episode creation. This could happen if:
+                Found {series.length} series available for episode creation.
               </p>
-              <ul style={{ margin: '10px 0', paddingLeft: '20px', fontSize: '14px' }}>
-                <li>You haven't submitted any series yet</li>
-                <li>Your submitted shows haven't been approved yet</li>
-                <li>There's a category mapping issue in the database</li>
-              </ul>
-              <p style={{ margin: '5px 0', fontSize: '14px' }}>
-                <strong>Solution:</strong> First go to "Add Show" and submit a series, then return here to add episodes.
-              </p>
-              <div style={{ marginTop: '10px' }}>
-                <button
-                  onClick={() => navigate('/add-show')}
-                  style={{
-                    background: 'rgba(255, 165, 0, 0.2)',
-                    border: '1px solid rgba(255, 165, 0, 0.5)',
-                    borderRadius: '5px',
-                    padding: '8px 15px',
-                    color: '#ffa500',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  Go to Add Show →
-                </button>
-              </div>
             </div>
           )}
 
@@ -263,28 +284,30 @@ function AddEpisodePage() {
                   value={selectedSeries}
                   onChange={handleSeriesChange}
                   required
+                  disabled={loading || series.length === 0}
                   style={{
                     width: '100%',
                     padding: '12px',
                     borderRadius: '8px',
                     border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255,255,255,0.1)',
+                    background: loading || series.length === 0 ? 'rgba(100,100,100,0.1)' : 'rgba(255,255,255,0.1)',
                     color: '#fff',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    cursor: loading || series.length === 0 ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <option value="">{series.length === 0 ? 'No series available' : 'Select a series'}</option>
+                  <option value="">
+                    {loading ? 'Loading series...' : 
+                     series.length === 0 ? 'No series available' : 
+                     'Select a series'}
+                  </option>
                   {series.map(show => (
                     <option key={show.SHOW_ID} value={show.SHOW_ID}>
                       {show.TITLE}
                     </option>
                   ))}
                 </select>
-                {series.length === 0 && (
-                  <div style={{ marginTop: '8px', color: '#ff6b6b', fontSize: '14px' }}>
-                    No series found. Please add a series first before adding episodes.
-                  </div>
-                )}
+                
                 {selectedSeries && (
                   <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {series.find(s => s.SHOW_ID == selectedSeries)?.THUMBNAIL && (
@@ -303,7 +326,7 @@ function AddEpisodePage() {
 
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
-                  Title *
+                  Episode Title *
                 </label>
                 <input
                   type="text"
@@ -320,13 +343,13 @@ function AddEpisodePage() {
                     color: '#fff',
                     fontSize: '16px'
                   }}
-                  placeholder="Enter episode title"
+                  placeholder="Enter episode title (e.g., Episode 1: The Beginning)"
                 />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
-                  Description *
+                  Episode Description *
                 </label>
                 <textarea
                   name="description"
@@ -344,13 +367,13 @@ function AddEpisodePage() {
                     fontSize: '16px',
                     resize: 'vertical'
                   }}
-                  placeholder="Enter episode description"
+                  placeholder="Enter episode description..."
                 />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
-                  Link to Episode *
+                  Episode Link *
                 </label>
                 <input
                   type="url"
@@ -367,8 +390,11 @@ function AddEpisodePage() {
                     color: '#fff',
                     fontSize: '16px'
                   }}
-                  placeholder="Enter link to episode"
+                  placeholder="https://example.com/episode-link"
                 />
+                <div style={{ marginTop: '5px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                  Provide a direct link to where the episode can be viewed
+                </div>
               </div>
             </div>
 
@@ -392,20 +418,22 @@ function AddEpisodePage() {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || loading || series.length === 0}
                 style={{
                   padding: '12px 24px',
                   borderRadius: '8px',
                   border: 'none',
-                  background: 'linear-gradient(45deg, #ffa726, #ff9800)',
+                  background: isSubmitting || loading || series.length === 0 ? 
+                    'rgba(100, 100, 100, 0.5)' : 
+                    'linear-gradient(45deg, #ffa726, #ff9800)',
                   color: '#fff',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  cursor: isSubmitting || loading || series.length === 0 ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
                   fontSize: '16px',
-                  opacity: isSubmitting ? 0.7 : 1
+                  opacity: isSubmitting || loading || series.length === 0 ? 0.7 : 1
                 }}
               >
-                {isSubmitting ? 'Adding...' : 'Add Episode'}
+                {isSubmitting ? 'Submitting...' : 'Add Episode'}
               </button>
             </div>
           </form>
@@ -415,4 +443,4 @@ function AddEpisodePage() {
   );
 }
 
-export default AddEpisodePage; 
+export default AddEpisodePage;

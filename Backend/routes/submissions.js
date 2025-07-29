@@ -73,81 +73,16 @@ router.post('/show', authenticateToken, upload.fields([
   { name: 'thumbnail', maxCount: 1 }
 ]), submissionsController.createShowSubmission);
 
-// Create new episode submission (publisher only) - DIRECT IMPLEMENTATION
-router.post('/episode', (req, res, next) => {
-  console.log('=== EPISODE ROUTE HIT ===');
-  console.log('Method:', req.method);
-  console.log('Path:', req.path);
-  console.log('Body:', req.body);
-  console.log('Headers:', req.headers);
-  next();
-}, authenticateToken, async (req, res) => {
-  console.log('=== AFTER AUTHENTICATION ===');
-  console.log('User:', req.user);
-  
-  try {
-    const userType = req.user?.userType;
-    const publisherId = req.user?.publisherId;
-    
-    // Check if user is a publisher
-    if (userType !== 'publisher') {
-      return res.status(403).json({ error: 'Access denied. Only publishers can add episodes.' });
-    }
-
-    // Get publisher ID if not in token
-    let actualPublisherId = publisherId;
-    if (!actualPublisherId) {
-      const [publisherRows] = await pool.query(
-        'SELECT PUBLISHER_ID FROM PUBLISHER WHERE PERSON_ID = ?',
-        [req.user.personId]
-      );
-      
-      if (publisherRows.length === 0) {
-        return res.status(403).json({ error: 'Publisher account not found.' });
-      }
-      actualPublisherId = publisherRows[0].PUBLISHER_ID;
-    }
-
-    const { title, description, episodeLink } = req.body;
-    
-    // Validate required fields
-    if (!title || !description || !episodeLink) {
-      return res.status(400).json({ error: 'Missing required fields: title, description, episodeLink' });
-    }
-
-    console.log('Inserting episode:', { title, description, episodeLink, actualPublisherId });
-
-    // Insert episode into database - adjust table/column names as needed
-    const [result] = await pool.query(
-      `INSERT INTO EPISODES (TITLE, DESCRIPTION, EPISODE_LINK, PUBLISHER_ID, CREATED_DATE, STATUS) 
-       VALUES (?, ?, ?, ?, NOW(), 'PENDING')`,
-      [title, description, episodeLink, actualPublisherId]
-    );
-
-    console.log('Episode inserted successfully:', result);
-
-    res.json({ 
-      success: true, 
-      episodeId: result.insertId,
-      message: 'Episode added successfully' 
-    });
-
-  } catch (err) {
-    console.error('Database error:', err);
-    res.status(500).json({ 
-      error: 'Failed to add episode',
-      details: err.message 
-    });
-  }
-});
+// Create new episode submission (publisher only)
+router.post('/episode', authenticateToken, submissionsController.createEpisodeSubmission);
 
 // Get submissions by publisher (publisher only)
 router.get('/my-submissions', authenticateToken, submissionsController.getPublisherSubmissions);
 
-// Catch-all route to see if requests are reaching the router (MOVE TO END)
-router.use('*', (req, res) => {
+// Catch-all route for debugging - using proper route pattern
+router.use('/debug-catch-all', (req, res) => {
   res.json({ 
-    message: 'Request reached submissions router but no matching route found',
+    message: 'Request reached submissions router debug route',
     method: req.method,
     path: req.path,
     originalUrl: req.originalUrl
