@@ -388,25 +388,52 @@ async function getPublisherShows(req, res) {
   const userType = req.user?.userType;
   const publisherId = req.user?.publisherId;
   
+  console.log('getPublisherShows called with:', { userType, publisherId });
+  
   if (userType !== 'publisher' || !publisherId) {
     return res.status(403).json({ error: 'Access denied. Only publishers can view their shows.' });
   }
   
   try {
-    const [rows] = await pool.query(`
+    // First, let's check what columns exist in the SHOWS table
+    console.log('Checking SHOWS table structure...');
+    const [columns] = await pool.query('DESCRIBE SHOWS');
+    console.log('SHOWS table columns:', columns);
+    
+    // Now get the shows with all available fields
+    const query = `
       SELECT 
         S.SHOW_ID,
         S.TITLE,
         S.THUMBNAIL,
         S.RATING,
         S.WATCH_COUNT,
+        S.CATEGORY_ID,
+        S.STATUS_ID,
+        S.PUBLISHER_ID,
+        S.AGE_RESTRICTION_ID,
+        S.DESCRIPTION,
+        S.TEASER,
+        S.RELEASE_DATE,
+        S.SEASON,
+        S.LICENSE,
+        S.ADMIN_ID,
+        S.BANNER,
+        S.REMOVED,
         P.ROYALTY,
         (S.WATCH_COUNT * P.ROYALTY) as INCOME
       FROM SHOWS S
       JOIN PUBLISHER P ON S.PUBLISHER_ID = P.PUBLISHER_ID
       WHERE S.PUBLISHER_ID = ? AND S.REMOVED = 0
       ORDER BY S.WATCH_COUNT DESC
-    `, [publisherId]);
+    `;
+    
+    console.log('Executing query with publisherId:', publisherId);
+    const [rows] = await pool.query(query, [publisherId]);
+    
+    console.log('Query result - number of rows:', rows.length);
+    console.log('First row sample:', rows[0]);
+    console.log('All rows:', rows);
     
     res.json(rows);
   } catch (err) {

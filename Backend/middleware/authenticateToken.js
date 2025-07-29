@@ -1,5 +1,6 @@
 // middleware/authenticateToken.js
 const jwt = require('jsonwebtoken');
+const pool = require('../db'); 
 const SECRET_KEY = 'your_super_secret_key';
 
 function authenticateToken(req, res, next) {

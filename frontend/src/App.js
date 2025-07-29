@@ -44,6 +44,8 @@ import PublisherContract from './components/PublisherContract';
 import PublisherAnalyticsPage from './components/PublisherAnalyticsPage';
 import BillingAndPaymentsPage from './components/BillingAndPaymentsPage';
 import ManageContentPage from './components/ManageContentPage';
+import AddShowPage from './components/AddShowPage';
+import AddEpisodePage from './components/AddEpisodePage';
 
 function App() {
   return (
@@ -96,6 +98,8 @@ function App() {
           <Route path="/publisher-analytics" element={<PublisherAnalyticsPage />} />
           <Route path="/billing-and-payments" element={<BillingAndPaymentsPage />} />
           <Route path="/manage-content" element={<ManageContentPage />} />
+          <Route path="/add-show" element={<AddShowPage />} />
+          <Route path="/add-episode" element={<AddEpisodePage />} />
         </Routes>
       </div>
     </Router>

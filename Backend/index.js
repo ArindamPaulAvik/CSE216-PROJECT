@@ -44,6 +44,14 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// Test submissions route directly in main server
+app.get('/api/submissions-test', (req, res) => {
+  res.json({ 
+    message: 'Submissions test route working from main server',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Route registration
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(require('./routes/auth'));
@@ -98,43 +106,13 @@ app.get('/api/replace-support-trigger', async (req, res) => {
 
     const results = [];
 
-    // Create the trigger (capitalized table names, assume SUPPORT_REQUEST table)
-    const DELETE_QUERY = `
--- Step 1: Find all deletable parent and child comment IDs
-CREATE TEMPORARY TABLE to_delete_ids AS
-SELECT parent.COMMENT_ID AS target_id
-FROM COMMENT parent
-WHERE parent.DELETED = 1
-  AND NOT EXISTS (
-    SELECT 1
-    FROM COMMENT child
-    WHERE child.PARENT_ID = parent.COMMENT_ID
-      AND child.DELETED = 0
-  )
-UNION
-SELECT child.COMMENT_ID
-FROM COMMENT child
-JOIN COMMENT parent ON child.PARENT_ID = parent.COMMENT_ID
-WHERE parent.DELETED = 1
-  AND NOT EXISTS (
-    SELECT 1
-    FROM COMMENT c2
-    WHERE c2.PARENT_ID = parent.COMMENT_ID
-      AND c2.DELETED = 0
-  );
+    const ALTER_SUBMISSION_TABLE_QUERY = `
+      
+    `;
 
--- Step 2: Delete from COMMENT where ID is in that temp list
-DELETE FROM COMMENT
-WHERE COMMENT_ID IN (
-  SELECT target_id FROM to_delete_ids
-);
 
--- Optional: Drop the temp table
-DROP TEMPORARY TABLE to_delete_ids;
-`;
-
-    await connection.query(DELETE_QUERY);
-    results.push('DELETED');
+    await connection.query(ALTER_SUBMISSION_TABLE_QUERY);
+    results.push('UPDATED');
 
     res.status(200).json({
       success: true,

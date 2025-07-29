@@ -101,7 +101,6 @@ const updateSubmissionVerdict = async (req, res) => {
         s.LINK_TO_SHOW,
         s.VERDICT,
         s.CREATED_AT,
-        s.UPDATED_AT,
         p.PUBLISHER_NAME,
         ca.ADMIN_ID
       FROM SUBMISSION s
@@ -170,6 +169,183 @@ const createSubmission = async (req, res) => {
   }
 };
 
+// Create show submission (for publishers)
+const createShowSubmission = async (req, res) => {
+  try {
+    // Verify publisher access
+    const userType = req.user.userType;
+    
+    if (userType !== 'publisher') {
+      return res.status(403).json({ message: 'Access denied. Publisher access required.' });
+    }
+
+    const publisherId = req.user.publisherId;
+    const { title, description, teaser, categoryType, movieLink } = req.body;
+    
+    // Handle file uploads
+    const bannerImg = req.files?.banner ? req.files.banner[0].filename : null;
+    const thumbImg = req.files?.thumbnail ? req.files.thumbnail[0].filename : null;
+
+    // Validate required fields
+    if (!title || !description || !teaser || !categoryType) {
+      return res.status(400).json({ message: 'Title, description, teaser, and category type are required' });
+    }
+
+    // Set link_to_show based on category type
+    let linkToShow = null;
+    if (categoryType === 'Movie' && movieLink) {
+      linkToShow = movieLink;
+    } else if (categoryType === 'Series') {
+      linkToShow = teaser; // For series, use teaser as link
+    }
+
+    // Insert new show submission
+    const insertQuery = `
+      INSERT INTO SUBMISSION (
+        PUBLISHER_ID, 
+        LINK_TO_SHOW, 
+        VERDICT, 
+        CREATED_AT, 
+        TYPE, 
+        TITLE, 
+        DESCRIPTION, 
+        TEASER, 
+        CATEGORY, 
+        BANNER_IMG, 
+        THUMB_IMG
+      )
+      VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, 'SHOWS', ?, ?, ?, ?, ?, ?)
+    `;
+
+    const [result] = await pool.execute(insertQuery, [
+      publisherId, 
+      linkToShow, 
+      title, 
+      description, 
+      teaser, 
+      categoryType, 
+      bannerImg, 
+      thumbImg
+    ]);
+
+    // Get the created submission with publisher info
+    const [newSubmission] = await pool.execute(`
+      SELECT 
+        s.SUBMISSION_ID,
+        s.PUBLISHER_ID,
+        s.ADMIN_ID,
+        s.LINK_TO_SHOW,
+        s.VERDICT,
+        s.CREATED_AT,
+        s.TYPE,
+        s.TITLE,
+        s.DESCRIPTION,
+        s.TEASER,
+        s.CATEGORY,
+        s.BANNER_IMG,
+        s.THUMB_IMG,
+        p.PUBLISHER_NAME
+      FROM SUBMISSION s
+      LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
+      WHERE s.SUBMISSION_ID = ?
+    `, [result.insertId]);
+
+    res.status(201).json({
+      message: 'Show submission created successfully',
+      submission: newSubmission[0]
+    });
+  } catch (error) {
+    console.error('Error creating show submission:', error);
+    res.status(500).json({ message: 'Error creating show submission', error: error.message });
+  }
+};
+
+// Create episode submission (for publishers)
+const createEpisodeSubmission = async (req, res) => {
+  console.log('=== CREATE EPISODE SUBMISSION CONTROLLER ===');
+  console.log('Request body:', req.body);
+  console.log('User:', req.user);
+  
+  try {
+    // Verify publisher access
+    const userType = req.user.userType;
+    console.log('User type:', userType);
+    
+    if (userType !== 'publisher') {
+      console.log('Access denied - not a publisher');
+      return res.status(403).json({ message: 'Access denied. Publisher access required.' });
+    }
+
+    const publisherId = req.user.publisherId;
+    const { title, description, episodeLink, seriesId } = req.body;
+    
+    console.log('Episode data:', { title, description, episodeLink, seriesId, publisherId });
+
+    // Validate required fields
+    if (!title || !description || !episodeLink || !seriesId) {
+      console.log('Validation failed - missing required fields');
+      return res.status(400).json({ message: 'Title, description, episode link, and series are required' });
+    }
+
+    console.log('Proceeding with database insertion...');
+
+    // Insert new episode submission
+    const insertQuery = `
+      INSERT INTO SUBMISSION (
+        PUBLISHER_ID, 
+        LINK_TO_SHOW, 
+        VERDICT, 
+        CREATED_AT, 
+        TYPE, 
+        TITLE, 
+        DESCRIPTION, 
+        CATEGORY
+      )
+      VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, 'EPISODES', ?, ?, 'Episode')
+    `;
+
+    console.log('Executing insert query with params:', [publisherId, episodeLink, title, description]);
+
+    const [result] = await pool.execute(insertQuery, [
+      publisherId, 
+      episodeLink, 
+      title, 
+      description
+    ]);
+
+    console.log('Insert successful, result:', result);
+
+    // Get the created submission with publisher info
+    const [newSubmission] = await pool.execute(`
+      SELECT 
+        s.SUBMISSION_ID,
+        s.PUBLISHER_ID,
+        s.ADMIN_ID,
+        s.LINK_TO_SHOW,
+        s.VERDICT,
+        s.CREATED_AT,
+        s.TYPE,
+        s.TITLE,
+        s.DESCRIPTION,
+        s.CATEGORY,
+        p.PUBLISHER_NAME
+      FROM SUBMISSION s
+      LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
+      WHERE s.SUBMISSION_ID = ?
+    `, [result.insertId]);
+
+    console.log('Retrieved submission:', newSubmission[0]);
+
+    res.status(201).json({
+      message: 'Episode submission created successfully',
+      submission: newSubmission[0]
+    });
+  } catch (error) {
+    console.error('Error creating episode submission:', error);
+    res.status(500).json({ message: 'Error creating episode submission', error: error.message });
+  }
+};
+
 // Get submissions by publisher
 const getPublisherSubmissions = async (req, res) => {
   try {
@@ -208,5 +384,7 @@ module.exports = {
   getAllSubmissions,
   updateSubmissionVerdict,
   createSubmission,
+  createShowSubmission,
+  createEpisodeSubmission,
   getPublisherSubmissions
 };

@@ -1,23 +1,48 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiStar, FiStar as FiStarOutline } from 'react-icons/fi';
+import { FaStar, FaRegStar, FaStarHalfAlt } from 'react-icons/fa';
 
 function ManageContentPage() {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownContainerRef = useRef(null);
   const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const [shows, setShows] = useState([]);
+
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch(`${BASE_URL}/publishers/my-shows`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => setShows(data))
+      .catch(err => setShows([]));
+  }, []);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function handleClickOutside(event) {
+      if (dropdownContainerRef.current && !dropdownContainerRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
 
   const handleBack = () => {
     navigate('/publisher-frontpage');
   };
 
   const handleDropdownToggle = () => {
+    console.log('Dropdown toggle clicked');
     setDropdownOpen((open) => !open);
   };
 
   const handleDropdownBlur = (e) => {
     // Close dropdown if focus leaves the dropdown
-    if (!dropdownRef.current.contains(e.relatedTarget)) {
+    if (!dropdownContainerRef.current.contains(e.relatedTarget)) {
       setDropdownOpen(false);
     }
   };
@@ -89,11 +114,9 @@ function ManageContentPage() {
             }}>
               Your shows
             </h2>
-            <div style={{ position: 'relative', zIndex: 1000 }}>
+            <div style={{ position: 'relative', zIndex: 1000 }} ref={dropdownContainerRef}>
               <button
                 onClick={handleDropdownToggle}
-                onBlur={handleDropdownBlur}
-                ref={dropdownRef}
                 style={{
                   background: 'linear-gradient(45deg, #ffa726, #ff9800)',
                   border: 'none',
@@ -106,7 +129,6 @@ function ManageContentPage() {
                   position: 'relative',
                   zIndex: 1001
                 }}
-                tabIndex={0}
               >
                 Add content ▾
               </button>
@@ -137,8 +159,11 @@ function ManageContentPage() {
                       cursor: 'pointer',
                       borderBottom: '1px solid rgba(255,255,255,0.08)'
                     }}
-                    tabIndex={0}
-                    onClick={() => { setDropdownOpen(false); /* To be implemented */ }}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/add-show');
+                    }}
                   >
                     Add new show
                   </button>
@@ -154,8 +179,11 @@ function ManageContentPage() {
                       fontSize: '1rem',
                       cursor: 'pointer',
                     }}
-                    tabIndex={0}
-                    onClick={() => { setDropdownOpen(false); /* To be implemented */ }}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { 
+                      setDropdownOpen(false); 
+                      navigate('/add-episode');
+                    }}
                   >
                     Add new episode
                   </button>
@@ -166,6 +194,21 @@ function ManageContentPage() {
           <p style={{ opacity: 0.7, fontSize: '1rem' }}>
             (Your shows will appear here)
           </p>
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {shows.length === 0 && <div style={{ color: '#aaa' }}>No shows found.</div>}
+            {shows.map(show => (
+              <div key={show.SHOW_ID} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 12, gap: 18 }}>
+                <img src={`${BASE_URL}/shows/${show.THUMBNAIL}`} alt={show.TITLE} style={{ width: 70, height: 100, objectFit: 'cover', borderRadius: 8, background: '#222' }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontWeight: 600, fontSize: 18, color: '#fff' }}>{show.TITLE}</div>
+                  <div style={{ color: '#aaa', fontSize: 15, marginTop: 4 }}>
+                    Rating: {show.RATING ?? 'N/A'}
+                  </div>
+                  <div style={{ color: '#8cf', fontSize: 14, marginTop: 2 }}>Watch count: {show.WATCH_COUNT ?? 0}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
