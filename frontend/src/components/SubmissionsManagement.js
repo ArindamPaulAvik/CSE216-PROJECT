@@ -380,24 +380,6 @@ function SubmissionsManagement() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <FiExternalLink size={16} style={{ opacity: 0.7 }} />
-                      <span style={{ fontSize: '14px', opacity: 0.8 }}>Show Link:</span>
-                      <span style={{ 
-                        fontSize: '14px', 
-                        fontWeight: '500',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        flex: 1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {submission.LINK_TO_SHOW}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FiUser size={16} style={{ opacity: 0.7 }} />
                       <span style={{ fontSize: '14px', opacity: 0.8 }}>Publisher:</span>
                       <span style={{ fontSize: '14px', fontWeight: '500' }}>
@@ -450,6 +432,33 @@ function SubmissionsManagement() {
                       >
                         <FiCheckCircle size={16} />
                         Approve
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Placeholder for CHECK action
+                          console.log('Check submission', submission.SUBMISSION_ID);
+                        }}
+                        style={{
+                          flex: 1,
+                          background: 'linear-gradient(45deg, #4f8cff, #1e3a8a)',
+                          border: 'none',
+                          color: 'white',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <FiExternalLink size={16} />
+                        CHECK
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.05 }}

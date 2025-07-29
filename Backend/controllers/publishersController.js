@@ -400,6 +400,7 @@ async function getPublisherShows(req, res) {
         S.THUMBNAIL,
         S.RATING,
         S.WATCH_COUNT,
+        S.CATEGORY_ID,
         P.ROYALTY,
         (S.WATCH_COUNT * P.ROYALTY) as INCOME
       FROM SHOWS S
