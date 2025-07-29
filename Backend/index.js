@@ -44,6 +44,14 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// Test submissions route directly in main server
+app.get('/api/submissions-test', (req, res) => {
+  res.json({ 
+    message: 'Submissions test route working from main server',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Route registration
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(require('./routes/auth'));

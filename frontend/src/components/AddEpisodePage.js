@@ -37,7 +37,21 @@ function AddEpisodePage() {
       console.log('Token exists:', !!token);
       console.log('Form data:', formData);
       
-      // First test if the submissions endpoint is accessible
+      // First test if the main server is accessible
+      const mainTestResponse = await fetch(`${BASE_URL}/api/submissions-test`, {
+        method: 'GET'
+      });
+      
+      console.log('Main server test status:', mainTestResponse.status);
+      if (mainTestResponse.status !== 200) {
+        console.error('Main server not accessible');
+        const mainTestText = await mainTestResponse.text();
+        console.error('Main test response:', mainTestText);
+        alert('Server not accessible. Please check server status.');
+        return;
+      }
+
+      // Now test if the submissions endpoint is accessible
       const testResponse = await fetch(`${BASE_URL}/api/submissions/test-simple`, {
         method: 'GET',
         headers: {
