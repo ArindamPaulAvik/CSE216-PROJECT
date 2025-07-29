@@ -591,6 +591,7 @@ useEffect(() => {
     if (path === '/actors') return 'actors-page-layout';
     if (path === '/directors') return 'directors-page-layout';
     if (path.startsWith('/show/')) return 'show-details-layout';
+    if (path.startsWith('/award/')) return 'award-details-layout';
     return '';
   };
 
@@ -1637,10 +1638,11 @@ useEffect(() => {
           width: calc(100% - 55px);
         }
 
-        /* Add left margin for actors page, directors page, and show details page */
+        /* Add left margin for actors page, directors page, show details page, and award details page */
         .actors-page-layout .main-content,
         .directors-page-layout .main-content,
-        .show-details-layout .main-content {
+        .show-details-layout .main-content,
+        .award-details-layout .main-content {
           margin-left: 55px;
           width: calc(100% - 55px);
         }

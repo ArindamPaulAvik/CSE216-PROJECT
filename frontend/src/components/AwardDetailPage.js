@@ -20,7 +20,10 @@ function AwardDetailPage() {
     axios.get(`${BASE_URL}/awards/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => setAward(res.data))
+      .then(res => {
+        console.log('Award data received:', res.data);
+        setAward(res.data);
+      })
       .catch(err => {
         if (err.response?.status === 401 || err.response?.status === 403) {
           alert('Session expired. Please log in again.');
@@ -65,7 +68,7 @@ function AwardDetailPage() {
           alignItems: 'flex-start',
         }}>
           <img
-            src={`${BASE_URL}/awards/${award.IMG}`}
+            src={award.IMG ? `${BASE_URL}/awards/${award.IMG}` : `${BASE_URL}/logo192.png`}
             alt={award.AWARD_NAME}
             style={{
               width: 250,
@@ -75,7 +78,8 @@ function AwardDetailPage() {
               border: '2px solid rgba(255, 215, 0, 0.3)'
             }}
             onError={(e) => {
-              e.target.src = '/images/default-award.png';
+              console.log('Failed to load award image:', award.IMG);
+              e.target.src = `${BASE_URL}/logo192.png`;
             }}
           />
           <div style={{ flex: 1, minWidth: 300 }}>
@@ -195,12 +199,16 @@ function AwardDetailPage() {
                     🏆
                   </div>
                   <img
-                    src={`${BASE_URL}/shows/${show.THUMBNAIL}`}
+                    src={show.THUMBNAIL ? `${BASE_URL}/shows/${show.THUMBNAIL}` : `${BASE_URL}/logo192.png`}
                     alt={show.TITLE}
                     style={{
                       width: '100%',
                       height: 280,
                       objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      console.log('Failed to load show image:', show.THUMBNAIL);
+                      e.target.src = `${BASE_URL}/logo192.png`;
                     }}
                     loading="lazy"
                   />
@@ -293,12 +301,16 @@ function AwardDetailPage() {
                     🏆
                   </div>
                   <img
-                    src={`${BASE_URL}/actors/${actor.PICTURE}`}
+                    src={actor.PICTURE ? `${BASE_URL}/actors/${actor.PICTURE}` : `${BASE_URL}/logo192.png`}
                     alt={actor.NAME}
                     style={{
                       width: '100%',
                       height: 280,
                       objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      console.log('Failed to load actor image:', actor.PICTURE);
+                      e.target.src = `${BASE_URL}/logo192.png`;
                     }}
                     loading="lazy"
                   />
@@ -389,12 +401,16 @@ function AwardDetailPage() {
                     🏆
                   </div>
                   <img
-                    src={`${BASE_URL}/directors/${director.PICTURE}`}
+                    src={director.PICTURE ? `${BASE_URL}/directors/${director.PICTURE}` : `${BASE_URL}/logo192.png`}
                     alt={director.NAME}
                     style={{
                       width: '100%',
                       height: 280,
                       objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      console.log('Failed to load director image:', director.PICTURE);
+                      e.target.src = `${BASE_URL}/logo192.png`;
                     }}
                     loading="lazy"
                   />

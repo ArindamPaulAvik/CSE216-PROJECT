@@ -73,7 +73,9 @@ exports.getAwardById = async (req, res) => {
     const actorQuery = `
       SELECT 
         a.ACTOR_ID,
-        CONCAT(a.ACTOR_FIRSTNAME, ' ', a.ACTOR_LASTNAME) as NAME
+        CONCAT(a.ACTOR_FIRSTNAME, ' ', a.ACTOR_LASTNAME) as NAME,
+        a.ACTOR_PICTURE as PICTURE,
+        aa.YEAR
       FROM ACTOR a
       INNER JOIN ACTOR_AWARD aa ON a.ACTOR_ID = aa.ACTOR_ID
       WHERE aa.AWARD_ID = ?
@@ -86,7 +88,9 @@ exports.getAwardById = async (req, res) => {
     const directorQuery = `
       SELECT 
         d.DIRECTOR_ID,
-        CONCAT(d.DIRECTOR_FIRSTNAME, ' ', d.DIRECTOR_LASTNAME) as NAME
+        CONCAT(d.DIRECTOR_FIRSTNAME, ' ', d.DIRECTOR_LASTNAME) as NAME,
+        d.DIRECTOR_PICTURE as PICTURE,
+        da.YEAR
       FROM DIRECTOR d
       INNER JOIN DIRECTOR_AWARD da ON d.DIRECTOR_ID = da.DIRECTOR_ID
       WHERE da.AWARD_ID = ?
@@ -100,7 +104,9 @@ exports.getAwardById = async (req, res) => {
       SELECT 
         s.SHOW_ID,
         s.TITLE,
-        s.RATING
+        s.RATING,
+        s.THUMBNAIL,
+        sa.YEAR
       FROM SHOWS s
       INNER JOIN SHOW_AWARD sa ON s.SHOW_ID = sa.SHOW_ID
       WHERE sa.AWARD_ID = ? AND s.REMOVED = 0
