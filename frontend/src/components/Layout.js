@@ -17,7 +17,6 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [recentSearches, setRecentSearches] = useState([]);
   const [viewingActivity, setViewingActivity] = useState([]);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
@@ -45,10 +44,8 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
 
   // Load personalization data
   useEffect(() => {
-    const savedSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
     const savedActivity = JSON.parse(localStorage.getItem('viewingActivity') || '[]');
     
-    setRecentSearches(savedSearches.slice(0, 5)); // Last 5 searches
     setViewingActivity(savedActivity.slice(0, 3)); // Last 3 viewed
   }, []);
 
@@ -319,18 +316,10 @@ useEffect(() => {
         // Handle different possible response structures
         setSearchResults(data.results || data.shows || data || []);
         setIsSearching(false);
-        
-        // Save to recent searches - ONLY if searchTerm is not empty and not already in recent searches
-        if (searchTerm.trim() && !recentSearches.includes(searchTerm)) {
-          const updatedSearches = [searchTerm, ...recentSearches].slice(0, 5);
-          setRecentSearches(updatedSearches);
-          localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
-        }
 
         // Show suggestions for empty search
         if (!searchTerm.trim()) {
           setSearchSuggestions([
-            ...recentSearches.map(search => ({ type: 'recent', value: search })),
             { type: 'trending', value: 'Breaking Bad' },
             { type: 'trending', value: 'Stranger Things' },
             { type: 'trending', value: 'The Office' }
@@ -596,8 +585,17 @@ useEffect(() => {
     }
   };
 
+  const getPageClass = () => {
+    const path = location.pathname;
+    if (path === '/frontpage') return 'frontpage';
+    if (path === '/actors') return 'actors-page-layout';
+    if (path === '/directors') return 'directors-page-layout';
+    if (path.startsWith('/show/')) return 'show-details-layout';
+    return '';
+  };
+
   return (
-    <div className="layout-container dark-theme">
+    <div className={`layout-container dark-theme ${getPageClass()}`}>
       {/* Network Status Indicator */}
       {!isOnline && (
         <div className="network-status offline">
@@ -663,7 +661,6 @@ useEffect(() => {
                           className={`suggestion-item ${suggestion.type}`}
                           onClick={() => handleSuggestionClick(suggestion)}
                         >
-                          {suggestion.type === 'recent' && <FiClock size={14} />}
                           {suggestion.type === 'trending' && <FiTrendingUp size={14} />}
                           <span>{suggestion.value}</span>
                         </div>
@@ -1632,6 +1629,20 @@ useEffect(() => {
           flex-direction: column;
           background: rgba(0, 0, 0, 0.02);
           margin-left: 0; /* Always 0 margin - sidebar overlays */
+        }
+
+        /* Add left margin for frontpage */
+        .frontpage .main-content {
+          margin-left: 55px;
+          width: calc(100% - 55px);
+        }
+
+        /* Add left margin for actors page, directors page, and show details page */
+        .actors-page-layout .main-content,
+        .directors-page-layout .main-content,
+        .show-details-layout .main-content {
+          margin-left: 55px;
+          width: calc(100% - 55px);
         }
 
         /* Remove old sidebar margin classes - not needed for overlay */

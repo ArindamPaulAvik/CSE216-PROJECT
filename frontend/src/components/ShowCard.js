@@ -244,20 +244,6 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
               ? show.DESCRIPTION.substring(0, 120) + '...'
               : show.DESCRIPTION || 'No description available'}
           </p>
-
-          <div className="card-genres">
-            {show.GENRES ? 
-              show.GENRES.split(',').slice(0, 3).map((genre, idx) => (
-                <span 
-                  key={idx} 
-                  className="genre-tag"
-                >
-                  {genre.trim()}
-                </span>
-              )) : 
-              <span className="genre-tag">No genres</span>
-            }
-          </div>
         </div>
 
         {/* Additional content shown on hover */}

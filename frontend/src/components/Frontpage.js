@@ -419,6 +419,7 @@ function FrontPage() {
       hasWatchAgain={watchAgainShows.length > 0}
       hasTopRated={topRatedShows.length > 0}
     >
+      <div style={{ marginTop: '70px' }}>
       {/* Trending Now Section */}
       <section id="trending" className="shows-section" ref={trendingRef}>
         <h2 className="section-title trending-title">Trending Now</h2>
@@ -549,6 +550,8 @@ function FrontPage() {
           </h2>
         </section>
       )}
+
+      </div>
 
       <style>{`
         /* CSS Custom Properties for Optimized Glass Theme */
