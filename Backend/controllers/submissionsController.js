@@ -277,14 +277,14 @@ const createEpisodeSubmission = async (req, res) => {
     }
 
     const publisherId = req.user.publisherId;
-    const { title, description, episodeLink } = req.body;
+    const { title, description, episodeLink, seriesId } = req.body;
     
-    console.log('Episode data:', { title, description, episodeLink, publisherId });
+    console.log('Episode data:', { title, description, episodeLink, seriesId, publisherId });
 
     // Validate required fields
-    if (!title || !description || !episodeLink) {
+    if (!title || !description || !episodeLink || !seriesId) {
       console.log('Validation failed - missing required fields');
-      return res.status(400).json({ message: 'Title, description, and episode link are required' });
+      return res.status(400).json({ message: 'Title, description, episode link, and series are required' });
     }
 
     console.log('Proceeding with database insertion...');

@@ -11,7 +11,54 @@ function AddEpisodePage() {
     episodeLink: ''
   });
   
+  const [series, setSeries] = useState([]);
+  const [selectedSeries, setSelectedSeries] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch series for the current publisher
+  React.useEffect(() => {
+    const fetchSeries = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Fetching series with token:', !!token);
+        
+        const response = await fetch(`${BASE_URL}/publishers/my-shows`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log('Series response status:', response.status);
+        
+        if (response.ok) {
+          const shows = await response.json();
+          console.log('All shows received:', shows);
+          
+          // Log category IDs to see what they represent
+          const categoryIds = [...new Set(shows.map(show => show.CATEGORY_ID))];
+          console.log('Available category IDs:', categoryIds);
+          
+          // Show all shows with their category IDs
+          shows.forEach(show => {
+            console.log(`Show: ${show.TITLE}, Category ID: ${show.CATEGORY_ID}`);
+          });
+          
+          // Filter for series (category_id = 2) and not removed
+          const seriesShows = shows.filter(show => 
+            show.CATEGORY_ID === 2 && show.REMOVED === 0
+          );
+          console.log('Filtered series shows:', seriesShows);
+          setSeries(seriesShows);
+        } else {
+          console.error('Failed to fetch shows:', response.status);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+        }
+      } catch (error) {
+        console.error('Error fetching series:', error);
+      }
+    };
+
+    fetchSeries();
+  }, []);
 
   const handleBack = () => {
     navigate('/manage-content');
@@ -23,6 +70,10 @@ function AddEpisodePage() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleSeriesChange = (e) => {
+    setSelectedSeries(e.target.value);
   };
 
   const handleSubmit = async (e) => {
@@ -82,6 +133,7 @@ function AddEpisodePage() {
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('episodeLink', formData.episodeLink);
+      formDataToSend.append('seriesId', selectedSeries); // Add seriesId to the FormData
 
       console.log('Making episode submission request...');
       const response = await fetch(`${BASE_URL}/api/submissions/episode`, {
@@ -176,6 +228,52 @@ function AddEpisodePage() {
             <div style={{ marginBottom: '30px' }}>
               <h3 style={{ marginBottom: '20px', color: '#fff', fontSize: '1.2rem' }}>Episode Information</h3>
               
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
+                  Series *
+                </label>
+                <select
+                  value={selectedSeries}
+                  onChange={handleSeriesChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '16px'
+                  }}
+                >
+                  <option value="">{series.length === 0 ? 'No series available' : 'Select a series'}</option>
+                  {series.map(show => (
+                    <option key={show.SHOW_ID} value={show.SHOW_ID}>
+                      {show.TITLE}
+                    </option>
+                  ))}
+                </select>
+                {series.length === 0 && (
+                  <div style={{ marginTop: '8px', color: '#ff6b6b', fontSize: '14px' }}>
+                    No series found. Please add a series first before adding episodes.
+                  </div>
+                )}
+                {selectedSeries && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {series.find(s => s.SHOW_ID == selectedSeries)?.THUMBNAIL && (
+                      <img 
+                        src={`${BASE_URL}/shows/${series.find(s => s.SHOW_ID == selectedSeries)?.THUMBNAIL}`} 
+                        alt="Series thumbnail" 
+                        style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '5px' }} 
+                      />
+                    )}
+                    <span style={{ color: '#8cf', fontSize: '14px' }}>
+                      Selected: {series.find(s => s.SHOW_ID == selectedSeries)?.TITLE}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
                   Title *
