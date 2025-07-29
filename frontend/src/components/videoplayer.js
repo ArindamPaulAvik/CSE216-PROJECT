@@ -4,12 +4,7 @@ function VideoPlayer({
   showVideoPlayer,
   selectedEpisode, // This should now be an episode object with VIDEO_URL
   videoRef,
-  isPlaying,
   closeVideoPlayer,
-  togglePlayPause,
-  handleVideoPlay,
-  handleVideoPause,
-  handleVideoEnded,
   formatDuration
 }) {
   if (!showVideoPlayer || !selectedEpisode) return null;
@@ -21,26 +16,15 @@ function VideoPlayer({
     console.log('selectedEpisode:', selectedEpisode);
     console.log('selectedEpisode keys:', selectedEpisode ? Object.keys(selectedEpisode) : 'null');
     
-    // Check for various possible video URL properties in selectedEpisode
-    let videoId = selectedEpisode?.VIDEO_URL || 
-                  selectedEpisode?.SHOW_EPISODE_VIDEO_URL || 
-                  selectedEpisode?.EPISODE_VIDEO_URL ||
-                  selectedEpisode?.VIDEO_FILE ||
-                  selectedEpisode?.FILE_PATH ||
-                  selectedEpisode?.MOVIE_FILE;
-    console.log('Direct video URL found:', videoId);
+    // Check for VIDEO_URL in selectedEpisode (if it's an episode object)
+    let videoId = selectedEpisode?.VIDEO_URL;
+    console.log('Direct VIDEO_URL:', videoId);
     
     // If selectedEpisode is a show object, look for the current episode's video ID
     if (!videoId && selectedEpisode?.EPISODES && selectedEpisode.EPISODES.length > 0) {
       console.log('Checking EPISODES array, length:', selectedEpisode.EPISODES.length);
       console.log('First episode:', selectedEpisode.EPISODES[0]);
-      const episode = selectedEpisode.EPISODES[0];
-      videoId = episode?.VIDEO_URL || 
-                episode?.SHOW_EPISODE_VIDEO_URL || 
-                episode?.EPISODE_VIDEO_URL ||
-                episode?.VIDEO_FILE ||
-                episode?.FILE_PATH ||
-                episode?.MOVIE_FILE;
+      videoId = selectedEpisode.EPISODES[0]?.VIDEO_URL;
       console.log('VIDEO_URL from first episode:', videoId);
     }
     
@@ -48,13 +32,7 @@ function VideoPlayer({
     if (!videoId && Array.isArray(selectedEpisode) && selectedEpisode.length > 0) {
       console.log('selectedEpisode is an array, length:', selectedEpisode.length);
       console.log('First item in array:', selectedEpisode[0]);
-      const episode = selectedEpisode[0];
-      videoId = episode?.VIDEO_URL || 
-                episode?.SHOW_EPISODE_VIDEO_URL || 
-                episode?.EPISODE_VIDEO_URL ||
-                episode?.VIDEO_FILE ||
-                episode?.FILE_PATH ||
-                episode?.MOVIE_FILE;
+      videoId = selectedEpisode[0]?.VIDEO_URL;
       console.log('VIDEO_URL from first array item:', videoId);
     }
     
@@ -83,119 +61,181 @@ function VideoPlayer({
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.95)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(20,20,30,0.98) 100%)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(10px)',
+        padding: '20px',
+        boxSizing: 'border-box'
+      }}
+    >
       <div style={{
         position: 'relative',
-        width: '90%',
-        maxWidth: '1200px',
-        backgroundColor: '#000',
-        borderRadius: '8px',
-        overflow: 'hidden'
+        width: '100%',
+        maxWidth: '1400px',
+        height: '85vh',
+        background: 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.1)',
+        border: '1px solid rgba(255,255,255,0.1)'
       }}>
-        {/* Video Player Header */}
+        
+        {/* Animated Background Particles */}
         <div style={{
-          padding: '15px 20px',
-          backgroundColor: '#1a1a1a',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: `
+            radial-gradient(circle at 20% 30%, rgba(120,119,198,0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(255,119,198,0.2) 0%, transparent 50%),
+            radial-gradient(circle at 40% 80%, rgba(119,198,255,0.2) 0%, transparent 50%)
+          `,
+          zIndex: 1,
+          opacity: 0.6
+        }} />
+
+        {/* Header */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          background: `linear-gradient(180deg, 
+            rgba(0,0,0,0.8) 0%, 
+            rgba(0,0,0,0.6) 50%, 
+            transparent 100%
+          )`,
+          padding: '25px 30px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid #333'
+          zIndex: 10
         }}>
-          <h3 style={{ color: '#fff', margin: 0 }}>
-            Episode {selectedEpisode.EPISODE_NUMBER}: {selectedEpisode.SHOW_EPISODE_TITLE}
-          </h3>
+          <div>
+            <h2 style={{ 
+              color: '#fff', 
+              margin: 0,
+              fontSize: '1.5rem',
+              fontWeight: '700',
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              letterSpacing: '0.5px'
+            }}>
+              {selectedEpisode.SHOW_EPISODE_TITLE || 'Video Player'}
+            </h2>
+            <p style={{
+              color: 'rgba(255,255,255,0.8)',
+              margin: '5px 0 0 0',
+              fontSize: '0.9rem',
+              fontWeight: '400'
+            }}>
+              Episode {selectedEpisode.EPISODE_NUMBER} • {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION) || 'Duration unknown'}
+            </p>
+          </div>
+          
           <button
-            onClick={closeVideoPlayer}
+            onClick={() => {
+              closeVideoPlayer();
+            }}
             style={{
-              background: 'none',
+              background: 'rgba(255,255,255,0.1)',
               border: 'none',
               color: '#fff',
               fontSize: '1.5rem',
               cursor: 'pointer',
-              padding: '5px 10px'
+              padding: '12px',
+              borderRadius: '50%',
+              transition: 'all 0.3s ease',
+              backdropFilter: 'blur(10px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255,69,58,0.8)';
+              e.target.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255,255,255,0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             ✕
           </button>
         </div>
         
-        {/* Video Element */}
-        {getVideoSrc() ? (
-          <iframe
-            ref={videoRef}
-            style={{
-              width: '100%',
-              height: '70vh',
-              border: 'none'
-            }}
-            src={getVideoSrc()}
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        ) : (
-          <div style={{
-            width: '100%',
-            height: '400px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#1a1a1a',
-            color: '#fff',
-            fontSize: '1.1rem'
-          }}>
-            <div>
-              <p>No video source available</p>
-              <p style={{ fontSize: '0.9rem', marginTop: '10px', color: '#888' }}>
-                Episode ID: {selectedEpisode.SHOW_EPISODE_ID} | VIDEO_URL: {selectedEpisode.VIDEO_URL || 'Not set'}
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Video Controls Overlay */}
+        {/* Video Container */}
         <div style={{
-          position: 'absolute',
-          bottom: '60px',
-          left: '20px',
-          right: '20px',
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          zIndex: 2,
           display: 'flex',
           alignItems: 'center',
-          gap: '15px',
-          color: '#fff',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          padding: '10px 15px',
-          borderRadius: '6px',
-          opacity: 0,
-          transition: 'opacity 0.3s ease'
-        }}
-        onMouseEnter={(e) => e.target.style.opacity = '1'}
-        onMouseLeave={(e) => e.target.style.opacity = '0'}>
-          <button
-            onClick={togglePlayPause}
-            style={{
-              background: 'none',
-              border: 'none',
+          justifyContent: 'center'
+        }}>
+          {getVideoSrc() ? (
+            <iframe
+              ref={videoRef}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '20px'
+              }}
+              src={getVideoSrc()}
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'linear-gradient(135deg, rgba(255,69,58,0.1) 0%, rgba(255,159,10,0.1) 100%)',
               color: '#fff',
-              fontSize: '1.5rem',
-              cursor: 'pointer'
-            }}
-          >
-            {isPlaying ? '⏸️' : '▶️'}
-          </button>
-          <span style={{ fontSize: '0.9rem' }}>
-            {formatDuration(selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
-          </span>
+              fontSize: '1.2rem',
+              textAlign: 'center',
+              padding: '40px'
+            }}>
+              <div>
+                <div style={{
+                  fontSize: '4rem',
+                  marginBottom: '20px',
+                  opacity: 0.7
+                }}>
+                  📹
+                </div>
+                <h3 style={{ margin: '0 0 15px 0', color: '#fff' }}>
+                  No video source available
+                </h3>
+                <p style={{ 
+                  fontSize: '0.95rem', 
+                  color: 'rgba(255,255,255,0.7)',
+                  margin: '0',
+                  lineHeight: '1.6'
+                }}>
+                  Episode ID: {selectedEpisode.SHOW_EPISODE_ID || 'Unknown'}<br/>
+                  VIDEO_URL: {selectedEpisode.VIDEO_URL || 'Not set'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

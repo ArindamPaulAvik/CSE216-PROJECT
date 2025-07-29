@@ -270,6 +270,14 @@ function ShowDetails() {
       return;
     }
     
+    // Set the selected episode to the first (and only) episode for movies
+    if (episodes && episodes.length > 0) {
+      console.log('🎬 Movie - Setting selectedEpisode:', episodes[0]);
+      setSelectedEpisode(episodes[0]);
+    } else {
+      console.error('❌ Movie - No episodes found:', { episodes, show });
+    }
+    
     setShowVideoPlayer(true);
     setIsPlaying(true);
     
@@ -301,9 +309,7 @@ function ShowDetails() {
   const closeVideoPlayer = () => {
     setShowVideoPlayer(false);
     setIsPlaying(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
+    // Remove videoRef.current.pause() since we're using iframe
     
     // Clean up watch tracking
     if (watchTimerRef.current) {
@@ -909,7 +915,7 @@ function ShowDetails() {
 
         <VideoPlayer
           showVideoPlayer={showVideoPlayer}
-          selectedEpisode={isMovie ? show : selectedEpisode}
+          selectedEpisode={selectedEpisode}
           videoRef={videoRef}
           isPlaying={isPlaying}
           closeVideoPlayer={closeVideoPlayer}

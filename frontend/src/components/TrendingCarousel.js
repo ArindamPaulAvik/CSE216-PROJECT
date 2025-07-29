@@ -288,16 +288,6 @@ const TrendingCarousel = ({ shows = [], onShowClick, userPreferences = { playTra
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <motion.div 
-            className="trending-badge"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-            <TrendingUp size={16} />
-            <span>#{currentIndex + 1} Trending</span>
-          </motion.div>
-
           <motion.h1 
             className="featured-title"
             initial={{ opacity: 0, y: 30 }}

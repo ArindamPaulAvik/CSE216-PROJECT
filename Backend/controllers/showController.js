@@ -53,11 +53,13 @@ exports.getShowDetails = async (req, res) => {
 
     // Get episodes grouped by season (if it's a series)
     const [episodeRows] = await pool.query(`
-      SELECT se.EPISODE_NUMBER,
+      SELECT se.SHOW_EPISODE_ID,
+             se.EPISODE_NUMBER,
              se.SHOW_EPISODE_TITLE,
              se.SHOW_EPISODE_DURATION,
              se.SHOW_EPISODE_RELEASE_DATE,
-             se.SHOW_EPISODE_DESCRIPTION
+             se.SHOW_EPISODE_DESCRIPTION,
+             se.VIDEO_URL
       FROM SHOW_EPISODE se
       WHERE se.SHOW_ID = ?
       ORDER BY se.EPISODE_NUMBER
