@@ -32,29 +32,23 @@ exports.getEpisodeInfo = async (req, res) => {
   }
 };
 
+// Fetches episodes with VIDEO_URL
 exports.getEpisodesByShow = async (req, res) => {
   const showId = req.params.showId;
-
-  try {
-    const [episodes] = await pool.query(`
-      SELECT 
-        SHOW_EPISODE_ID,
-        EPISODE_NUMBER,
-        SHOW_EPISODE_TITLE,
-        SHOW_EPISODE_DESCRIPTION,
-        SHOW_EPISODE_DURATION,
-        SHOW_EPISODE_RELEASE_DATE,
-        VIDEO_URL
-      FROM SHOW_EPISODE
-      WHERE SHOW_ID = ?
-      ORDER BY EPISODE_NUMBER ASC
-    `, [showId]);
-
-    res.json(episodes);
-  } catch (err) {
-    console.error('Error fetching episodes:', err);
-    res.status(500).json({ error: 'Database error' });
-  }
+  
+  const [episodes] = await pool.query(`
+    SELECT 
+      SHOW_EPISODE_ID,
+      EPISODE_NUMBER,
+      SHOW_EPISODE_TITLE,
+      SHOW_EPISODE_DESCRIPTION,
+      SHOW_EPISODE_DURATION,
+      SHOW_EPISODE_RELEASE_DATE,
+      VIDEO_URL  // ← This is where the video URL comes from
+    FROM SHOW_EPISODE
+    WHERE SHOW_ID = ?
+    ORDER BY EPISODE_NUMBER ASC
+  `, [showId]);
 };
 
 exports.updateEpisode = async (req, res) => {

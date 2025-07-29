@@ -2,7 +2,7 @@ import React from 'react';
 
 function VideoPlayer({
   showVideoPlayer,
-  selectedEpisode,
+  selectedEpisode, // This should now be an episode object with VIDEO_URL
   videoRef,
   isPlaying,
   closeVideoPlayer,
@@ -13,6 +13,26 @@ function VideoPlayer({
   formatDuration
 }) {
   if (!showVideoPlayer || !selectedEpisode) return null;
+
+  // Get the video source URL - expects selectedEpisode to be an episode object
+  const getVideoSrc = () => {
+    console.log('Episode object:', selectedEpisode);
+    console.log('VIDEO_URL:', selectedEpisode.VIDEO_URL);
+
+    if (selectedEpisode.VIDEO_URL) {
+      const videoUrl = selectedEpisode.VIDEO_URL.trim();
+      
+      // If it looks like a Google Drive file ID
+      if (/^[a-zA-Z0-9_-]+$/.test(videoUrl) && videoUrl.length > 10) {
+        const driveUrl = `https://drive.google.com/file/d/${videoUrl}/preview`;
+        console.log('Generated Google Drive URL:', driveUrl);
+        return driveUrl;
+      }
+      // Otherwise, use local file path
+      return `/movies/${videoUrl}`;
+    }
+    return '';
+  };
 
   return (
     <div style={{
@@ -63,22 +83,37 @@ function VideoPlayer({
         </div>
         
         {/* Video Element */}
-        <video
-          ref={videoRef}
-          style={{
+        {getVideoSrc() ? (
+          <iframe
+            ref={videoRef}
+            style={{
+              width: '100%',
+              height: '70vh',
+              border: 'none'
+            }}
+            src={getVideoSrc()}
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          />
+        ) : (
+          <div style={{
             width: '100%',
-            height: 'auto',
-            maxHeight: '70vh'
-          }}
-          controls
-          autoPlay
-          onPlay={handleVideoPlay}
-          onPause={handleVideoPause}
-          onEnded={handleVideoEnded}
-          src={`/movies/${selectedEpisode.VIDEO_URL}`}
-        >
-          Your browser does not support the video tag.
-        </video>
+            height: '400px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#1a1a1a',
+            color: '#fff',
+            fontSize: '1.1rem'
+          }}>
+            <div>
+              <p>No video source available</p>
+              <p style={{ fontSize: '0.9rem', marginTop: '10px', color: '#888' }}>
+                Episode ID: {selectedEpisode.SHOW_EPISODE_ID} | VIDEO_URL: {selectedEpisode.VIDEO_URL || 'Not set'}
+              </p>
+            </div>
+          </div>
+        )}
         
         {/* Video Controls Overlay */}
         <div style={{
