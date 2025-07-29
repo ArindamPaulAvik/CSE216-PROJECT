@@ -69,34 +69,25 @@ function ActorsPage() {
               src={`${BASE_URL}/actors/${actor.PICTURE}`}
               alt={actor.NAME}
               className="actor-image"
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.4 }}
               onError={(e) => {
                 e.target.src = `${BASE_URL}/actors/${actor.PICTURE}`;
               }}
             />
-            <div className="actor-overlay">
+            {/* Glass overlay with actor info */}
+            <div className="actor-glass-overlay">
               <motion.div
-                className="actor-info"
-                initial={{ opacity: 0, y: 20 }}
-                whileHover={{ opacity: 1, y: 0 }}
+                className="actor-glass-content"
+                initial={{ opacity: 1, y: 0 }}
+                whileHover={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <h3 className="actor-name">{actor.NAME}</h3>
-                <p className="actor-role">View Profile</p>
+                <h3 className="actor-glass-name">{actor.NAME}</h3>
+                <p className="actor-glass-role">Actor</p>
               </motion.div>
             </div>
           </div>
-          <motion.div
-            className="actor-details"
-            whileHover={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
-            transition={{ duration: 0.3 }}
-          >
-            <p className="actor-name-bottom">{actor.NAME}</p>
-            <div className="actor-stats">
-              <span className="stat-item">✨ Actor</span>
-            </div>
-          </motion.div>
         </div>
       </motion.div>
     );
@@ -362,91 +353,73 @@ function ActorsPage() {
         }
 
         .actor-card-inner {
-          background: linear-gradient(145deg, #1e1e2e, #2a2a3a);
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.08) 0%, 
+            rgba(255, 160, 122, 0.08) 100%);
           border-radius: 20px;
           overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.05);
-          transition: all 0.4s ease;
+          backdrop-filter: blur(15px) saturate(140%);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+          position: relative;
         }
 
         .actor-image-container {
           position: relative;
-          height: 280px;
+          height: 350px;
           overflow: hidden;
+          border-radius: 20px;
         }
 
         .actor-image {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.4s ease;
+          transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
 
-        .actor-overlay {
+        /* Glass overlay design similar to ShowCard */
+        .actor-glass-overlay {
           position: absolute;
-          top: 0;
+          bottom: 0;
           left: 0;
           right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.1) 0%,
-            rgba(0, 0, 0, 0.3) 50%,
-            rgba(0, 0, 0, 0.8) 100%
-          );
-          display: flex;
-          align-items: flex-end;
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.15) 0%, 
+            rgba(255, 160, 122, 0.15) 100%);
+          backdrop-filter: blur(15px) saturate(140%);
+          border-top: 1px solid rgba(255, 255, 255, 0.2);
           padding: 20px;
-          opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          box-shadow: 
+            0 -4px 20px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
-        .actor-card:hover .actor-overlay {
-          opacity: 1;
-        }
-
-        .actor-info h3 {
-          color: #ffffff;
-          font-size: 1.3rem;
-          font-weight: 600;
-          margin: 0 0 5px 0;
-        }
-
-        .actor-role {
-          color: #b0b0b0;
-          font-size: 0.9rem;
-          margin: 0;
-        }
-
-        .actor-details {
-          padding: 20px;
+        .actor-glass-content {
           text-align: center;
-          background: rgba(0, 0, 0, 0.2);
-          backdrop-filter: blur(10px);
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .actor-name-bottom {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #f5f5f5;
-          margin: 0 0 10px 0;
+        .actor-glass-name {
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 1.3rem;
+          font-weight: 700;
+          margin: 0 0 8px 0;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          letter-spacing: 0.5px;
         }
 
-        .actor-stats {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-        }
-
-        .stat-item {
-          font-size: 0.85rem;
-          color: #8b5cf6;
-          background: rgba(139, 92, 246, 0.1);
-          padding: 4px 8px;
-          border-radius: 12px;
-          border: 1px solid rgba(139, 92, 246, 0.3);
+        .actor-glass-role {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.95rem;
+          font-weight: 500;
+          margin: 0;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+          opacity: 0.9;
         }
 
         /* Responsive Design */

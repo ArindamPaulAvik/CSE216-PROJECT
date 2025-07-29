@@ -109,6 +109,8 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
     navigate(`/show/${show.SHOW_ID}`);
   }, [navigate, show.SHOW_ID]);
 
+
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -246,7 +248,10 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
           <div className="card-genres">
             {show.GENRES ? 
               show.GENRES.split(',').slice(0, 3).map((genre, idx) => (
-                <span key={idx} className="genre-tag">
+                <span 
+                  key={idx} 
+                  className="genre-tag"
+                >
                   {genre.trim()}
                 </span>
               )) : 

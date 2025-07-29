@@ -606,33 +606,22 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Backdrop for mobile */}
-      {menuOpen && (
-        <div
-          className="sidebar-backdrop"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
-      {/* Enhanced Fixed Sidebar */}
+      {/* Glassmorphism Sidebar */}
       <div
-        className={`sidebar ${menuOpen ? 'sidebar-open' : 'sidebar-closed'}`}
-        onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={() => setMenuOpen(false)}
+        className="glass-sidebar"
       >
         <div className="sidebar-header">
           <div className="menu-icon-wrapper">
             <FiMenu size={24} className="menu-icon" />
             {!isOnline && <div className="offline-indicator" />}
           </div>
-          {menuOpen && (
-            <span
-              className="logo-text logo-clickable"
-              onClick={() => {
-                window.location.href = '/frontpage';
-                setMenuOpen(false);
-                setSearchOpen(false);
-                setSearchTerm('');
+          <span
+            className="logo-text logo-clickable"
+            onClick={() => {
+              window.location.href = '/frontpage';
+              setMenuOpen(false);
+              setSearchOpen(false);
+              setSearchTerm('');
                 setSearchResults([]);
                 setError('');
               }}
@@ -640,20 +629,18 @@ useEffect(() => {
             >
               RnbDom
             </span>
-          )}
         </div>
 
-        {menuOpen && (
-          <div className="sidebar-content">
-            {/* Enhanced Search Section */}
-            <div className="search-section">
-              <div className="menu-item" onClick={handleSearchToggle}>
-                <FiSearch size={18} />
-                <span>Search</span>
-              </div>
+        <div className="sidebar-content">
+          {/* Enhanced Search Section */}
+          <div className="search-section">
+            <div className="menu-item" onClick={handleSearchToggle}>
+              <FiSearch size={18} />
+              <span>Search</span>
+            </div>
 
-              {/* Enhanced Search Input */}
-              {searchOpen && (
+            {/* Enhanced Search Input */}
+            {searchOpen && (
                 <div className="search-input-container">
                   <div className="search-input-wrapper">
                     <FiSearch size={16} className="search-input-icon" />
@@ -751,21 +738,18 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Logout Section */}
-            <div className="logout-section">
-              <div className="menu-item logout-item" onClick={handleLogout}>
-                <FiX size={18} />
-                <span>Logout</span>
-              </div>
+          {/* Logout Section */}
+          <div className="logout-section">
+            <div className="menu-item logout-item" onClick={handleLogout}>
+              <FiX size={18} />
+              <span>Logout</span>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Main Content Area */}
+        </div>
+      </div>      {/* Main Content Area */}
       <div className="main-content">
         {/* Enhanced Fixed Header */}
-        <div className="header">
+        <div className={`header ${notificationOpen ? 'notifications-expanded' : ''}`}>
           <div className="header-left">
             {location.pathname === '/frontpage' && (
               <div className="section-nav-buttons">
@@ -1090,27 +1074,50 @@ useEffect(() => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
+          background: linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.4) 0%, 
+            rgba(0, 0, 0, 0.6) 100%);
           z-index: 999;
           display: none;
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(8px) saturate(120%);
         }
 
-        /* Enhanced Sidebar with Modern Glassmorphism */
+        /* Enhanced Sidebar with Premium Glassmorphism */
         .sidebar {
-          background: var(--secondary-bg);
-          backdrop-filter: blur(var(--blur-amount));
-          border-right: 1px solid var(--border-color);
+          background: transparent;
+          backdrop-filter: blur(20px) saturate(180%) brightness(120%);
+          border-right: 1px solid rgba(255, 255, 255, 0.1);
           transition: all 0.3s var(--transition-smooth);
           position: fixed;
           top: 0;
           left: 0;
           height: 100vh;
           z-index: 1000;
-          box-shadow: var(--shadow-heavy);
+          box-shadow: 
+            0 2px 15px rgba(0, 0, 0, 0.02),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          position: relative;
+        }
+
+        .sidebar::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: transparent; /* Remove gradient for max transparency */
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .sidebar > * {
+          position: relative;
+          z-index: 2;
         }
 
         .sidebar-closed {
@@ -1126,9 +1133,32 @@ useEffect(() => {
           display: flex;
           align-items: center;
           gap: 16px;
-          border-bottom: 1px solid var(--border-color);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.15);
           margin-bottom: 24px;
-          background: var(--glass-bg);
+          background: transparent; /* Remove background for transparency */
+          backdrop-filter: none; /* Remove backdrop filter to allow main glass effect */
+          position: relative;
+          overflow: hidden;
+        }
+
+        .sidebar-header::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%
+          );
+          transition: left 0.8s ease;
+        }
+
+        .sidebar:hover .sidebar-header::before {
+          left: 100%;
         }
 
         .menu-icon-wrapper {
@@ -1182,12 +1212,32 @@ useEffect(() => {
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Enhanced Search Section */
+        /* Enhanced Search Section with Glass Effects */
         .search-section {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.04) 0%, 
+            rgba(255, 160, 122, 0.06) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 16px;
           padding: 20px;
+          backdrop-filter: blur(15px) saturate(130%);
+          box-shadow: 
+            0 4px 20px rgba(0, 0, 0, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .search-section::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 50% 50%, rgba(255, 182, 193, 0.05) 0%, transparent 70%);
+          pointer-events: none;
         }
 
         .search-input-container {
@@ -1198,19 +1248,42 @@ useEffect(() => {
           position: relative;
           display: flex;
           align-items: center;
-          background: rgba(255, 255, 255, 0.05);
-          border: 2px solid transparent;
+          background: rgba(255, 255, 255, 0.02);
+          border: 2px solid rgba(255, 255, 255, 0.08);
           border-radius: 12px;
           padding: 0 16px;
           transition: all 0.3s var(--transition-smooth);
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(20px) saturate(150%);
+          overflow: hidden;
+        }
+
+        .search-input-wrapper::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(102, 126, 234, 0.1) 50%,
+            transparent 100%
+          );
+          transition: left 0.6s ease;
         }
 
         .search-input-wrapper:focus-within {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: var(--accent-color);
-          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(102, 126, 234, 0.4);
+          box-shadow: 
+            0 0 0 4px rgba(102, 126, 234, 0.1),
+            0 8px 25px rgba(102, 126, 234, 0.15);
           transform: scale(1.02);
+        }
+
+        .search-input-wrapper:focus-within::before {
+          left: 100%;
         }
 
         .search-input {
@@ -1291,12 +1364,30 @@ useEffect(() => {
           100% { transform: rotate(360deg); }
         }
 
-        /* Continue Watching Section */
+        /* Enhanced Continue Watching with Glass Theme */
         .continue-watching-section {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 16px;
           padding: 20px;
+          backdrop-filter: blur(15px) saturate(180%);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .continue-watching-section::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 80%, rgba(118, 75, 162, 0.03) 0%, transparent 70%);
+          pointer-events: none;
         }
 
         .continue-watching-list {
@@ -1311,14 +1402,40 @@ useEffect(() => {
           gap: 12px;
           padding: 12px;
           background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 10px;
           cursor: pointer;
           transition: all 0.3s var(--transition-smooth);
+          backdrop-filter: blur(10px);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .continue-item::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%
+          );
+          transition: left 0.5s ease;
         }
 
         .continue-item:hover {
           background: rgba(255, 255, 255, 0.05);
-          transform: translateX(4px);
+          border-color: rgba(102, 126, 234, 0.3);
+          transform: translateX(4px) scale(1.02);
+          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .continue-item:hover::before {
+          left: 100%;
         }
 
         .continue-thumbnail {
@@ -1398,6 +1515,16 @@ useEffect(() => {
         /* Navigation Menu */
         .nav-section {
           margin-top: 8px;
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.03) 0%, 
+            rgba(255, 160, 122, 0.05) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          padding: 16px 8px;
+          backdrop-filter: blur(15px) saturate(120%);
+          box-shadow: 
+            0 4px 20px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
         }
 
         .menu-item {
@@ -1503,30 +1630,61 @@ useEffect(() => {
           flex-direction: column;
           min-height: 100vh;
           background: rgba(0, 0, 0, 0.02);
+          margin-left: 0; /* Remove margin to prevent content pushing */
         }
 
         .main-content-closed {
-          margin-left: 60px;
+          /* Remove margin - sidebar will overlay */
         }
 
         .main-content-open {
-          margin-left: 320px;
+          /* Remove margin - sidebar will overlay */
         }
 
-        /* Enhanced Header with Modern Features */
+        /* Enhanced Header with Premium Glass Effects */
         .header {
-          background: var(--secondary-bg);
-          backdrop-filter: blur(var(--blur-amount));
-          border-bottom: 1px solid var(--border-color);
-          padding: 16px 32px;
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px) saturate(180%) brightness(105%);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 9.6px 32px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           position: sticky;
           top: 0;
           z-index: 100;
-          box-shadow: var(--shadow-light);
-          gap: 48px; /* Gap between left and right sections */
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          gap: 48px;
+          position: relative;
+          overflow: visible;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          min-height: 48px;
+        }
+
+        .header.notifications-expanded {
+          padding-bottom: 16px;
+          overflow: visible;
+        }
+
+        .header::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.03) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(118, 75, 162, 0.03) 0%, transparent 50%);
+          pointer-events: none;
+        }
+
+        .header > * {
+          position: relative;
+          z-index: 1;
         }
 
         .header-left {
@@ -1537,7 +1695,9 @@ useEffect(() => {
         .header-right {
           display: flex;
           align-items: center;
-          gap: 32px; /* 32px gap between notification and user profile */
+          gap: 32px;
+          position: relative;
+          z-index: 105;
         }
 
         .section-nav-buttons {
@@ -1551,20 +1711,22 @@ useEffect(() => {
           display: flex;
           align-items: center;
           gap: 6px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: rgba(255, 255, 255, 0.7);
-          padding: 10px 16px; /* Reduced padding to fit 5 buttons */
+          padding: 10px 16px;
           border-radius: 25px;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
           font-weight: 500;
-          font-size: 13px; /* Slightly smaller font */
+          font-size: 13px;
           position: relative;
           overflow: hidden;
-          backdrop-filter: blur(10px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          white-space: nowrap; /* Prevent text wrapping */
+          backdrop-filter: blur(15px) saturate(150%);
+          box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          white-space: nowrap;
         }
 
         .section-nav-btn::before {
@@ -1574,19 +1736,25 @@ useEffect(() => {
           left: -100%;
           width: 100%;
           height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          background: linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
           transition: left 0.6s ease;
           z-index: 1;
         }
 
+        .section-nav-btn > * {
+          position: relative;
+          z-index: 2;
+        }
+
         .section-nav-btn:hover {
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          border-color: rgba(255, 255, 255, 0.3);
+          background: rgba(102, 126, 234, 0.2);
+          border-color: rgba(102, 126, 234, 0.4);
           color: white;
           transform: translateY(-2px) scale(1.05);
           box-shadow: 
-            0 8px 25px rgba(102, 126, 234, 0.4),
-            0 4px 15px rgba(118, 75, 162, 0.3);
+            0 12px 35px rgba(102, 126, 234, 0.3),
+            0 6px 20px rgba(118, 75, 162, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .section-nav-btn:hover::before {
@@ -1598,17 +1766,14 @@ useEffect(() => {
         }
 
         .section-nav-btn.active {
-          background: linear-gradient(135deg, #5a67d8, #6b46c1);
-          border-color: rgba(255, 255, 255, 0.4);
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+          border-color: rgba(102, 126, 234, 0.5);
           color: white;
           box-shadow: 
-            0 6px 20px rgba(90, 103, 216, 0.5),
-            0 3px 12px rgba(107, 70, 193, 0.4);
+            0 8px 25px rgba(102, 126, 234, 0.4),
+            0 4px 15px rgba(118, 75, 162, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
           transform: translateY(-1px);
-        }
-
-        .section-nav-btn.active::before {
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
         }
 
         /* Responsive styles for section navigation buttons */
@@ -1646,26 +1811,57 @@ useEffect(() => {
         /* Enhanced Notifications */
         .notifications-wrapper {
           position: relative;
+          display: flex;
+          align-items: center;
         }
 
         .notification-bell {
           position: relative;
           background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-color);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 12px;
-          width: 44px;
-          height: 44px;
+          width: 48px;
+          height: 48px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.3s var(--transition-smooth);
+          backdrop-filter: blur(15px) saturate(150%);
+          box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .notification-bell::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(102, 126, 234, 0.2) 50%,
+            transparent 100%
+          );
+          transition: left 0.5s ease;
         }
 
         .notification-bell:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: var(--accent-color);
-          transform: scale(1.1);
+          background: rgba(102, 126, 234, 0.1);
+          border-color: rgba(102, 126, 234, 0.3);
+          transform: scale(1.05);
+          box-shadow: 
+            0 8px 25px rgba(102, 126, 234, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .notification-bell:hover::before {
+          left: 100%;
         }
 
         .notification-badge {
@@ -1695,16 +1891,40 @@ useEffect(() => {
           position: absolute;
           top: calc(100% + 12px);
           right: 0;
-          width: 400px;
+          width: 420px;
           max-height: 500px;
-          background: var(--secondary-bg);
-          border: 1px solid var(--glass-border);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 16px;
-          box-shadow: var(--shadow-heavy);
-          backdrop-filter: blur(20px);
-          z-index: 1000;
+          box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(25px) saturate(180%) brightness(110%);
+          z-index: 200;
           overflow: hidden;
-          animation: dropdownSlideIn 0.3s var(--transition-bounce);
+          animation: dropdownSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          position: absolute;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .notifications-dropdown::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 30% 30%, rgba(102, 126, 234, 0.05) 0%, transparent 70%),
+            radial-gradient(circle at 70% 70%, rgba(118, 75, 162, 0.05) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .notifications-dropdown > * {
+          position: relative;
+          z-index: 1;
         }
 
         @keyframes dropdownSlideIn {
@@ -1713,12 +1933,43 @@ useEffect(() => {
         }
 
         .notifications-header {
-          background: var(--glass-bg);
+          background: rgba(255, 255, 255, 0.05);
           padding: 20px;
-          border-bottom: 1px solid var(--border-color);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
           display: flex;
           align-items: center;
           justify-content: space-between;
+          backdrop-filter: blur(12px) brightness(115%);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .notifications-header h3 {
+          color: rgba(255, 255, 255, 0.95);
+          font-weight: 700;
+          font-size: 18px;
+          margin: 0;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .notifications-header::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%
+          );
+          transition: left 0.8s ease;
+        }
+
+        .notifications-dropdown:hover .notifications-header::before {
+          left: 100%;
         }
 
         .notifications-actions {
@@ -1728,62 +1979,195 @@ useEffect(() => {
         }
 
         .mark-all-read {
-          background: rgba(102, 126, 234, 0.1);
-          border: 1px solid rgba(102, 126, 234, 0.3);
-          color: var(--accent-color);
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .mark-all-read:hover {
-          background: rgba(102, 126, 234, 0.2);
-          border-color: var(--accent-color);
-        }
-
-        .notifications-title {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .mark-all-read {
-          background: rgba(102, 126, 234, 0.1);
-          color: var(--accent-color);
-          border: none;
+          background: rgba(102, 126, 234, 0.15);
+          border: 1px solid rgba(102, 126, 234, 0.4);
+          color: rgba(255, 255, 255, 0.9);
           padding: 8px 16px;
           border-radius: 8px;
           cursor: pointer;
           font-size: 12px;
           font-weight: 600;
           transition: all 0.2s ease;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .mark-all-read:hover {
-          background: rgba(102, 126, 234, 0.2);
+          background: rgba(102, 126, 234, 0.25);
+          border-color: rgba(102, 126, 234, 0.6);
+          color: rgba(255, 255, 255, 1);
           transform: scale(1.05);
         }
 
         .notifications-list {
           max-height: 400px;
           overflow-y: auto;
+          overflow-x: hidden;
+          scroll-behavior: smooth;
+          padding-right: 4px;
+          position: relative;
+        }
+
+        /* Enhanced Custom Scrollbar for Notifications */
+        .notifications-list::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .notifications-list::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 10px;
+          margin: 8px 0;
+        }
+
+        .notifications-list::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.3) 0%, 
+            rgba(255, 160, 122, 0.3) 100%);
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .notifications-list::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.5) 0%, 
+            rgba(255, 160, 122, 0.5) 100%);
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 0 8px rgba(255, 182, 193, 0.3);
+        }
+
+        .notifications-list::-webkit-scrollbar-thumb:active {
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.7) 0%, 
+            rgba(255, 160, 122, 0.7) 100%);
+        }
+
+        /* Firefox scrollbar */
+        .notifications-list {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 182, 193, 0.3) rgba(255, 255, 255, 0.02);
+        }
+
+        /* Scroll indicators for notifications */
+        .notifications-dropdown.has-scroll .notifications-list::before {
+          background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.05) 0%,
+            transparent 100%
+          );
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .notifications-dropdown.has-scroll .notifications-list::after {
+          background: linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0.05) 0%,
+            transparent 100%
+          );
+          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Smooth scroll momentum for mobile */
+        .notifications-list {
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
+
+        /* Enhanced scroll animation */
+        @keyframes scrollHint {
+          0%, 100% { opacity: 1; transform: translateY(0); }
+          50% { opacity: 0.6; transform: translateY(2px); }
+        }
+
+        .notifications-list.has-more::after {
+          animation: scrollHint 2s ease-in-out infinite;
+        }
+        .notifications-list::before {
+          content: '';
+          position: sticky;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.03) 0%,
+            transparent 100%
+          );
+          pointer-events: none;
+          z-index: 1;
+          display: block;
+        }
+
+        .notifications-list::after {
+          content: '';
+          position: sticky;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          background: linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0.03) 0%,
+            transparent 100%
+          );
+          pointer-events: none;
+          z-index: 1;
+          display: block;
         }
 
         .notification-item {
           padding: 16px 20px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
           position: relative;
           display: flex;
           align-items: center;
           justify-content: space-between;
+          backdrop-filter: blur(10px);
+          margin: 2px 0;
+          border-radius: 8px;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .notification-item::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 182, 193, 0.1) 40%,
+            rgba(255, 160, 122, 0.1) 60%,
+            transparent 100%
+          );
+          transition: left 0.5s ease;
+          z-index: 0;
         }
 
         .notification-item:hover {
-          background: rgba(255, 255, 255, 0.03);
+          background: rgba(255, 255, 255, 0.08);
+          transform: translateX(4px);
+          border-left: 3px solid rgba(255, 182, 193, 0.5);
+          box-shadow: 
+            0 4px 15px rgba(255, 182, 193, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .notification-item:hover .notification-message {
+          color: rgba(255, 255, 255, 0.98);
+        }
+
+        .notification-item:hover .notification-time {
+          color: rgba(255, 255, 255, 0.85);
+        }
+
+        .notification-item:hover::before {
+          left: 100%;
         }
 
         .notification-item:hover .notification-arrow {
@@ -1829,8 +2213,10 @@ useEffect(() => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(102, 126, 234, 0.1);
-          color: var(--accent-color);
+          background: rgba(102, 126, 234, 0.15);
+          color: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(102, 126, 234, 0.3);
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
         }
 
         .notification-text {
@@ -1839,14 +2225,18 @@ useEffect(() => {
 
         .notification-message {
           font-size: 14px;
-          color: var(--text-primary);
+          color: rgba(255, 255, 255, 0.92);
           margin-bottom: 4px;
           line-height: 1.4;
+          font-weight: 500;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .notification-time {
           font-size: 12px;
-          color: var(--text-muted);
+          color: rgba(255, 255, 255, 0.75);
+          font-weight: 400;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .notification-arrow {
@@ -1877,34 +2267,108 @@ useEffect(() => {
 
         .no-notifications {
           text-align: center;
-          padding: 40px 20px;
+          padding: 60px 20px;
           color: var(--text-muted);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 200px;
+          background: rgba(255, 255, 255, 0.01);
+          border-radius: 12px;
+          margin: 20px;
+          border: 1px dashed rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .no-notifications::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 50% 50%, rgba(255, 182, 193, 0.03) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .no-notifications > * {
+          position: relative;
+          z-index: 1;
         }
 
         .no-notifications svg {
-          margin-bottom: 12px;
-          opacity: 0.5;
+          margin-bottom: 16px;
+          opacity: 0.3;
+          filter: drop-shadow(0 0 10px rgba(255, 182, 193, 0.2));
+          animation: floatIcon 3s ease-in-out infinite;
         }
 
-        /* Enhanced User Profile */
+        .no-notifications p {
+          font-size: 14px;
+          font-weight: 500;
+          opacity: 0.7;
+        }
+
+        @keyframes floatIcon {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-5px); }
+        }
+
+        /* Enhanced User Profile with Premium Glass */
         .user-info {
           display: flex;
           align-items: center;
           gap: 12px;
           background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-color);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 20px;
           padding: 8px 16px 8px 8px;
           cursor: pointer;
           transition: all 0.3s var(--transition-smooth);
           position: relative;
+          backdrop-filter: blur(15px) saturate(150%);
+          box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          overflow: hidden;
+        }
+
+        .user-info::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(102, 126, 234, 0.2) 50%,
+            transparent 100%
+          );
+          transition: left 0.6s ease;
+        }
+
+        .user-info > * {
+          position: relative;
+          z-index: 1;
         }
 
         .user-info:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: var(--accent-color);
-          transform: scale(1.01);
-          box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+          background: rgba(102, 126, 234, 0.1);
+          border-color: rgba(102, 126, 234, 0.3);
+          transform: scale(1.02);
+          box-shadow: 
+            0 8px 25px rgba(102, 126, 234, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .user-info:hover::before {
+          left: 100%;
         }
 
         .user-avatar, .user-avatar-img {
@@ -1986,6 +2450,56 @@ useEffect(() => {
           position: relative;
         }
 
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 16px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          backdrop-filter: blur(15px);
+          box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          position: relative;
+          overflow: hidden;
+          min-width: 180px;
+          height: 48px;
+        }
+
+        .user-info::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(102, 126, 234, 0.2) 50%,
+            transparent 100%
+          );
+          transition: left 0.5s ease;
+        }
+
+        .user-info:hover {
+          background: rgba(102, 126, 234, 0.1);
+          border-color: rgba(102, 126, 234, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 
+            0 12px 35px rgba(102, 126, 234, 0.3),
+            0 6px 20px rgba(118, 75, 162, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .user-info:hover::before {
+          left: 100%;
+        }
+
         .dropdown-arrow {
           transition: transform 0.3s ease;
           margin-left: 8px;
@@ -2000,15 +2514,37 @@ useEffect(() => {
           position: absolute;
           top: calc(100% + 2px);
           right: 0;
-          background: var(--sidebar-bg);
-          border: 1px solid var(--border-color);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 12px;
           padding: 8px 0;
           min-width: 200px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          backdrop-filter: blur(10px);
-          z-index: 1000;
-          animation: dropdownFadeIn 0.2s ease-out;
+          box-shadow: 
+            0 15px 45px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px) saturate(180%);
+          z-index: 150;
+          animation: dropdownFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          position: absolute;
+          overflow: hidden;
+        }
+
+        .profile-dropdown-menu::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.05) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .profile-dropdown-menu > * {
+          position: relative;
+          z-index: 1;
         }
 
         @keyframes dropdownFadeIn {
@@ -2032,11 +2568,34 @@ useEffect(() => {
           color: var(--text-secondary);
           font-size: 14px;
           font-weight: 500;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .dropdown-item::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(102, 126, 234, 0.1) 50%,
+            transparent 100%
+          );
+          transition: left 0.4s ease;
         }
 
         .dropdown-item:hover {
           background: rgba(102, 126, 234, 0.1);
           color: var(--accent-color);
+          transform: translateX(4px);
+        }
+
+        .dropdown-item:hover::before {
+          left: 100%;
         }
 
         .dropdown-item svg {
@@ -2099,15 +2658,39 @@ useEffect(() => {
           box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
         }
 
-        /* Enhanced Filter Section */
+        /* Enhanced Filter Section with Glass Theme */
         .filter-section {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 16px;
           padding: 24px;
           margin-bottom: 24px;
-          animation: slideDown 0.3s var(--transition-smooth);
-          backdrop-filter: blur(var(--blur-amount));
+          animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          backdrop-filter: blur(20px) saturate(180%);
+          box-shadow: 
+            0 15px 45px rgba(0, 0, 0, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .filter-section::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.03) 0%, transparent 70%),
+            radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.03) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .filter-section > * {
+          position: relative;
+          z-index: 1;
         }
 
         @keyframes slideDown {
@@ -2143,14 +2726,53 @@ useEffect(() => {
           align-items: center;
           gap: 12px;
           cursor: pointer;
-          padding: 12px;
-          border-radius: 10px;
-          transition: all 0.3s var(--transition-smooth);
+          padding: 12px 16px;
+          border-radius: 12px;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
           user-select: none;
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.08) 0%, 
+            rgba(255, 160, 122, 0.08) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          backdrop-filter: blur(15px) saturate(140%);
+          box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .filter-checkbox::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 182, 193, 0.15) 40%,
+            rgba(255, 160, 122, 0.15) 60%,
+            transparent 100%
+          );
+          transition: left 0.5s ease;
         }
 
         .filter-checkbox:hover {
-          background: rgba(255, 255, 255, 0.03);
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.15) 0%, 
+            rgba(255, 160, 122, 0.15) 100%);
+          border-color: rgba(255, 182, 193, 0.3);
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 
+            0 8px 25px rgba(255, 182, 193, 0.2),
+            0 4px 15px rgba(255, 160, 122, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .filter-checkbox:hover::before {
+          left: 100%;
         }
 
         .filter-checkbox input[type="checkbox"] {
@@ -2159,20 +2781,50 @@ useEffect(() => {
 
         .checkmark {
           position: relative;
-          width: 20px;
-          height: 20px;
-          border: 2px solid var(--border-color);
-          border-radius: 4px;
-          transition: all 0.3s var(--transition-smooth);
+          width: 22px;
+          height: 22px;
+          border: 2px solid rgba(255, 182, 193, 0.3);
+          border-radius: 6px;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
           display: flex;
           align-items: center;
           justify-content: center;
+          background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            rgba(255, 255, 255, 0.05) 100%);
+          backdrop-filter: blur(10px);
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .checkmark::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.2) 0%, 
+            rgba(255, 160, 122, 0.2) 100%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
         }
 
         .filter-checkbox input[type="checkbox"]:checked + .checkmark {
-          background: var(--accent-color);
-          border-color: var(--accent-color);
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.8) 0%, 
+            rgba(255, 160, 122, 0.8) 100%);
+          border-color: rgba(255, 182, 193, 0.9);
           transform: scale(1.1);
+          box-shadow: 
+            0 0 20px rgba(255, 182, 193, 0.4),
+            0 4px 15px rgba(255, 160, 122, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .filter-checkbox input[type="checkbox"]:checked + .checkmark::before {
+          opacity: 1;
         }
 
         .filter-checkbox input[type="checkbox"]:checked + .checkmark::after {
@@ -2212,7 +2864,7 @@ useEffect(() => {
           }
           
           .main-content-open {
-            margin-left: 280px;
+            margin-left: 0; /* Remove margin - sidebar will overlay */
           }
           
           .movie-grid {
@@ -2734,13 +3386,13 @@ useEffect(() => {
           display: flex;
           flex-direction: column;
           min-height: 100vh;
-          margin-left: 60px; /* Space for closed sidebar */
+          margin-left: 0; /* Remove margin - sidebar will overlay */
           transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Adjust margin when sidebar is open */
+        /* Remove margin adjustment - sidebar will overlay */
         .sidebar-open ~ .main-content {
-          margin-left: 280px;
+          margin-left: 0;
         }
 
         /* FIXED HEADER */
@@ -2755,14 +3407,14 @@ useEffect(() => {
           position: fixed;
           top: 0;
           right: 0;
-          left: 60px; /* Start after closed sidebar */
+          left: 0; /* Full width - sidebar will overlay */
           z-index: 100;
           transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Adjust header position when sidebar is open */
+        /* Keep header full width when sidebar is open */
         .sidebar-open ~ .main-content .header {
-          left: 280px;
+          left: 0;
         }
 
         .user-info {
@@ -2993,6 +3645,70 @@ useEffect(() => {
           color: #b0b0b0;
           border: none;
           box-shadow: none;
+        }
+
+        /* Glassmorphism Backdrop */
+        .glass-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(5px);
+          z-index: 998;
+          opacity: 0;
+          animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+          to { opacity: 1; }
+        }
+
+        /* Glassmorphism Sidebar */
+        .glass-sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100vh;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px) saturate(180%);
+          border-right: 1px solid rgba(255, 255, 255, 0.2);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 999;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          width: 60px;
+          overflow: hidden;
+        }
+
+        .glass-sidebar .sidebar-content {
+          opacity: 0;
+          transition: opacity 0.3s ease 0.1s;
+          pointer-events: none;
+        }
+
+        .glass-sidebar .logo-text {
+          opacity: 0;
+          transition: opacity 0.3s ease 0.1s;
+          pointer-events: none;
+        }
+
+        .glass-sidebar:hover {
+          width: 320px;
+        }
+
+        .glass-sidebar:hover .sidebar-content {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .glass-sidebar:hover .logo-text {
+          opacity: 1;
+          pointer-events: auto;
         }
       `}</style>
     </div>
