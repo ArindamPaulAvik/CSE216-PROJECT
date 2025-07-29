@@ -16,35 +16,52 @@ function VideoPlayer({
 
   // Get the video source URL - assumes VIDEO_URL contains Google Drive file ID
   const getVideoSrc = () => {
-    console.log('selectedEpisode:', selectedEpisode); // Debug log
+    console.log('=== DEBUG getVideoSrc ===');
+    console.log('selectedEpisode type:', typeof selectedEpisode);
+    console.log('selectedEpisode:', selectedEpisode);
+    console.log('selectedEpisode keys:', selectedEpisode ? Object.keys(selectedEpisode) : 'null');
     
     // Check for VIDEO_URL in selectedEpisode (if it's an episode object)
     let videoId = selectedEpisode?.VIDEO_URL;
+    console.log('Direct VIDEO_URL:', videoId);
     
     // If selectedEpisode is a show object, look for the current episode's video ID
     if (!videoId && selectedEpisode?.EPISODES && selectedEpisode.EPISODES.length > 0) {
-      // Assuming we want the first episode's video, or you can modify this logic
+      console.log('Checking EPISODES array, length:', selectedEpisode.EPISODES.length);
+      console.log('First episode:', selectedEpisode.EPISODES[0]);
       videoId = selectedEpisode.EPISODES[0]?.VIDEO_URL;
+      console.log('VIDEO_URL from first episode:', videoId);
     }
     
-    console.log('Found video ID:', videoId); // Debug log
+    // Check if it's an array of episodes (sometimes the API returns an array directly)
+    if (!videoId && Array.isArray(selectedEpisode) && selectedEpisode.length > 0) {
+      console.log('selectedEpisode is an array, length:', selectedEpisode.length);
+      console.log('First item in array:', selectedEpisode[0]);
+      videoId = selectedEpisode[0]?.VIDEO_URL;
+      console.log('VIDEO_URL from first array item:', videoId);
+    }
+    
+    console.log('Final video ID found:', videoId);
     
     if (videoId) {
-      const trimmedId = videoId.toString().trim(); // Remove any whitespace and convert to string
-      console.log('Trimmed video ID:', trimmedId); // Debug log
+      const trimmedId = videoId.toString().trim();
+      console.log('Trimmed video ID:', trimmedId);
+      console.log('Trimmed ID length:', trimmedId.length);
+      console.log('Regex test result:', /^[a-zA-Z0-9_-]+$/.test(trimmedId));
       
       // If it looks like a Google Drive file ID (alphanumeric with dashes/underscores)
       if (/^[a-zA-Z0-9_-]+$/.test(trimmedId) && trimmedId.length > 10) {
         const finalUrl = `https://drive.google.com/file/d/${trimmedId}/preview`;
-        console.log('Generated Google Drive URL:', finalUrl); // Debug log
+        console.log('Generated Google Drive URL:', finalUrl);
         return finalUrl;
       }
       // Otherwise, use the original path structure for local files
       const localUrl = `/movies/${trimmedId}`;
-      console.log('Generated local URL:', localUrl); // Debug log
+      console.log('Generated local URL:', localUrl);
       return localUrl;
     }
-    console.log('No video ID found in any location'); // Debug log
+    console.log('No video ID found in any location');
+    console.log('=== END DEBUG ===');
     return '';
   };
 
