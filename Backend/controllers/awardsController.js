@@ -74,7 +74,7 @@ exports.getAwardById = async (req, res) => {
       SELECT 
         a.ACTOR_ID,
         CONCAT(a.ACTOR_FIRSTNAME, ' ', a.ACTOR_LASTNAME) as NAME,
-        a.ACTOR_PICTURE as PICTURE,
+        a.PICTURE,
         aa.YEAR
       FROM ACTOR a
       INNER JOIN ACTOR_AWARD aa ON a.ACTOR_ID = aa.ACTOR_ID
@@ -89,7 +89,7 @@ exports.getAwardById = async (req, res) => {
       SELECT 
         d.DIRECTOR_ID,
         CONCAT(d.DIRECTOR_FIRSTNAME, ' ', d.DIRECTOR_LASTNAME) as NAME,
-        d.DIRECTOR_PICTURE as PICTURE,
+        d.PICTURE,
         da.YEAR
       FROM DIRECTOR d
       INNER JOIN DIRECTOR_AWARD da ON d.DIRECTOR_ID = da.DIRECTOR_ID
