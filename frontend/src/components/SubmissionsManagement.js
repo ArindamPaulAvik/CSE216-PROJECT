@@ -10,7 +10,10 @@ import {
   FiUser,
   FiCalendar,
   FiFilter,
-  FiTag
+  FiTag,
+  FiX,
+  FiLink,
+  FiFileText
 } from 'react-icons/fi';
 import axios from 'axios';
 
@@ -22,6 +25,9 @@ function SubmissionsManagement() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState({ submissionId: null, verdict: null });
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [submissionDetails, setSubmissionDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   useEffect(() => {
@@ -151,6 +157,109 @@ function SubmissionsManagement() {
   const handleCancelAction = () => {
     setShowConfirmModal(false);
     setConfirmAction({ submissionId: null, verdict: null });
+  };
+
+  const fetchSubmissionDetails = async (submissionId) => {
+    try {
+      setDetailsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      console.log('Fetching submission details for ID:', submissionId);
+      console.log('Using token:', token ? 'Token exists' : 'No token');
+      
+      const response = await axios.get(`${BASE_URL}/api/submissions/${submissionId}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Submission details fetched successfully:', response.data);
+      setSubmissionDetails(response.data);
+      setShowDetailsModal(true);
+      
+    } catch (error) {
+      console.error('Error fetching submission details:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = 'Error fetching submission details';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const serverMessage = error.response.data?.message;
+        const serverError = error.response.data?.error;
+        const serverCode = error.response.data?.code;
+        
+        console.log('Server error details:', {
+          status,
+          message: serverMessage,
+          error: serverError,
+          code: serverCode
+        });
+        
+        switch (status) {
+          case 403:
+            errorMessage = 'Access denied. Please check your permissions.';
+            break;
+          case 404:
+            errorMessage = 'Submission not found.';
+            break;
+          case 500:
+            if (serverCode === 'ER_NO_SUCH_TABLE') {
+              errorMessage = 'Database configuration error. Please contact administrator.';
+            } else if (serverCode === 'ER_BAD_FIELD_ERROR') {
+              errorMessage = 'Database schema error. Please contact administrator.';
+            } else if (serverMessage) {
+              errorMessage = `Server error: ${serverMessage}`;
+            } else {
+              errorMessage = 'Internal server error occurred.';
+            }
+            break;
+          default:
+            errorMessage = serverMessage || `Server error (${status})`;
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else {
+        // Something else happened
+        errorMessage = error.message || 'Unknown error occurred';
+      }
+      
+      // Show user-friendly error message
+      alert(errorMessage);
+      
+      // For debugging, also log the technical details
+      console.error('Technical error details:', {
+        originalError: error.message,
+        serverMessage: error.response?.data?.message,
+        serverCode: error.response?.data?.code,
+        sqlMessage: error.response?.data?.sqlMessage,
+        userFriendlyMessage: errorMessage
+      });
+      
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCheckSubmission = (submission) => {
+    console.log('Checking submission:', submission);
+    
+    if (!submission || !submission.SUBMISSION_ID) {
+      alert('Invalid submission data');
+      return;
+    }
+    
+    fetchSubmissionDetails(submission.SUBMISSION_ID);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSubmissionDetails(null);
   };
 
   const filteredSubmissions = submissions.filter(submission => {
@@ -448,8 +557,7 @@ function SubmissionsManagement() {
                         whileTap={{ scale: 0.95 }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Placeholder for CHECK action
-                          console.log('Check submission', submission.SUBMISSION_ID);
+                          handleCheckSubmission(submission);
                         }}
                         style={{
                           flex: 1,
@@ -651,6 +759,465 @@ function SubmissionsManagement() {
               >
                 {confirmAction.verdict === 'APPROVED' ? 'Approve' : 'Reject'}
               </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Submission Details Modal */}
+      {showDetailsModal && submissionDetails && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              background: 'rgba(20, 20, 30, 0.95)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '20px',
+              padding: '40px',
+              maxWidth: '900px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflow: 'auto'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '30px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              paddingBottom: '20px'
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                color: 'white',
+                fontSize: '1.8rem',
+                fontWeight: '600'
+              }}>
+                Submission Details
+              </h2>
+              <button
+                onClick={closeDetailsModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: '5px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'none';
+                }}
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Submission ID and Status */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '15px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <div>
+                  <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>
+                    Submission #{submissionDetails.SUBMISSION_ID}
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    <div style={{
+                      background: getStatusColor(submissionDetails.VERDICT),
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '15px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      {getStatusIcon(submissionDetails.VERDICT)}
+                      {submissionDetails.VERDICT}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Basic Information */}
+              <div style={{
+                padding: '15px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                  <FiFileText size={16} style={{ marginRight: '8px' }} />
+                  Basic Information
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {submissionDetails.TYPE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiTag size={16} style={{ opacity: 0.7 }} />
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Type:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {submissionDetails.TYPE}
+                      </span>
+    </div>
+                  )}
+                  
+                  {submissionDetails.CATEGORY && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiFileText size={16} style={{ opacity: 0.7 }} />
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Category:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {submissionDetails.CATEGORY}
+                      </span>
+                    </div>
+                  )}
+
+                  {submissionDetails.SHOW_ID && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiFileText size={16} style={{ opacity: 0.7 }} />
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Show ID:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {submissionDetails.SHOW_ID}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Content Details - Different based on TYPE */}
+              {submissionDetails.TYPE === 'SHOWS' && (
+                <div style={{
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                    <FiFileText size={16} style={{ marginRight: '8px' }} />
+                    Show Details
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {submissionDetails.TITLE && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Title:</span>
+                          <p style={{ fontSize: '14px', fontWeight: '500', margin: '5px 0 0 0', lineHeight: '1.4' }}>
+                            {submissionDetails.TITLE}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {submissionDetails.DESCRIPTION && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Description:</span>
+                          <p style={{ fontSize: '14px', fontWeight: '500', margin: '5px 0 0 0', lineHeight: '1.4' }}>
+                            {submissionDetails.DESCRIPTION}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {submissionDetails.TEASER && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Teaser:</span>
+                          <p style={{ fontSize: '14px', fontWeight: '500', margin: '5px 0 0 0', lineHeight: '1.4' }}>
+                            {submissionDetails.TEASER}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {submissionDetails.TYPE === 'EPISODES' && (
+                <div style={{
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                    <FiFileText size={16} style={{ marginRight: '8px' }} />
+                    Episode Details
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {submissionDetails.TITLE && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Episode Title:</span>
+                          <p style={{ fontSize: '14px', fontWeight: '500', margin: '5px 0 0 0', lineHeight: '1.4' }}>
+                            {submissionDetails.TITLE}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {submissionDetails.DESCRIPTION && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Description:</span>
+                          <p style={{ fontSize: '14px', fontWeight: '500', margin: '5px 0 0 0', lineHeight: '1.4' }}>
+                            {submissionDetails.DESCRIPTION}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Media Files - Only for SHOWS */}
+              {submissionDetails.TYPE === 'SHOWS' && (submissionDetails.BANNER_IMG || submissionDetails.THUMB_IMG) && (
+                <div style={{
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                    <FiFileText size={16} style={{ marginRight: '8px' }} />
+                    Media Files
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {submissionDetails.BANNER_IMG && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7 }} />
+                        <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Banner Image:</span>
+                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {submissionDetails.BANNER_IMG}
+                        </span>
+                      </div>
+                    )}
+
+                    {submissionDetails.THUMB_IMG && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FiFileText size={16} style={{ opacity: 0.7 }} />
+                        <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Thumbnail Image:</span>
+                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {submissionDetails.THUMB_IMG}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Links */}
+              {submissionDetails.LINK_TO_SHOW && (
+                <div style={{
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                    <FiLink size={16} style={{ marginRight: '8px' }} />
+                    {submissionDetails.TYPE === 'SHOWS' ? 'Movie Link' : 'Episode Link'}
+                  </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <FiLink size={16} style={{ opacity: 0.7 }} />
+                    <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>
+                      {submissionDetails.TYPE === 'SHOWS' ? 'Link to movie:' : 'Episode link:'}
+                    </span>
+                    <a 
+                      href={submissionDetails.LINK_TO_SHOW}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#4f8cff',
+                        textDecoration: 'none',
+                        wordBreak: 'break-all'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.textDecoration = 'underline';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.textDecoration = 'none';
+                      }}
+                    >
+                      {submissionDetails.LINK_TO_SHOW}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* User Information */}
+              <div style={{
+                padding: '15px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                  <FiUser size={16} style={{ marginRight: '8px' }} />
+                  User Information
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <FiUser size={16} style={{ opacity: 0.7 }} />
+                    <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Publisher:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                      {submissionDetails.PUBLISHER_NAME || `Publisher #${submissionDetails.PUBLISHER_ID}`}
+                    </span>
+                  </div>
+
+                  {submissionDetails.ADMIN_ID && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiUser size={16} style={{ opacity: 0.7 }} />
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Admin ID:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {submissionDetails.ADMIN_NAME}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Timestamps */}
+              <div style={{
+                padding: '15px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h4 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4f8cff' }}>
+                  <FiCalendar size={16} style={{ marginRight: '8px' }} />
+                  Timestamps
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {submissionDetails.CREATED_AT && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiCalendar size={16} style={{ opacity: 0.7 }} />
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Created:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {new Date(submissionDetails.CREATED_AT).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {submissionDetails.UPDATED_AT && submissionDetails.UPDATED_AT !== submissionDetails.CREATED_AT && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiCalendar size={16} style={{ opacity: 0.7 }} />
+                      <span style={{ fontSize: '14px', opacity: 0.8, minWidth: '100px' }}>Updated:</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {new Date(submissionDetails.UPDATED_AT).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons for Pending Submissions */}
+              {submissionDetails.VERDICT === 'PENDING' && (
+                <div style={{
+                  display: 'flex',
+                  gap: '15px',
+                  padding: '20px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      updateSubmissionVerdict(submissionDetails.SUBMISSION_ID, 'APPROVED');
+                      closeDetailsModal();
+                    }}
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(45deg, #2ed573, #00b894)',
+                      border: 'none',
+                      color: 'white',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <FiCheckCircle size={16} />
+                    Approve
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      updateSubmissionVerdict(submissionDetails.SUBMISSION_ID, 'REJECTED');
+                      closeDetailsModal();
+                    }}
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(45deg, #e74c3c, #c0392b)',
+                      border: 'none',
+                      color: 'white',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <FiXCircle size={16} />
+                    Reject
+                  </motion.button>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

@@ -17,6 +17,7 @@ router.get('/debug', (req, res) => {
     message: 'Submissions router is working',
     availableRoutes: [
       'GET /submissions/',
+      'GET /submissions/:id',
       'POST /submissions/',
       'POST /submissions/show',
       'POST /submissions/episode',
@@ -61,6 +62,12 @@ router.get('/test', (req, res) => {
 // Get all submissions (admin only)
 router.get('/', authenticateToken, submissionsController.getAllSubmissions);
 
+// Get submissions by publisher (publisher only) - MUST come before /:id route
+router.get('/my-submissions', authenticateToken, submissionsController.getPublisherSubmissions);
+
+// Get submission by ID (admin only) - MUST come after specific routes
+router.get('/:id', authenticateToken, submissionsController.getSubmissionById);
+
 // Update submission verdict (admin only)
 router.put('/:id/verdict', authenticateToken, submissionsController.updateSubmissionVerdict);
 
@@ -75,9 +82,6 @@ router.post('/show', authenticateToken, upload.fields([
 
 // Create new episode submission (publisher only)
 router.post('/episode', authenticateToken, submissionsController.createEpisodeSubmission);
-
-// Get submissions by publisher (publisher only)
-router.get('/my-submissions', authenticateToken, submissionsController.getPublisherSubmissions);
 
 // Catch-all route for debugging - using proper route pattern
 router.use('/debug-catch-all', (req, res) => {

@@ -121,6 +121,7 @@ const updateSubmissionVerdict = async (req, res) => {
 };
 
 // Create new submission (for publishers)
+// Replace your existing createSubmission function with this:
 const createSubmission = async (req, res) => {
   try {
     // Verify publisher access
@@ -137,10 +138,10 @@ const createSubmission = async (req, res) => {
       return res.status(400).json({ message: 'Link to show is required' });
     }
 
-    // Insert new submission
+    // Insert new submission - ADD TYPE = 'GENERAL' here
     const insertQuery = `
-      INSERT INTO SUBMISSION (PUBLISHER_ID, LINK_TO_SHOW, VERDICT, CREATED_AT)
-      VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP)
+      INSERT INTO SUBMISSION (PUBLISHER_ID, LINK_TO_SHOW, VERDICT, CREATED_AT, TYPE)
+      VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, 'GENERAL')
     `;
 
     const [result] = await pool.execute(insertQuery, [publisherId, linkToShow]);
@@ -154,6 +155,7 @@ const createSubmission = async (req, res) => {
         s.LINK_TO_SHOW,
         s.VERDICT,
         s.CREATED_AT,
+        s.TYPE,
         p.PUBLISHER_NAME
       FROM SUBMISSION s
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
@@ -381,11 +383,86 @@ const getPublisherSubmissions = async (req, res) => {
   }
 };
 
+// Get detailed submission information by ID
+const getSubmissionById = async (req, res) => {
+  try {
+    console.log('=== GET SUBMISSION BY ID ===');
+    console.log('Request params:', req.params);
+    console.log('User:', req.user);
+    
+    // Verify admin access
+    const userType = req.user.userType;
+    const adminType = req.user.adminType;
+    
+    console.log('User auth check:', { userType, adminType });
+    
+    if (userType !== 'admin' || adminType !== 'Content') {
+      console.log('Access denied for user:', { userType, adminType });
+      return res.status(403).json({ message: 'Access denied. Content admin access required.' });
+    }
+
+    const { id } = req.params;
+    
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ message: 'Invalid submission ID' });
+    }
+
+    console.log('Fetching submission with ID:', id);
+
+    // Query without ADMIN_NAME since it doesn't exist
+    const query = `
+      SELECT 
+        s.SUBMISSION_ID,
+        s.PUBLISHER_ID,
+        s.ADMIN_ID,
+        s.LINK_TO_SHOW,
+        COALESCE(s.VERDICT, 'PENDING') as VERDICT,
+        s.CREATED_AT,
+        s.UPDATED_AT,
+        s.TYPE,
+        s.TITLE,
+        s.DESCRIPTION,
+        s.TEASER,
+        s.CATEGORY,
+        s.BANNER_IMG,
+        s.THUMB_IMG,
+        s.SHOW_ID,
+        COALESCE(p.PUBLISHER_NAME, CONCAT('Publisher #', s.PUBLISHER_ID)) as PUBLISHER_NAME
+      FROM SUBMISSION s
+      LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
+      WHERE s.SUBMISSION_ID = ?
+    `;
+
+    console.log('Executing query:', query);
+    console.log('With parameters:', [id]);
+
+    const [rows] = await pool.execute(query, [id]);
+    
+    console.log('Query executed successfully, rows found:', rows.length);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    console.log('Submission details:', rows[0]);
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error in getSubmissionById:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Error fetching submission details', 
+      error: error.message,
+      stack: error.stack 
+    });
+  }
+};
+
 module.exports = {
   getAllSubmissions,
   updateSubmissionVerdict,
   createSubmission,
   createShowSubmission,
   createEpisodeSubmission,
-  getPublisherSubmissions
+  getPublisherSubmissions,
+  getSubmissionById
 };

@@ -65,7 +65,7 @@ function AwardDetailPage() {
           alignItems: 'flex-start',
         }}>
           <img
-            src={`/awards/${award.IMG}`}
+            src={`${BASE_URL}/awards/${award.IMG}`}
             alt={award.AWARD_NAME}
             style={{
               width: 250,
@@ -293,7 +293,7 @@ function AwardDetailPage() {
                     🏆
                   </div>
                   <img
-                    src={`/actors/${actor.PICTURE}`}
+                    src={`${BASE_URL}/actors/${actor.PICTURE}`}
                     alt={actor.NAME}
                     style={{
                       width: '100%',
@@ -389,7 +389,7 @@ function AwardDetailPage() {
                     🏆
                   </div>
                   <img
-                    src={`/directors/${director.PICTURE}`}
+                    src={`${BASE_URL}/directors/${director.PICTURE}`}
                     alt={director.NAME}
                     style={{
                       width: '100%',
