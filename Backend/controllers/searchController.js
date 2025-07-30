@@ -113,6 +113,12 @@ exports.searchShows = async (req, res) => {
 
     console.log('✅ Results found:', results.length);
     
+    // Add YEAR field to search results (extract from RELEASE_DATE)
+    const resultsWithYear = results.map(show => ({
+      ...show,
+      YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null
+    }));
+    
     // Add some debugging info
     if (results.length === 0) {
       console.log('⚠️  No results found with current filters');
@@ -122,7 +128,7 @@ exports.searchShows = async (req, res) => {
       console.log('🎭 Genre filter:', genres);
     }
 
-    res.json({ results });
+    res.json({ results: resultsWithYear });
   } catch (error) {
     console.error('❌ Search failed:', error.message);
     console.error('Full error:', error);
