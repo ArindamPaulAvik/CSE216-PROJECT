@@ -27,6 +27,7 @@ exports.getFrontpage = async (req, res) => {
     s.THUMBNAIL, 
     s.RATING, 
     s.RELEASE_DATE,
+    s.WATCH_COUNT,
     s.TEASER, 
     s.BANNER, 
     GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') AS GENRES,
@@ -48,7 +49,7 @@ exports.getFrontpage = async (req, res) => {
   LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
   WHERE s.REMOVED = 0
   GROUP BY 
-    s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, s.BANNER, IS_FAVORITE
+    s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.WATCH_COUNT, s.TEASER, s.BANNER, IS_FAVORITE
   ORDER BY s.WATCH_COUNT DESC
   LIMIT 4
 `, [userId]);

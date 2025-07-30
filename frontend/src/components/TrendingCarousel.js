@@ -324,7 +324,7 @@ const TrendingCarousel = ({ shows = [], onShowClick, userPreferences = { playTra
             </div>
             <div className="meta-item">
               <Users size={16} />
-              <span>{formatViewers(currentShow.VIEWERS)} viewers</span>
+              <span>{formatViewers(currentShow.WATCH_COUNT)} viewers</span>
             </div>
             <div className="meta-item year">
               <span>{currentShow.YEAR}</span>
