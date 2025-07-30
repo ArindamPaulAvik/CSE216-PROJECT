@@ -4,6 +4,6 @@ const authenticateToken = require('../middleware/authenticateToken');
 const marketingController = require('../controllers/marketingController');
 
 // Get marketing dashboard statistics
-router.get('/stats', authenticateToken, marketingController.getMarketingStats);
+router.get('/stats', marketingController.getMarketingStats);
 
 module.exports = router; 

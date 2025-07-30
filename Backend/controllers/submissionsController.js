@@ -25,6 +25,7 @@ const getAllSubmissions = async (req, res) => {
       SELECT 
         s.SUBMISSION_ID,
         s.PUBLISHER_ID,
+        s.SHOW_ID,
         s.LINK_TO_SHOW,
         COALESCE(s.VERDICT, 'PENDING') as VERDICT,
         s.CREATED_AT,
@@ -296,6 +297,7 @@ const createEpisodeSubmission = async (req, res) => {
     const insertQuery = `
       INSERT INTO SUBMISSION (
         PUBLISHER_ID, 
+        SHOW_ID,
         LINK_TO_SHOW, 
         VERDICT, 
         CREATED_AT, 
@@ -304,13 +306,14 @@ const createEpisodeSubmission = async (req, res) => {
         DESCRIPTION, 
         CATEGORY
       )
-      VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, 'EPISODES', ?, ?, 'Episode')
+      VALUES (?, ?, ?, 'PENDING', CURRENT_TIMESTAMP, 'EPISODES', ?, ?, 'Episode')
     `;
 
-    console.log('Executing insert query with params:', [publisherId, episodeLink, title, description]);
+    console.log('Executing insert query with params:', [publisherId, seriesId, episodeLink, title, description]);
 
     const [result] = await pool.execute(insertQuery, [
       publisherId, 
+      seriesId,
       episodeLink, 
       title, 
       description
@@ -323,6 +326,7 @@ const createEpisodeSubmission = async (req, res) => {
       SELECT 
         s.SUBMISSION_ID,
         s.PUBLISHER_ID,
+        s.SHOW_ID,
         s.ADMIN_ID,
         s.LINK_TO_SHOW,
         s.VERDICT,
@@ -365,6 +369,7 @@ const getPublisherSubmissions = async (req, res) => {
       SELECT 
         s.SUBMISSION_ID,
         s.PUBLISHER_ID,
+        s.SHOW_ID,
         s.ADMIN_ID,
         s.LINK_TO_SHOW,
         s.VERDICT,

@@ -53,6 +53,14 @@ app.get('/api/submissions-test', (req, res) => {
   });
 });
 
+// Test marketing route
+app.get('/api/marketing-test', (req, res) => {
+  res.json({ 
+    message: 'Marketing test route working from main server',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Route registration
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(require('./routes/auth'));
