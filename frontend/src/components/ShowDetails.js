@@ -1234,7 +1234,7 @@ function ShowDetails() {
                 whileHover={{ background: 'rgba(255,255,255,0.2)' }}
                 transition={{ duration: 0.2 }}
               >
-                {formatDuration(isMovie ? show.DURATION : selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
+                {show.DURATION_DISPLAY || 'N/A'}
               </motion.span>
 
               <motion.span 
@@ -1671,7 +1671,7 @@ function ShowDetails() {
                     Duration
                   </h3>
                   <p style={{ fontSize: '0.95rem', color: '#ccc' }}>
-                    {formatDuration(isMovie ? show.DURATION : selectedEpisode?.SHOW_EPISODE_DURATION || 'N/A')}
+                    {show.DURATION_DISPLAY || 'N/A'}
                   </p>
                 </motion.div>
 

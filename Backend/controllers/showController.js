@@ -18,7 +18,14 @@ exports.getShowDetails = async (req, res) => {
              GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') as GENRES,
              COUNT(DISTINCT fls.USER_ID) as FAVORITES_COUNT,
              COUNT(DISTINCT se.SHOW_EPISODE_ID) as TOTAL_EPISODES,
-             s.WATCH_COUNT as TOTAL_VIEWS
+             s.WATCH_COUNT as TOTAL_VIEWS,
+             CASE 
+               WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+                 CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+               WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+                 CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+               ELSE 'N/A'
+             END as DURATION_DISPLAY
       FROM SHOWS s
       LEFT JOIN CATEGORY c ON s.CATEGORY_ID = c.CATEGORY_ID
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
