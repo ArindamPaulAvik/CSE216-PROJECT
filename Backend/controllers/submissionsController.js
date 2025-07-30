@@ -290,7 +290,7 @@ const createEpisodeSubmission = async (req, res) => {
     
     // Validate required fields
     if (!title || !description || !episodeLink || !showId) {
-      return res.status(400).json({ message: 'Title, description, episode link, and series are required' });
+      return res.status(400).json({ message: 'Title, description, episode link, and show ID are required' });
     }
 
     // Verify the show exists and belongs to this publisher

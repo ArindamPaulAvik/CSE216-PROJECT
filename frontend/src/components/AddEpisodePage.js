@@ -111,7 +111,7 @@ function AddEpisodePage() {
         title: formData.title,
         description: formData.description,
         episodeLink: formData.episodeLink,
-        seriesId: selectedSeries
+        showId: selectedSeries
       };
   
       console.log('Submitting episode data:', episodeData);
