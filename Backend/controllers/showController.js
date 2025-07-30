@@ -86,7 +86,7 @@ exports.getShowDetails = async (req, res) => {
       directorsRows = [];
     }
 
-    // Get similar shows based on same genre(s) - using the same logic as search controller
+    // Get similar shows based on genres (like search controller)
     let similarShowsRows = [];
     try {
       // First, get the genres of the current show
@@ -97,6 +97,9 @@ exports.getShowDetails = async (req, res) => {
         WHERE sg.SHOW_ID = ?
       `, [showId]);
       
+      console.log('🎭 Debug - Current show ID:', showId);
+      console.log('🎭 Debug - Current show genres query result:', currentShowGenres);
+      
       if (currentShowGenres.length > 0) {
         // Get genre names for the current show
         const genreNames = currentShowGenres.map(row => row.GENRE_NAME);
@@ -104,9 +107,11 @@ exports.getShowDetails = async (req, res) => {
         
         // Create placeholders for genre names
         const genrePlaceholders = genreNames.map(() => '?').join(',');
+        console.log('🎭 Debug - Genre placeholders:', genrePlaceholders);
+        console.log('🎭 Debug - Query params:', [...genreNames, showId]);
         
         // Use the same pattern as searchController for genre filtering
-        const [similarShows] = await pool.query(`
+        const similarShowsQuery = `
           SELECT DISTINCT s2.SHOW_ID,
                  s2.TITLE,
                  s2.DESCRIPTION,
@@ -116,8 +121,7 @@ exports.getShowDetails = async (req, res) => {
                  s2.DURATION,
                  s2.MATURITY_RATING,
                  s2.TEASER,
-                 false as IS_FAVORITE,
-                 GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ') AS GENRES
+                 false as IS_FAVORITE
           FROM SHOWS s2
           INNER JOIN SHOW_GENRE sg2 ON s2.SHOW_ID = sg2.SHOW_ID
           INNER JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID
@@ -127,7 +131,13 @@ exports.getShowDetails = async (req, res) => {
           GROUP BY s2.SHOW_ID
           ORDER BY s2.RATING DESC
           LIMIT 8
-        `, [...genreNames, showId]);
+        `;
+        
+        console.log('🎭 Debug - Similar shows query:', similarShowsQuery);
+        
+        const [similarShows] = await pool.query(similarShowsQuery, [...genreNames, showId]);
+        
+        console.log('🎭 Debug - Raw similar shows result:', similarShows);
         
         // Format similar shows data with year extracted in JavaScript
         similarShowsRows = similarShows.map(show => ({
@@ -141,10 +151,9 @@ exports.getShowDetails = async (req, res) => {
       }
     } catch (similarError) {
       console.error('Error fetching similar shows:', similarError);
+      console.error('Similar shows error details:', similarError.message);
       similarShowsRows = [];
-    }
-
-    // Get episodes grouped by season (if it's a series)
+    }    // Get episodes grouped by season (if it's a series)
     let episodeRows = [];
     try {
       const [episodes] = await pool.query(`
