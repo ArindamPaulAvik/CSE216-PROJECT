@@ -27,7 +27,8 @@ if (!fs.existsSync(showBannerPath)) fs.mkdirSync(showBannerPath, { recursive: tr
 app.use(cors({
   origin: [
     'http://localhost:3000',      // Local development
-    'https://rnbdom.vercel.app'   // Your Vercel deployment
+    'https://rnbdomx.vercel.app',  // Your correct Vercel deployment
+    /^https:\/\/.*\.vercel\.app$/ // Any Vercel deployment URL
   ],
   credentials: true
 }));
