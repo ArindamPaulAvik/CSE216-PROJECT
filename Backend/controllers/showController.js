@@ -123,13 +123,22 @@ exports.getShowDetails = async (req, res) => {
                  s.THUMBNAIL,
                  s.RATING,
                  s.RELEASE_DATE,
-                 s.TEASER
+                 s.TEASER,
+                 CASE 
+                   WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+                     CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+                   WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+                     CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+                   ELSE 'N/A'
+                 END as DURATION
           FROM SHOWS s
           INNER JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
           INNER JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+          LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
           WHERE g.GENRE_NAME IN (${placeholders})
           AND s.SHOW_ID != ?
           AND s.REMOVED = 0
+          GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER
           ORDER BY s.RATING DESC
           LIMIT 8
         `, [...genreNames, showId]);
@@ -148,10 +157,25 @@ exports.getShowDetails = async (req, res) => {
         console.log('🎬 No genres found for show', showId);
         // Fallback to top-rated shows if no genres found
         const [fallbackShows] = await pool.query(`
-          SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, RELEASE_DATE, TEASER
-          FROM SHOWS 
-          WHERE SHOW_ID != ? AND REMOVED = 0 
-          ORDER BY RATING DESC 
+          SELECT s.SHOW_ID, 
+                 s.TITLE, 
+                 s.DESCRIPTION, 
+                 s.THUMBNAIL, 
+                 s.RATING, 
+                 s.RELEASE_DATE, 
+                 s.TEASER,
+                 CASE 
+                   WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) = 1 THEN 
+                     CONCAT(MIN(se.SHOW_EPISODE_DURATION), ' min')
+                   WHEN COUNT(DISTINCT se.SHOW_EPISODE_ID) > 1 THEN 
+                     CONCAT(COUNT(DISTINCT se.SHOW_EPISODE_ID), ' episodes')
+                   ELSE 'N/A'
+                 END as DURATION
+          FROM SHOWS s
+          LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
+          WHERE s.SHOW_ID != ? AND s.REMOVED = 0 
+          GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER
+          ORDER BY s.RATING DESC 
           LIMIT 5
         `, [showId]);
         
