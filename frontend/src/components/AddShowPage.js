@@ -49,9 +49,7 @@ function AddShowPage() {
       formDataToSend.append('description', formData.description);
       formDataToSend.append('teaser', formData.teaser);
       formDataToSend.append('categoryType', formData.categoryType);
-      if (formData.categoryType === 'Movie') {
-        formDataToSend.append('movieLink', formData.movieLink);
-      }
+      formDataToSend.append('movieLink', formData.movieLink);
       if (bannerFile) {
         formDataToSend.append('banner', bannerFile);
       }
@@ -161,31 +159,29 @@ function AddShowPage() {
                   <option value="Series" style={{ background: '#2a2a2a', color: '#fff' }}>Series</option>
                 </select>
               </div>
-              {/* Link to Movie (only if Movie is selected) */}
-              {formData.categoryType === 'Movie' && (
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
-                    Link to movie *
-                  </label>
-                  <input
-                    type="url"
-                    name="movieLink"
-                    value={formData.movieLink}
-                    onChange={handleInputChange}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(255,255,255,0.1)',
-                      color: '#fff',
-                      fontSize: '16px'
-                    }}
-                    placeholder="Enter link to movie"
-                  />
-                </div>
-              )}
+              {/* Link to Movie/Episode (shown for both Movie and Series) */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
+                  {formData.categoryType === 'Movie' ? 'Link to movie *' : 'Link to episode *'}
+                </label>
+                <input
+                  type="url"
+                  name="movieLink"
+                  value={formData.movieLink}
+                  onChange={handleInputChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '16px'
+                  }}
+                  placeholder={formData.categoryType === 'Movie' ? "Enter link to movie" : "Enter link to episode"}
+                />
+              </div>
               
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontWeight: '600' }}>
