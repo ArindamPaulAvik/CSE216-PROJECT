@@ -730,7 +730,7 @@ function ShowDetails() {
     );
   };
 
-  // Award Card Component
+  // Award Card Component - Copied from AwardsPage for better design
   const AwardCard = ({ award, index }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { 
@@ -755,92 +755,135 @@ function ShowDetails() {
           transition: { duration: 0.3 },
         }}
         whileTap={{ scale: 0.98 }}
-        className="actor-card"
+        className="award-card"
         style={{
-          background: 'linear-gradient(135deg, rgba(83, 52, 131, 0.1) 0%, rgba(22, 33, 62, 0.3) 100%)',
-          border: '1px solid rgba(83, 52, 131, 0.3)',
+          cursor: 'pointer'
         }}
       >
-        <div className="actor-card-inner">
-          <div className="actor-image-container">
+        <div className="award-card-inner" style={{
+          background: 'linear-gradient(145deg, #2a2a1e, #3a3a2a)',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 215, 0, 0.1)',
+          transition: 'all 0.4s ease'
+        }}>
+          <div className="award-image-container" style={{
+            position: 'relative',
+            height: '280px',
+            overflow: 'hidden'
+          }}>
             <motion.img
               src={`${BASE_URL}/awards/${award.IMG}`}
               alt={award.AWARD_NAME}
-              className="actor-image"
-              whileHover={{ scale: 1.05 }}
+              className="award-image"
+              whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.4 }}
               onError={(e) => {
                 e.target.src = `${BASE_URL}/placeholder-award.jpg`;
               }}
               style={{
-                objectFit: 'contain',
-                padding: '10px',
-                background: 'rgba(255, 255, 255, 0.05)'
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transition: 'transform 0.4s ease'
               }}
             />
-            {/* Glass overlay with award info */}
-            <div className="actor-glass-overlay">
+            <div className="award-overlay" style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.8) 100%)',
+              display: 'flex',
+              alignItems: 'flex-end',
+              padding: '20px',
+              opacity: 0,
+              transition: 'opacity 0.3s ease'
+            }}>
               <motion.div
-                className="actor-glass-content"
-                initial={{ opacity: 1, y: 0 }}
-                whileHover={{ opacity: 0, y: -20 }}
+                className="award-info"
+                initial={{ opacity: 0, y: 20 }}
+                whileHover={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                style={{
-                  textAlign: 'center',
-                  padding: '15px'
-                }}
               >
-                <h3 className="actor-glass-name" style={{
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  marginBottom: '8px',
-                  color: '#fff'
+                <h3 style={{
+                  color: '#ffffff',
+                  fontSize: '1.3rem',
+                  fontWeight: '600',
+                  margin: '0 0 5px 0'
                 }}>
                   {award.AWARD_NAME}
                 </h3>
-                <p className="actor-glass-role" style={{
-                  fontSize: '0.8rem',
-                  color: '#ccc',
-                  marginBottom: '5px'
+                <p style={{
+                  color: '#ffd700',
+                  fontSize: '0.9rem',
+                  margin: '0 0 5px 0',
+                  fontWeight: '500'
                 }}>
                   {award.AWARDING_BODY}
                 </p>
                 {award.YEAR && (
                   <p style={{
-                    fontSize: '0.8rem',
-                    color: '#533483',
-                    fontWeight: 'bold'
+                    color: '#b0b0b0',
+                    fontSize: '0.9rem',
+                    margin: '0'
                   }}>
                     {award.YEAR}
                   </p>
                 )}
               </motion.div>
-              
-              {/* Hover overlay with description */}
-              <motion.div
-                className="award-description-overlay"
-                initial={{ opacity: 0, y: 20 }}
-                whileHover={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)',
-                  padding: '20px 15px 15px 15px',
-                  fontSize: '0.75rem',
-                  color: '#fff',
-                  lineHeight: '1.4'
-                }}
-              >
-                {award.DESCRIPTION && award.DESCRIPTION.length > 100 
-                  ? `${award.DESCRIPTION.substring(0, 100)}...`
-                  : award.DESCRIPTION
-                }
-              </motion.div>
             </div>
           </div>
+          <motion.div
+            className="award-details"
+            whileHover={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}
+            transition={{ duration: 0.3 }}
+            style={{
+              padding: '20px',
+              textAlign: 'center',
+              background: 'rgba(0, 0, 0, 0.2)',
+              backdropFilter: 'blur(10px)',
+              borderTop: '1px solid rgba(255, 215, 0, 0.1)'
+            }}
+          >
+            <p style={{
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              color: '#f5f5f5',
+              margin: '0 0 10px 0'
+            }}>
+              {award.AWARD_NAME}
+            </p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '15px'
+            }}>
+              <span style={{
+                fontSize: '0.85rem',
+                color: '#ffd700',
+                background: 'rgba(255, 215, 0, 0.1)',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 215, 0, 0.3)'
+              }}>
+                🏆 {award.AWARDING_BODY}
+              </span>
+              {award.YEAR && (
+                <span style={{
+                  fontSize: '0.85rem',
+                  color: '#ffd700',
+                  background: 'rgba(255, 215, 0, 0.1)',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 215, 0, 0.3)'
+                }}>
+                  📅 {award.YEAR}
+                </span>
+              )}
+            </div>
+          </motion.div>
         </div>
       </motion.div>
     );
@@ -1620,10 +1663,10 @@ function ShowDetails() {
                 <motion.div 
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
                     gap: '25px',
                     padding: '0 0 20px 0',
-                    maxWidth: '1400px',
+                    maxWidth: '1200px',
                     margin: '0 auto',
                     marginTop: '10px'
                   }}
@@ -2189,6 +2232,16 @@ function ShowDetails() {
             gap: 40px;
             padding: 10px 10px 20px 10px;
           }
+        }
+
+        /* Award Card Hover Effects */
+        .award-card:hover .award-overlay {
+          opacity: 1 !important;
+        }
+
+        .award-card-inner:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 215, 0, 0.3) !important;
         }
       `}</style>
     </Layout>
