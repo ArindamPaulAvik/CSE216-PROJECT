@@ -6,6 +6,7 @@ const SECRET_KEY = 'your_super_secret_key';
 const saltRounds = 10;
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log('Login attempt for email:', email); // Debug log
   try {
     // First, get the person and check password
     const [personRows] = await pool.query(
@@ -13,7 +14,11 @@ exports.login = async (req, res) => {
       [email]
     );
 
-    if (personRows.length === 0) return res.status(401).json({ error: 'Invalid email or password' });
+    console.log('Person rows found:', personRows.length); // Debug log
+    if (personRows.length === 0) {
+      console.log('No user found with email:', email); // Debug log
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
 
     const match = await bcrypt.compare(password, personRows[0].PASSWORD_HASHED);
     if (!match) return res.status(401).json({ error: 'Invalid email or password' });
