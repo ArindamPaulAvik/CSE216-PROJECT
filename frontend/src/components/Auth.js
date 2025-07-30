@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 // HARDCODED - NO ENVIRONMENT VARIABLES
 const PRODUCTION_API_URL = 'https://cse216-project.onrender.com';
+const BASE_URL = PRODUCTION_API_URL;
 
 // Animation Variants
 const formVariants = {
