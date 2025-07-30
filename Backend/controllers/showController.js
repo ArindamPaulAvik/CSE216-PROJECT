@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 
 exports.getShowDetails = async (req, res) => {
   const showId = req.params.id;
+  console.log('🎬 Fetching show details for ID:', showId);
   
   try {
     // Get basic show information with category, publisher, age restriction, and genres
@@ -64,6 +65,7 @@ exports.getShowDetails = async (req, res) => {
     `, [showId]);
 
     console.log('🎭 Directors query result for show', showId, ':', directorsRows);
+    console.log('🎭 Directors query length:', directorsRows.length);
 
     // Get similar shows based on same genre(s)
     const [similarShowsRows] = await pool.query(`
@@ -89,6 +91,8 @@ exports.getShowDetails = async (req, res) => {
       ORDER BY s2.RATING DESC
       LIMIT 8
     `, [showId, showId]);
+
+    console.log('🎬 Similar shows query result for show', showId, ':', similarShowsRows.length, 'shows found');
 
     // Get episodes grouped by season (if it's a series)
     const [episodeRows] = await pool.query(`
@@ -123,7 +127,10 @@ exports.getShowDetails = async (req, res) => {
     res.json(showDetails);
   } catch (err) {
     console.error('Error fetching show:', err);
-    res.status(500).json({ error: 'Database error' });
+    console.error('Error details:', err.message);
+    console.error('SQL State:', err.sqlState);
+    console.error('SQL Message:', err.sqlMessage);
+    res.status(500).json({ error: 'Database error', details: err.message });
   }
 };
 
