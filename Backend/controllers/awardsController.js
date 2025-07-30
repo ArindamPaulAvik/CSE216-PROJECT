@@ -340,3 +340,57 @@ exports.getAwardsForShow = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch awards for show' });
   }
 };
+
+// Get awards for a specific actor
+exports.getAwardsForActor = async (req, res) => {
+  try {
+    const { actorId } = req.params;
+    
+    const query = `
+      SELECT DISTINCT
+        a.AWARD_ID,
+        a.AWARD_NAME as NAME,
+        a.AWARDING_BODY,
+        a.IMG,
+        a.DESCRIPTION,
+        aa.YEAR
+      FROM AWARD a
+      INNER JOIN ACTOR_AWARD aa ON a.AWARD_ID = aa.AWARD_ID
+      WHERE aa.ACTOR_ID = ?
+      ORDER BY aa.YEAR DESC, a.AWARD_NAME
+    `;
+    
+    const [results] = await pool.execute(query, [actorId]);
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching awards for actor:', error);
+    res.status(500).json({ message: 'Failed to fetch awards for actor' });
+  }
+};
+
+// Get awards for a specific director
+exports.getAwardsForDirector = async (req, res) => {
+  try {
+    const { directorId } = req.params;
+    
+    const query = `
+      SELECT DISTINCT
+        a.AWARD_ID,
+        a.AWARD_NAME as NAME,
+        a.AWARDING_BODY,
+        a.IMG,
+        a.DESCRIPTION,
+        da.YEAR
+      FROM AWARD a
+      INNER JOIN DIRECTOR_AWARD da ON a.AWARD_ID = da.AWARD_ID
+      WHERE da.DIRECTOR_ID = ?
+      ORDER BY da.YEAR DESC, a.AWARD_NAME
+    `;
+    
+    const [results] = await pool.execute(query, [directorId]);
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching awards for director:', error);
+    res.status(500).json({ message: 'Failed to fetch awards for director' });
+  }
+};

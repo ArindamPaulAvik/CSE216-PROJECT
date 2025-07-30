@@ -1,11 +1,126 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import axios from 'axios';
 import Layout from './Layout';
+
+// Award Card Component
+const AwardCard = ({ award }) => {
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  return (
+    <motion.div
+      whileHover={{ 
+        scale: 1.05, 
+        rotateY: 5,
+        rotateX: 5,
+        transition: { duration: 0.3 }
+      }}
+      style={{
+        background: 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
+        borderRadius: '15px',
+        padding: '20px',
+        boxShadow: '0 8px 32px rgba(212, 175, 55, 0.15)',
+        border: '1px solid rgba(212, 175, 55, 0.3)',
+        cursor: 'pointer',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Golden accent line */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '3px',
+        background: 'linear-gradient(90deg, #d4af37, #f4d03f, #d4af37)',
+      }} />
+      
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', marginBottom: '15px' }}>
+        <div style={{ 
+          width: '60px', 
+          height: '60px', 
+          borderRadius: '8px', 
+          overflow: 'hidden',
+          border: '2px solid rgba(212, 175, 55, 0.5)',
+          flexShrink: 0
+        }}>
+          {!imageError ? (
+            <img
+              src={`/awards/${award.IMG}`}
+              alt={award.NAME}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover'
+              }}
+              onError={handleImageError}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(212, 175, 55, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#d4af37'
+            }}>
+              🏆
+            </div>
+          )}
+        </div>
+        
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 style={{ 
+            color: '#d4af37', 
+            fontSize: '18px', 
+            margin: '0 0 8px 0',
+            fontWeight: '600',
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+          }}>
+            {award.NAME}
+          </h3>
+          {award.YEAR && (
+            <div style={{
+              color: '#b8860b',
+              fontSize: '14px',
+              fontWeight: '500',
+              marginBottom: '5px'
+            }}>
+              {award.YEAR}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {award.DESCRIPTION && (
+        <p style={{ 
+          color: '#ccc', 
+          fontSize: '14px', 
+          lineHeight: '1.5',
+          margin: 0,
+          flex: 1
+        }}>
+          {award.DESCRIPTION}
+        </p>
+      )}
+    </motion.div>
+  );
+};
 
 function ActorDetailPage() {
   const { id } = useParams();
   const [actor, setActor] = useState(null);
+  const [awards, setAwards] = useState([]);
   const navigate = useNavigate();
   const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
@@ -31,7 +146,17 @@ function ActorDetailPage() {
           console.error('Error fetching actor:', err);
         }
       });
-  }, [id]);
+
+    // Fetch awards for this actor
+    axios.get(`${BASE_URL}/awards/actor/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setAwards(res.data))
+      .catch(err => {
+        console.error('Failed to fetch actor awards:', err);
+        setAwards([]);
+      });
+  }, [id, BASE_URL]);
 
   if (!actor) {
     return (
@@ -49,14 +174,6 @@ function ActorDetailPage() {
       </Layout>
     );
   }
-
-  // IMDb-style info fields (use N/A if missing)
-  const born = actor.BORN || 'N/A';
-  const birthplace = actor.BIRTHPLACE || 'N/A';
-  const awards = actor.AWARDS || 'N/A';
-  const knownFor = actor.KNOWN_FOR || (actor.SHOWS && actor.SHOWS.length > 0 ? actor.SHOWS[0].TITLE : 'N/A');
-  const gender = actor.GENDER || 'N/A';
-  const height = actor.HEIGHT || 'N/A';
 
   return (
     <Layout>
@@ -87,41 +204,38 @@ function ActorDetailPage() {
           />
           <div style={{ flex: 1, minWidth: 300 }}>
             <h2 style={{ color: '#fff', marginBottom: 10, fontSize: '2.2rem' }}>{actor.NAME}</h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 18,
-              marginBottom: 25,
-              background: 'rgba(30,30,40,0.7)',
-              borderRadius: 10,
-              padding: 18,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-            }}>
-              <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Born</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{born}</div>
+            
+            {/* Awards Section */}
+            {awards && awards.length > 0 && (
+              <div style={{ marginBottom: 25 }}>
+                <h3 style={{ 
+                  color: '#d4af37', 
+                  marginBottom: 15, 
+                  fontSize: '1.3rem',
+                  fontWeight: '600'
+                }}>
+                  Awards & Recognition
+                </h3>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '15px',
+                  marginBottom: '20px'
+                }}>
+                  {awards.slice(0, 4).map((award, index) => (
+                    <motion.div
+                      key={award.AWARD_ID}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <AwardCard award={award} />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Birthplace</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{birthplace}</div>
-              </div>
-              <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Gender</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{gender}</div>
-              </div>
-              <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Height</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{height}</div>
-              </div>
-              <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Awards</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{awards}</div>
-              </div>
-              <div>
-                <span style={{ color: '#aaa', fontSize: 13 }}>Known For</span>
-                <div style={{ color: '#fff', fontWeight: 500 }}>{knownFor}</div>
-              </div>
-            </div>
+            )}
+            
             <h3 style={{ color: '#ddd', marginBottom: 15, fontSize: '1.3rem' }}>Biography</h3>
             <p style={{
               color: '#ccc',
