@@ -3,7 +3,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const BASE_URL = 'https://cse216-project.onrender.com';
+// HARDCODED - NO ENVIRONMENT VARIABLES
+const PRODUCTION_API_URL = 'https://cse216-project.onrender.com';
+const BASE_URL = PRODUCTION_API_URL;
 
 // Animation Variants
 const formVariants = {
@@ -155,9 +157,10 @@ function Auth() {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    console.log('BASE_URL being used:', BASE_URL); // Debug log
+    console.log('API URL being used:', PRODUCTION_API_URL); // Debug log
     console.log('Login attempt at:', new Date().toISOString()); // Force rebuild
     try {
+      // EXPLICITLY HARDCODED - NO VARIABLES
       const res = await axios.post('https://cse216-project.onrender.com/login', loginData);
       if (res.status === 200) {
         localStorage.setItem('token', res.data.token);
@@ -184,6 +187,7 @@ function Auth() {
     setError(null);
     setIsLoading(true);
     try {
+      // EXPLICITLY HARDCODED - NO VARIABLES
       const response = await axios.post('https://cse216-project.onrender.com/register', registerData);
       if (response.status === 201) {
         setShowSuccessModal(true);
