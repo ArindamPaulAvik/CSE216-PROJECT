@@ -14,7 +14,7 @@ exports.getShowDetails = async (req, res) => {
              c.CATEGORY_NAME,
              p.PUBLISHER_NAME,
              a.AGE_RESTRICTION_NAME,
-             st.STATUS_NAME,
+             st.STATUS_NAME,ss
              GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') as GENRES,
              COUNT(DISTINCT fls.USER_ID) as FAVORITES_COUNT,
              COUNT(DISTINCT se.SHOW_EPISODE_ID) as TOTAL_EPISODES,
@@ -123,8 +123,6 @@ exports.getShowDetails = async (req, res) => {
                  s.THUMBNAIL,
                  s.RATING,
                  s.RELEASE_DATE,
-                 s.DURATION,
-                 s.MATURITY_RATING,
                  s.TEASER
           FROM SHOWS s
           INNER JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
@@ -150,7 +148,7 @@ exports.getShowDetails = async (req, res) => {
         console.log('🎬 No genres found for show', showId);
         // Fallback to top-rated shows if no genres found
         const [fallbackShows] = await pool.query(`
-          SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, RELEASE_DATE, DURATION, MATURITY_RATING, TEASER
+          SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, RELEASE_DATE, TEASER
           FROM SHOWS 
           WHERE SHOW_ID != ? AND REMOVED = 0 
           ORDER BY RATING DESC 
