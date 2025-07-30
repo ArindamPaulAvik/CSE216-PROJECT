@@ -225,7 +225,7 @@ const ShowCard = ({ show, index = 0, userPreferences = { playTrailerOnHover: fal
           
           <div className="card-meta">
             <div className="meta-item">
-              <span className="year">{show.YEAR || 'N/A'}</span>
+              <span className="year">{show.YEAR || (show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : 'N/A')}</span>
             </div>
             {show.DURATION && (
               <div className="meta-item">

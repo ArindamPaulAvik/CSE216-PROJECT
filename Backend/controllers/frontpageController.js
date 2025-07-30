@@ -408,19 +408,25 @@ exports.getFrontpage = async (req, res) => {
       LIMIT 4
     `, [userId]);
 
+    // Add YEAR field to all show arrays
+    const addYearField = (shows) => shows.map(show => ({
+      ...show,
+      YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null
+    }));
+
     res.json({
       userName,
       profilePicture: userRows[0].PROFILE_PICTURE || null,
-      trendingshows,
-      watchagainshows,
-      allshows,
-      recommendedShows,
-      topRatedShows,
-      actionHitsShows,
-      thrillerShows,
-      comedyShows,
-      dramaShows,
-      familyShows
+      trendingshows: addYearField(trendingshows),
+      watchagainshows: addYearField(watchagainshows),
+      allshows: addYearField(allshows),
+      recommendedShows: addYearField(recommendedShows),
+      topRatedShows: addYearField(topRatedShows),
+      actionHitsShows: addYearField(actionHitsShows),
+      thrillerShows: addYearField(thrillerShows),
+      comedyShows: addYearField(comedyShows),
+      dramaShows: addYearField(dramaShows),
+      familyShows: addYearField(familyShows)
     });
   } catch (err) {
     console.error('Error fetching frontpage:', err.message);
