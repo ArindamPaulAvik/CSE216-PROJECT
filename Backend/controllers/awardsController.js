@@ -346,6 +346,8 @@ exports.getAwardsForActor = async (req, res) => {
   try {
     const { actorId } = req.params;
     
+    console.log('Fetching awards for actor ID:', actorId);
+    
     const query = `
       SELECT DISTINCT
         a.AWARD_ID,
@@ -360,7 +362,14 @@ exports.getAwardsForActor = async (req, res) => {
       ORDER BY aa.YEAR DESC, a.AWARD_NAME
     `;
     
+    console.log('Executing query:', query);
+    console.log('With actor ID:', actorId);
+    
     const [results] = await pool.execute(query, [actorId]);
+    
+    console.log('Query results:', results);
+    console.log('Number of awards found:', results.length);
+    
     res.json(results);
   } catch (error) {
     console.error('Error fetching awards for actor:', error);
