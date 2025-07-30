@@ -17,9 +17,6 @@ const {
 // GET all awards with optional search
 router.get('/', authenticateToken, getAllAwards);
 
-// GET award by ID with recipients
-router.get('/:id', authenticateToken, getAwardById);
-
 // GET awards for a specific show
 router.get('/show/:showId', authenticateToken, getAwardsForShow);
 
@@ -28,6 +25,9 @@ router.get('/actor/:actorId', authenticateToken, getAwardsForActor);
 
 // GET awards for a specific director
 router.get('/director/:directorId', authenticateToken, getAwardsForDirector);
+
+// GET award by ID with recipients (this should come after specific routes)
+router.get('/:id', authenticateToken, getAwardById);
 
 // POST create new award with image upload
 router.post('/', authenticateToken, awardUpload.single('image'), createAward);
