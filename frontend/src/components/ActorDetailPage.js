@@ -60,7 +60,13 @@ function ActorDetailPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 0 40px 0' }}>
+      <div style={{ 
+        padding: '0 0 40px 0',
+        marginLeft: '55px',
+        marginTop: '70px',
+        marginRight: '20px', // Ensure right side isn't cropped
+        maxWidth: 'calc(100vw - 75px)' // Account for left margin + right margin
+      }}>
         {/* Top IMDb-style info section */}
         <div style={{
           display: 'flex',

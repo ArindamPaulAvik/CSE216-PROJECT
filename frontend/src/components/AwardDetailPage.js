@@ -58,7 +58,10 @@ function AwardDetailPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 0 40px 0' }}>
+      <div style={{ 
+        padding: '0 0 40px 0',
+        marginTop: '50px'
+      }}>
         {/* Top award info section */}
         <div style={{
           display: 'flex',
