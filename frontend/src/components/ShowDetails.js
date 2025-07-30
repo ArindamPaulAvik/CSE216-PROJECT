@@ -24,6 +24,7 @@ function ShowDetails() {
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [userSubscription, setUserSubscription] = useState(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [awards, setAwards] = useState([]);
   const videoRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const navigate = useNavigate();
@@ -232,6 +233,20 @@ function ShowDetails() {
       })
       .catch((err) => {
         console.error('Error fetching episodes:', err);
+      });
+
+    // Fetch awards for this show
+    axios
+      .get(`${BASE_URL}/awards/show/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        console.log('🏆 Awards data:', res.data); // Debug log
+        setAwards(res.data);
+      })
+      .catch((err) => {
+        console.error('Error fetching awards:', err);
+        // Don't show error for awards - not critical
       });
   }, [id]);
 
@@ -707,6 +722,122 @@ function ShowDetails() {
                   {director.DIRECTOR_NAME}
                 </h3>
                 <p className="actor-glass-role">Director</p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Award Card Component
+  const AwardCard = ({ award, index }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { 
+      once: true, 
+      amount: 0.3,
+      margin: "0px 0px -100px 0px"
+    });
+
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ scale: 0.7, opacity: 0, y: 50 }}
+        animate={isInView ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.7, opacity: 0, y: 50 }}
+        transition={{
+          duration: 0.6,
+          delay: (index % 4) * 0.1,
+          ease: [0.25, 0.46, 0.45, 0.94],
+        }}
+        whileHover={{
+          scale: 1.08,
+          rotateY: 5,
+          transition: { duration: 0.3 },
+        }}
+        whileTap={{ scale: 0.98 }}
+        className="actor-card"
+        style={{
+          background: 'linear-gradient(135deg, rgba(83, 52, 131, 0.1) 0%, rgba(22, 33, 62, 0.3) 100%)',
+          border: '1px solid rgba(83, 52, 131, 0.3)',
+        }}
+      >
+        <div className="actor-card-inner">
+          <div className="actor-image-container">
+            <motion.img
+              src={`${BASE_URL}/awards/${award.IMG}`}
+              alt={award.AWARD_NAME}
+              className="actor-image"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.4 }}
+              onError={(e) => {
+                e.target.src = `${BASE_URL}/placeholder-award.jpg`;
+              }}
+              style={{
+                objectFit: 'contain',
+                padding: '10px',
+                background: 'rgba(255, 255, 255, 0.05)'
+              }}
+            />
+            {/* Glass overlay with award info */}
+            <div className="actor-glass-overlay">
+              <motion.div
+                className="actor-glass-content"
+                initial={{ opacity: 1, y: 0 }}
+                whileHover={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  textAlign: 'center',
+                  padding: '15px'
+                }}
+              >
+                <h3 className="actor-glass-name" style={{
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  marginBottom: '8px',
+                  color: '#fff'
+                }}>
+                  {award.AWARD_NAME}
+                </h3>
+                <p className="actor-glass-role" style={{
+                  fontSize: '0.8rem',
+                  color: '#ccc',
+                  marginBottom: '5px'
+                }}>
+                  {award.AWARDING_BODY}
+                </p>
+                {award.YEAR && (
+                  <p style={{
+                    fontSize: '0.8rem',
+                    color: '#533483',
+                    fontWeight: 'bold'
+                  }}>
+                    {award.YEAR}
+                  </p>
+                )}
+              </motion.div>
+              
+              {/* Hover overlay with description */}
+              <motion.div
+                className="award-description-overlay"
+                initial={{ opacity: 0, y: 20 }}
+                whileHover={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)',
+                  padding: '20px 15px 15px 15px',
+                  fontSize: '0.75rem',
+                  color: '#fff',
+                  lineHeight: '1.4'
+                }}
+              >
+                {award.DESCRIPTION && award.DESCRIPTION.length > 100 
+                  ? `${award.DESCRIPTION.substring(0, 100)}...`
+                  : award.DESCRIPTION
+                }
               </motion.div>
             </div>
           </div>
@@ -1453,6 +1584,56 @@ function ShowDetails() {
                 >
                   {show.DIRECTORS && show.DIRECTORS.map((director, index) => (
                     <DirectorCard key={director.DIRECTOR_ID} director={director} index={index} />
+                  ))}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Awards Section */}
+          <AnimatePresence>
+            {awards && awards.length > 0 && (
+              <motion.div 
+                style={{
+                  marginBottom: '50px'
+                }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <motion.h2 
+                  style={{
+                    fontSize: '2.2rem',
+                    fontWeight: 'bold',
+                    marginBottom: '30px',
+                    color: '#fff',
+                    textAlign: 'center',
+                    textShadow: '1px 1px 2px #533483'
+                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                >
+                  🏆 Awards & Recognition
+                </motion.h2>
+                
+                <motion.div 
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                    gap: '25px',
+                    padding: '0 0 20px 0',
+                    maxWidth: '1400px',
+                    margin: '0 auto',
+                    marginTop: '10px'
+                  }}
+                  className="actors-grid"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.7 }}
+                >
+                  {awards && awards.map((award, index) => (
+                    <AwardCard key={award.AWARD_ID} award={award} index={index} />
                   ))}
                 </motion.div>
               </motion.div>
