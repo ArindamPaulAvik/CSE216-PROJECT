@@ -20,7 +20,7 @@ export default function Layout({ children, activeSection, hasWatchAgain = true, 
   const [viewingActivity, setViewingActivity] = useState([]);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   const navigate = useNavigate();
   const location = useLocation();

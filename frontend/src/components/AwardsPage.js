@@ -9,7 +9,7 @@ function AwardsPage() {
   const [filteredAwards, setFilteredAwards] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('token');

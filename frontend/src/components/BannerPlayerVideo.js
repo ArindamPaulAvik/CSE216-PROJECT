@@ -20,7 +20,7 @@ const BannerPlayerVideo = ({
   const videoRef = useRef(null);
   const progressRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   const getBannerPath = (banner) => {
     if (!banner) return `${BASE_URL}/banners/placeholder.jpg`;

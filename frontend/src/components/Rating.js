@@ -16,7 +16,7 @@ const Rating = ({ episodeId, showAverageRating = true }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [isLoadingUserRating, setIsLoadingUserRating] = useState(true);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     if (episodeId) {

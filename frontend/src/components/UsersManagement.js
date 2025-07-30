@@ -20,7 +20,7 @@ function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({});
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('token');

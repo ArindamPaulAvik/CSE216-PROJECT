@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+const BASE_URL = 'https://cse216-project.onrender.com';
 
 // Animation Variants
 const formVariants = {
@@ -155,8 +155,10 @@ function Auth() {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    console.log('BASE_URL being used:', BASE_URL); // Debug log
+    console.log('Login attempt at:', new Date().toISOString()); // Force rebuild
     try {
-      const res = await axios.post(`${BASE_URL}/login`, loginData);
+      const res = await axios.post('https://cse216-project.onrender.com/login', loginData);
       if (res.status === 200) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user_id', res.data.userId || res.data.adminId || res.data.publisherId);
@@ -182,7 +184,7 @@ function Auth() {
     setError(null);
     setIsLoading(true);
     try {
-      const response = await axios.post(`${BASE_URL}/register`, registerData);
+      const response = await axios.post('https://cse216-project.onrender.com/register', registerData);
       if (response.status === 201) {
         setShowSuccessModal(true);
       }

@@ -8,7 +8,7 @@ function EditActor() {
   const navigate = useNavigate();
   const { id } = useParams(); // If id exists, we're editing; otherwise, we're adding
   const isEditing = Boolean(id);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
   
   const [formData, setFormData] = useState({
     firstName: '',

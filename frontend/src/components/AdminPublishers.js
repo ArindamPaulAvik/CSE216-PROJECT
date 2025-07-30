@@ -30,7 +30,7 @@ function AdminPublishers() {
   const [rejectingId, setRejectingId] = useState(null);
   const [acceptingId, setAcceptingId] = useState(null);
   
-const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+const BASE_URL = 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     fetchPublishers();
