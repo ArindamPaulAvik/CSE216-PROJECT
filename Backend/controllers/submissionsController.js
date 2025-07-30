@@ -266,32 +266,30 @@ const createShowSubmission = async (req, res) => {
 
 // Create episode submission (for publishers)
 const createEpisodeSubmission = async (req, res) => {
-  console.log('=== CREATE EPISODE SUBMISSION CONTROLLER ===');
-  console.log('Request body:', req.body);
-  console.log('User:', req.user);
-  
   try {
-    // Verify publisher access
     const userType = req.user.userType;
-    console.log('User type:', userType);
     
     if (userType !== 'publisher') {
-      console.log('Access denied - not a publisher');
       return res.status(403).json({ message: 'Access denied. Publisher access required.' });
     }
 
     const publisherId = req.user.publisherId;
-    const { title, description, episodeLink, seriesId } = req.body;
+    const { title, description, episodeLink, showId } = req.body; // Changed from seriesId to showId
     
-    console.log('Episode data:', { title, description, episodeLink, seriesId, publisherId });
-
     // Validate required fields
-    if (!title || !description || !episodeLink || !seriesId) {
-      console.log('Validation failed - missing required fields');
+    if (!title || !description || !episodeLink || !showId) {
       return res.status(400).json({ message: 'Title, description, episode link, and series are required' });
     }
 
-    console.log('Proceeding with database insertion...');
+    // Verify the show exists and belongs to this publisher
+    const [showResult] = await pool.execute(
+      'SELECT SHOW_ID, TITLE FROM SHOWS WHERE SHOW_ID = ? AND PUBLISHER_ID = ? AND REMOVED = 0',
+      [showId, publisherId]
+    );
+
+    if (showResult.length === 0) {
+      return res.status(404).json({ message: 'Series not found or you do not have permission to add episodes to it' });
+    }
 
     // Insert new episode submission
     const insertQuery = `
@@ -309,19 +307,15 @@ const createEpisodeSubmission = async (req, res) => {
       VALUES (?, ?, ?, 'PENDING', CURRENT_TIMESTAMP, 'EPISODES', ?, ?, 'Episode')
     `;
 
-    console.log('Executing insert query with params:', [publisherId, seriesId, episodeLink, title, description]);
-
     const [result] = await pool.execute(insertQuery, [
       publisherId, 
-      seriesId,
+      showId, // Use showId directly
       episodeLink, 
       title, 
       description
     ]);
 
-    console.log('Insert successful, result:', result);
-
-    // Get the created submission with publisher info
+    // Get the created submission
     const [newSubmission] = await pool.execute(`
       SELECT 
         s.SUBMISSION_ID,
@@ -335,13 +329,13 @@ const createEpisodeSubmission = async (req, res) => {
         s.TITLE,
         s.DESCRIPTION,
         s.CATEGORY,
-        p.PUBLISHER_NAME
+        p.PUBLISHER_NAME,
+        sh.TITLE as SERIES_TITLE
       FROM SUBMISSION s
       LEFT JOIN PUBLISHER p ON s.PUBLISHER_ID = p.PUBLISHER_ID
+      LEFT JOIN SHOWS sh ON s.SHOW_ID = sh.SHOW_ID
       WHERE s.SUBMISSION_ID = ?
     `, [result.insertId]);
-
-    console.log('Retrieved submission:', newSubmission[0]);
 
     res.status(201).json({
       message: 'Episode submission created successfully',
