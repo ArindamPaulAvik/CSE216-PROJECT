@@ -39,8 +39,8 @@ function ShowDetails() {
   const isMovie = show?.CATEGORY_ID === 1;
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, []);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [id]);
 
   // Fetch current favorite status on mount
   useEffect(() => {
