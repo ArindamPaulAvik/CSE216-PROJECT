@@ -1411,7 +1411,7 @@ function ShowDetails() {
 
           {/* Directors Section */}
           <AnimatePresence>
-            {true && (
+            {show.DIRECTORS && show.DIRECTORS.length > 0 && (
               <motion.div 
                 style={{
                   marginBottom: '50px'
@@ -1433,7 +1433,7 @@ function ShowDetails() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.5 }}
                 >
-                  Directors ({show.DIRECTORS ? show.DIRECTORS.length : 'undefined'})
+                  Directors
                 </motion.h2>
                 
                 <motion.div 
@@ -1461,7 +1461,7 @@ function ShowDetails() {
 
           {/* More Like This Section */}
           <AnimatePresence>
-            {true && (
+            {show.SIMILAR_SHOWS && show.SIMILAR_SHOWS.length > 0 && (
               <motion.div 
                 style={{
                   marginBottom: '50px'
@@ -1483,7 +1483,7 @@ function ShowDetails() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.6 }}
                 >
-                  More Like This ({show.SIMILAR_SHOWS ? show.SIMILAR_SHOWS.length : 'undefined'})
+                  More Like This
                 </motion.h2>
                 
                 <motion.div 

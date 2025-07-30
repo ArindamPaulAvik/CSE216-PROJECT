@@ -38,75 +38,100 @@ exports.getShowDetails = async (req, res) => {
     }
 
     // Get cast information for the show
-    const [castRows] = await pool.query(`
-      SELECT a.ACTOR_ID,
-             a.ACTOR_FIRSTNAME,
-             a.ACTOR_LASTNAME,
-             a.BIOGRAPHY,
-             a.PICTURE,
-             sc.ROLE_NAME,
-             sc.DESCRIPTION as ROLE_DESCRIPTION
-      FROM SHOW_CAST sc
-      JOIN ACTOR a ON sc.ACTOR_ID = a.ACTOR_ID
-      WHERE sc.SHOW_ID = ?
-      ORDER BY sc.ROLE_NAME
-    `, [showId]);
+    let castRows = [];
+    try {
+      const [cast] = await pool.query(`
+        SELECT a.ACTOR_ID,
+               a.ACTOR_FIRSTNAME,
+               a.ACTOR_LASTNAME,
+               a.BIOGRAPHY,
+               a.PICTURE,
+               sc.ROLE_NAME,
+               sc.DESCRIPTION as ROLE_DESCRIPTION
+        FROM SHOW_CAST sc
+        JOIN ACTOR a ON sc.ACTOR_ID = a.ACTOR_ID
+        WHERE sc.SHOW_ID = ?
+        ORDER BY sc.ROLE_NAME
+      `, [showId]);
+      castRows = cast;
+    } catch (castError) {
+      console.error('Error fetching cast:', castError);
+      castRows = [];
+    }
 
     // Get directors information for the show
-    const [directorsRows] = await pool.query(`
-      SELECT d.DIRECTOR_ID,
-             CONCAT(d.DIRECTOR_FIRSTNAME, ' ', d.DIRECTOR_LASTNAME) as DIRECTOR_NAME,
-             d.BIOGRAPHY,
-             d.PICTURE as IMAGE
-      FROM SHOW_DIRECTOR sd
-      JOIN DIRECTOR d ON sd.DIRECTOR_ID = d.DIRECTOR_ID
-      WHERE sd.SHOW_ID = ?
-      ORDER BY d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME
-    `, [showId]);
-
-    console.log('🎭 Directors query result for show', showId, ':', directorsRows);
-    console.log('🎭 Directors query length:', directorsRows.length);
+    let directorsRows = [];
+    try {
+      const [directors] = await pool.query(`
+        SELECT d.DIRECTOR_ID,
+               CONCAT(COALESCE(d.DIRECTOR_FIRSTNAME, ''), ' ', COALESCE(d.DIRECTOR_LASTNAME, '')) as DIRECTOR_NAME,
+               d.BIOGRAPHY,
+               d.PICTURE as IMAGE
+        FROM SHOW_DIRECTOR sd
+        JOIN DIRECTOR d ON sd.DIRECTOR_ID = d.DIRECTOR_ID
+        WHERE sd.SHOW_ID = ?
+        ORDER BY d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME
+      `, [showId]);
+      directorsRows = directors;
+      console.log('🎭 Directors query result for show', showId, ':', directorsRows.length, 'directors found');
+    } catch (directorError) {
+      console.error('Error fetching directors:', directorError);
+      directorsRows = [];
+    }
 
     // Get similar shows based on same genre(s)
-    const [similarShowsRows] = await pool.query(`
-      SELECT DISTINCT s2.SHOW_ID,
-             s2.TITLE,
-             s2.DESCRIPTION,
-             s2.THUMBNAIL,
-             s2.RATING,
-             YEAR(s2.RELEASE_DATE) as YEAR,
-             s2.DURATION,
-             s2.MATURITY_RATING,
-             s2.TEASER,
-             false as IS_FAVORITE
-      FROM SHOWS s2
-      LEFT JOIN SHOW_GENRE sg2 ON s2.SHOW_ID = sg2.SHOW_ID
-      WHERE sg2.GENRE_ID IN (
-        SELECT sg1.GENRE_ID 
-        FROM SHOW_GENRE sg1 
-        WHERE sg1.SHOW_ID = ?
-      )
-      AND s2.SHOW_ID != ?
-      AND s2.REMOVED = 0
-      ORDER BY s2.RATING DESC
-      LIMIT 8
-    `, [showId, showId]);
-
-    console.log('🎬 Similar shows query result for show', showId, ':', similarShowsRows.length, 'shows found');
+    let similarShowsRows = [];
+    try {
+      const [similarShows] = await pool.query(`
+        SELECT DISTINCT s2.SHOW_ID,
+               s2.TITLE,
+               s2.DESCRIPTION,
+               s2.THUMBNAIL,
+               COALESCE(s2.RATING, 0) as RATING,
+               COALESCE(YEAR(s2.RELEASE_DATE), 0) as YEAR,
+               s2.DURATION,
+               s2.MATURITY_RATING,
+               s2.TEASER,
+               false as IS_FAVORITE
+        FROM SHOWS s2
+        LEFT JOIN SHOW_GENRE sg2 ON s2.SHOW_ID = sg2.SHOW_ID
+        WHERE sg2.GENRE_ID IN (
+          SELECT sg1.GENRE_ID 
+          FROM SHOW_GENRE sg1 
+          WHERE sg1.SHOW_ID = ?
+        )
+        AND s2.SHOW_ID != ?
+        AND s2.REMOVED = 0
+        ORDER BY s2.RATING DESC
+        LIMIT 8
+      `, [showId, showId]);
+      similarShowsRows = similarShows;
+      console.log('🎬 Similar shows query result for show', showId, ':', similarShowsRows.length, 'shows found');
+    } catch (similarError) {
+      console.error('Error fetching similar shows:', similarError);
+      similarShowsRows = [];
+    }
 
     // Get episodes grouped by season (if it's a series)
-    const [episodeRows] = await pool.query(`
-      SELECT se.SHOW_EPISODE_ID,
-             se.EPISODE_NUMBER,
-             se.SHOW_EPISODE_TITLE,
-             se.SHOW_EPISODE_DURATION,
-             se.SHOW_EPISODE_RELEASE_DATE,
-             se.SHOW_EPISODE_DESCRIPTION,
-             se.VIDEO_URL
-      FROM SHOW_EPISODE se
-      WHERE se.SHOW_ID = ?
-      ORDER BY se.EPISODE_NUMBER
-    `, [showId]);
+    let episodeRows = [];
+    try {
+      const [episodes] = await pool.query(`
+        SELECT se.SHOW_EPISODE_ID,
+               se.EPISODE_NUMBER,
+               se.SHOW_EPISODE_TITLE,
+               se.SHOW_EPISODE_DURATION,
+               se.SHOW_EPISODE_RELEASE_DATE,
+               se.SHOW_EPISODE_DESCRIPTION,
+               se.VIDEO_URL
+        FROM SHOW_EPISODE se
+        WHERE se.SHOW_ID = ?
+        ORDER BY se.EPISODE_NUMBER
+      `, [showId]);
+      episodeRows = episodes;
+    } catch (episodeError) {
+      console.error('Error fetching episodes:', episodeError);
+      episodeRows = [];
+    }
 
     // Combine the results
     const showDetails = {
