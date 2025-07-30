@@ -26,6 +26,7 @@ exports.getFrontpage = async (req, res) => {
     s.DESCRIPTION, 
     s.THUMBNAIL, 
     s.RATING, 
+    s.RELEASE_DATE,
     s.TEASER, 
     s.BANNER, 
     GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') AS GENRES,
@@ -47,14 +48,14 @@ exports.getFrontpage = async (req, res) => {
   LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
   WHERE s.REMOVED = 0
   GROUP BY 
-    s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, s.BANNER, IS_FAVORITE
+    s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, s.BANNER, IS_FAVORITE
   ORDER BY s.WATCH_COUNT DESC
   LIMIT 4
 `, [userId]);
 
 
     const [allshows] = await pool.query(`
-      SELECT SHOW_ID, TITLE, THUMBNAIL, RATING FROM SHOWS WHERE REMOVED = 0
+      SELECT SHOW_ID, TITLE, THUMBNAIL, RATING, RELEASE_DATE FROM SHOWS WHERE REMOVED = 0
     `);
 
     const [watchagainshows] = await pool.query(`
@@ -64,6 +65,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         GROUP_CONCAT(DISTINCT g.GENRE_NAME ORDER BY g.GENRE_NAME SEPARATOR ', ') AS GENRES,
         CASE 
@@ -81,7 +83,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
       LEFT JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
       WHERE p.EMAIL = ? AND s.REMOVED = 0
-      GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER
+      GROUP BY s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER
       LIMIT 4
     `, [userEmail]);
 
@@ -163,6 +165,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
          FROM SHOW_GENRE sg2 
@@ -184,7 +187,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE s.RATING IS NOT NULL AND s.RATING > 0 AND s.REMOVED = 0
       GROUP BY 
-        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
       ORDER BY s.RATING DESC, s.WATCH_COUNT DESC
       LIMIT 4
     `, [userId]);
@@ -197,6 +200,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
          FROM SHOW_GENRE sg2 
@@ -220,7 +224,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%action%' AND s.REMOVED = 0
       GROUP BY 
-        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
       LIMIT 4
     `, [userId]);
@@ -233,6 +237,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
          FROM SHOW_GENRE sg2 
@@ -256,7 +261,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%thriller%' OR LOWER(g.GENRE_NAME) LIKE '%suspense%' AND s.REMOVED = 0
       GROUP BY 
-        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
       LIMIT 4
     `, [userId]);
@@ -269,6 +274,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
          FROM SHOW_GENRE sg2 
@@ -292,7 +298,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%comedy%' OR LOWER(g.GENRE_NAME) LIKE '%humor%' OR LOWER(g.GENRE_NAME) LIKE '%comic%' AND s.REMOVED = 0
       GROUP BY 
-        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
       LIMIT 4
     `, [userId]);
@@ -309,6 +315,7 @@ exports.getFrontpage = async (req, res) => {
           s.DESCRIPTION, 
           s.THUMBNAIL, 
           s.RATING, 
+          s.RELEASE_DATE,
           s.TEASER,
           (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
            FROM SHOW_GENRE sg2 
@@ -330,7 +337,7 @@ exports.getFrontpage = async (req, res) => {
         LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
         WHERE s.REMOVED = 0
         GROUP BY 
-          s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+          s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
         ORDER BY RAND()
         LIMIT 4
       `, [userId]);
@@ -344,6 +351,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
          FROM SHOW_GENRE sg2 
@@ -367,7 +375,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE LOWER(g.GENRE_NAME) LIKE '%drama%' AND s.REMOVED = 0
       GROUP BY 
-        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
       LIMIT 4
     `, [userId]);
@@ -380,6 +388,7 @@ exports.getFrontpage = async (req, res) => {
         s.DESCRIPTION, 
         s.THUMBNAIL, 
         s.RATING, 
+        s.RELEASE_DATE,
         s.TEASER,
         (SELECT GROUP_CONCAT(DISTINCT g2.GENRE_NAME ORDER BY g2.GENRE_NAME SEPARATOR ', ')
          FROM SHOW_GENRE sg2 
@@ -403,7 +412,7 @@ exports.getFrontpage = async (req, res) => {
       LEFT JOIN SHOW_EPISODE se ON s.SHOW_ID = se.SHOW_ID
       WHERE (LOWER(g.GENRE_NAME) LIKE '%family%' OR s.AGE_RESTRICTION_ID IN (1, 2, 3)) AND s.REMOVED = 0
       GROUP BY 
-        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.TEASER, IS_FAVORITE
+        s.SHOW_ID, s.TITLE, s.DESCRIPTION, s.THUMBNAIL, s.RATING, s.RELEASE_DATE, s.TEASER, IS_FAVORITE
       ORDER BY RAND()
       LIMIT 4
     `, [userId]);
