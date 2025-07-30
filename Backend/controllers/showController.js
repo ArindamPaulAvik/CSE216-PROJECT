@@ -110,7 +110,7 @@ exports.getShowDetails = async (req, res) => {
         console.log('🎭 Debug - Genre placeholders:', genrePlaceholders);
         console.log('🎭 Debug - Query params:', [...genreNames, showId]);
         
-        // Use the same pattern as searchController for genre filtering
+        // Simplified query without GROUP_CONCAT - let JavaScript handle genre aggregation
         const similarShowsQuery = `
           SELECT DISTINCT s2.SHOW_ID,
                  s2.TITLE,
@@ -120,15 +120,13 @@ exports.getShowDetails = async (req, res) => {
                  s2.RELEASE_DATE,
                  s2.DURATION,
                  s2.MATURITY_RATING,
-                 s2.TEASER,
-                 false as IS_FAVORITE
+                 s2.TEASER
           FROM SHOWS s2
           INNER JOIN SHOW_GENRE sg2 ON s2.SHOW_ID = sg2.SHOW_ID
           INNER JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID
           WHERE g2.GENRE_NAME IN (${genrePlaceholders})
           AND s2.SHOW_ID != ?
           AND s2.REMOVED = 0
-          GROUP BY s2.SHOW_ID
           ORDER BY s2.RATING DESC
           LIMIT 8
         `;
@@ -142,16 +140,19 @@ exports.getShowDetails = async (req, res) => {
         // Format similar shows data with year extracted in JavaScript
         similarShowsRows = similarShows.map(show => ({
           ...show,
-          YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null
+          YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null,
+          IS_FAVORITE: false
         }));
         
         console.log('🎬 Similar shows query result for show', showId, ':', similarShowsRows.length, 'shows found');
+        console.log('🎬 Final similar shows data:', similarShowsRows);
       } else {
         console.log('🎬 No genres found for show', showId, ', no similar shows to fetch');
       }
     } catch (similarError) {
       console.error('Error fetching similar shows:', similarError);
       console.error('Similar shows error details:', similarError.message);
+      console.error('Similar shows error stack:', similarError.stack);
       similarShowsRows = [];
     }    // Get episodes grouped by season (if it's a series)
     let episodeRows = [];
