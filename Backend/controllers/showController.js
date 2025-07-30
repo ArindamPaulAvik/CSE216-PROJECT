@@ -86,39 +86,84 @@ exports.getShowDetails = async (req, res) => {
       directorsRows = [];
     }
 
-    // Get similar shows based on genres (simplified test)
+    // Get similar shows based on genres (fixed implementation)
     let similarShowsRows = [];
     try {
       console.log('🎭 Debug - Starting similar shows query for show ID:', showId);
       
-      // Simple test - just get all shows except current one (for debugging)
-      const [allOtherShows] = await pool.query(`
-        SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, RELEASE_DATE
-        FROM SHOWS 
-        WHERE SHOW_ID != ? AND REMOVED = 0 
-        ORDER BY RATING DESC 
-        LIMIT 5
+      // First, get the genres of the current show
+      const [currentShowGenres] = await pool.query(`
+        SELECT DISTINCT g.GENRE_NAME
+        FROM SHOW_GENRE sg
+        INNER JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+        WHERE sg.SHOW_ID = ?
       `, [showId]);
       
-      console.log('🎭 Debug - Simple test query returned:', allOtherShows.length, 'shows');
+      console.log('🎭 Debug - Current show genres:', currentShowGenres);
       
-      if (allOtherShows.length > 0) {
-        similarShowsRows = allOtherShows.map(show => ({
+      if (currentShowGenres.length > 0) {
+        const genreNames = currentShowGenres.map(row => row.GENRE_NAME);
+        console.log('🎭 Debug - Genre names array:', genreNames);
+        
+        // Create placeholders for the IN clause
+        const placeholders = genreNames.map(() => '?').join(',');
+        
+        // Query for shows with matching genres (similar to searchController)
+        const [similarShows] = await pool.query(`
+          SELECT DISTINCT s.SHOW_ID,
+                 s.TITLE,
+                 s.DESCRIPTION,
+                 s.THUMBNAIL,
+                 s.RATING,
+                 s.RELEASE_DATE,
+                 s.DURATION,
+                 s.MATURITY_RATING,
+                 s.TEASER
+          FROM SHOWS s
+          INNER JOIN SHOW_GENRE sg ON s.SHOW_ID = sg.SHOW_ID
+          INNER JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
+          WHERE g.GENRE_NAME IN (${placeholders})
+          AND s.SHOW_ID != ?
+          AND s.REMOVED = 0
+          ORDER BY s.RATING DESC
+          LIMIT 8
+        `, [...genreNames, showId]);
+        
+        console.log('🎭 Debug - Similar shows query returned:', similarShows.length, 'shows');
+        
+        // Format the results
+        similarShowsRows = similarShows.map(show => ({
           ...show,
           YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null,
-          IS_FAVORITE: false,
-          TEASER: null,
-          DURATION: null,
-          MATURITY_RATING: null
+          IS_FAVORITE: false
         }));
-        console.log('� Debug - Final similar shows:', similarShowsRows);
+        
+        console.log('🎬 Final similar shows data:', similarShowsRows);
+      } else {
+        console.log('🎬 No genres found for show', showId);
+        // Fallback to top-rated shows if no genres found
+        const [fallbackShows] = await pool.query(`
+          SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, RELEASE_DATE, DURATION, MATURITY_RATING, TEASER
+          FROM SHOWS 
+          WHERE SHOW_ID != ? AND REMOVED = 0 
+          ORDER BY RATING DESC 
+          LIMIT 5
+        `, [showId]);
+        
+        similarShowsRows = fallbackShows.map(show => ({
+          ...show,
+          YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null,
+          IS_FAVORITE: false
+        }));
+        console.log('🎬 Using fallback shows:', similarShowsRows.length);
       }
     } catch (similarError) {
       console.error('Error fetching similar shows:', similarError);
-      console.error('Similar shows error details:', similarError.message);
-      console.error('Similar shows error stack:', similarError.stack);
+      console.error('Error details:', similarError.message);
       similarShowsRows = [];
-    }    // Get episodes grouped by season (if it's a series)
+    }
+
+    // Get episodes grouped by season (if it's a series)
     let episodeRows = [];
     try {
       const [episodes] = await pool.query(`
