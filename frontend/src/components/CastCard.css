@@ -1,0 +1,208 @@
+/* Cast Card Styles - Similar to ActorsPage cards */
+.cast-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(22, 33, 62, 0.95), rgba(83, 52, 131, 0.85));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    0 1px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  width: 100%;
+  height: 350px;
+}
+
+.cast-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.cast-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.cast-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: scale(1);
+}
+
+.cast-glass-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(22, 33, 62, 0.8) 40%,
+    rgba(83, 52, 131, 0.6) 70%,
+    transparent 100%
+  );
+  backdrop-filter: blur(15px) saturate(150%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  color: white;
+  transform: translateY(0);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.cast-glass-content {
+  text-align: left;
+}
+
+.cast-glass-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+
+.cast-glass-role {
+  font-size: 0.95rem;
+  color: #667eea;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.cast-glass-description {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  margin: 0 0 6px 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cast-glass-bio {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.3;
+  margin: 0;
+  font-style: italic;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Hover Effects */
+.cast-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 
+    0 20px 60px rgba(102, 126, 234, 0.2),
+    0 8px 30px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.cast-card:not(:hover) {
+  transform: translateY(0);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    0 1px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.cast-card:hover .cast-image {
+  transform: scale(1.08);
+}
+
+.cast-card:not(:hover) .cast-image {
+  transform: scale(1);
+}
+
+.cast-card:hover .cast-glass-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(102, 126, 234, 0.9) 0%,
+    rgba(22, 33, 62, 0.85) 40%,
+    rgba(83, 52, 131, 0.7) 70%,
+    transparent 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.cast-card:not(:hover) .cast-glass-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(22, 33, 62, 0.8) 40%,
+    rgba(83, 52, 131, 0.6) 70%,
+    transparent 100%
+  );
+  backdrop-filter: blur(15px) saturate(150%);
+}
+
+.cast-card:hover .cast-glass-name {
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(102, 126, 234, 0.6);
+}
+
+.cast-card:not(:hover) .cast-glass-name {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.cast-card:hover .cast-glass-role {
+  color: #8c9eff;
+}
+
+.cast-card:not(:hover) .cast-glass-role {
+  color: #667eea;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cast-card {
+    height: 300px;
+  }
+  
+  .cast-glass-overlay {
+    padding: 15px;
+  }
+  
+  .cast-glass-name {
+    font-size: 1.1rem;
+  }
+  
+  .cast-glass-role {
+    font-size: 0.9rem;
+  }
+  
+  .cast-glass-description {
+    font-size: 0.8rem;
+  }
+  
+  .cast-glass-bio {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cast-card {
+    height: 280px;
+  }
+  
+  .cast-glass-overlay {
+    padding: 12px;
+  }
+  
+  .cast-glass-name {
+    font-size: 1rem;
+  }
+  
+  .cast-glass-role {
+    font-size: 0.85rem;
+  }
+}

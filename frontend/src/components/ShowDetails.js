@@ -1,12 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence, useInView } from 'framer-motion';
 import axios from 'axios';
 import Layout from './Layout';
 import VideoPlayer from './videoplayer';
 import CommentSection from './Comment';
 import Rating from './Rating';
 import { useNavigate } from 'react-router-dom';
+import './ShowCard.css';
+import './TrendingCarousel.css';
 
 
 function ShowDetails() {
@@ -198,6 +200,9 @@ function ShowDetails() {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
+        console.log('📺 Show details received:', res.data); // Debug log
+        console.log('📽️ Directors data:', res.data.DIRECTORS); // Debug log
+        console.log('🎬 Similar shows data:', res.data.SIMILAR_SHOWS); // Debug log
         setShow(res.data);
         setLoading(false);
       })
@@ -590,177 +595,382 @@ function ShowDetails() {
     );
   };
 
-  // Cast Card Component
+  // Cast Card Component - Exact 1:1 copy from ActorsPage
   const CastCard = ({ actor, index }) => {
-    const cardRef = useRef(null);
-    const { scrollYProgress: cardScrollProgress } = useScroll({
-      target: cardRef,
-      offset: ["start end", "end start"]
+    const ref = useRef(null);
+    const isInView = useInView(ref, { 
+      once: true, 
+      amount: 0.3,
+      margin: "0px 0px -100px 0px"
     });
-
-    const scale = useTransform(cardScrollProgress, [0, 0.3, 0.7, 1], [0.9, 1, 1, 0.95]);
-    const opacity = useTransform(cardScrollProgress, [0, 0.2, 0.8, 1], [0.5, 1, 1, 0.8]);
-
-    // Debug: Log the actor data to see what's available
-    console.log('Actor data:', actor);
 
     return (
       <motion.div
-        ref={cardRef}
-        style={{ 
-          scale, 
-          opacity,
-          background: 'rgba(22, 33, 62, 0.85)',
-          borderRadius: '15px',
-          padding: '20px',
-          border: '1px solid #533483',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 8px 25px rgba(22, 33, 62, 0.3)',
-          transition: 'all 0.3s ease',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden'
+        ref={ref}
+        initial={{ scale: 0.7, opacity: 0, y: 50 }}
+        animate={isInView ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.7, opacity: 0, y: 50 }}
+        transition={{
+          duration: 0.6,
+          delay: (index % 4) * 0.1,
+          ease: [0.25, 0.46, 0.45, 0.94],
         }}
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ 
-          duration: 0.6, 
-          delay: index * 0.1,
-          ease: [0.25, 0.46, 0.45, 0.94]
+        whileHover={{
+          scale: 1.08,
+          rotateY: 5,
+          transition: { duration: 0.3 },
         }}
-        whileHover={{ 
-          scale: 1.05,
-          boxShadow: '0 12px 35px rgba(229, 9, 20, 0.2)',
-          transition: { duration: 0.2 }
-        }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {/* Animated background gradient */}
-        <motion.div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(83, 52, 131, 0.15), rgba(22, 33, 62, 0.1))',
-            opacity: 0,
-          }}
-          whileHover={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        />
-
-        <motion.div 
+        whileTap={{ scale: 0.98 }}
         onClick={() => navigate(`/actor/${actor.ACTOR_ID}`)}
-          style={{ 
-            position: 'relative', 
-            zIndex: 1,
-            textAlign: 'center'
-          }}
-        >
-         {/* Actor Image - Simplified version */}
-          <motion.div
-            style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              margin: '0 auto 15px',
-              overflow: 'hidden',
-              position: 'relative'
-            }}
-            whileHover={{ scale: 1.1 }}
-            transition={{ duration: 0.2 }}
-          >
-            {actor.PICTURE && (
-              <img 
-                src={`${BASE_URL}/actors/${actor.PICTURE}`}
-                alt={`${actor.ACTOR_FIRSTNAME} ${actor.ACTOR_LASTNAME}`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            )}
-          </motion.div>
-
-          {/* Actor Name */}
-          <motion.h3 
-            style={{ 
-              color: '#fff', 
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              marginBottom: '8px',
-              textAlign: 'center'
-            }}
-            whileHover={{ color: '#e50914' }}
-            transition={{ duration: 0.2 }}
-          >
-            {actor.ACTOR_FIRSTNAME} {actor.ACTOR_LASTNAME}
-          </motion.h3>
-
-          {/* Role Name */}
-          {actor.ROLE_NAME && (
-            <motion.p 
-              style={{ 
-                color: '#ccc', 
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                marginBottom: '8px',
-                textAlign: 'center'
+        className="actor-card"
+      >
+        <div className="actor-card-inner">
+          <div className="actor-image-container">
+            <motion.img
+              src={`${BASE_URL}/actors/${actor.PICTURE}`}
+              alt={actor.NAME || `${actor.ACTOR_FIRSTNAME} ${actor.ACTOR_LASTNAME}`}
+              className="actor-image"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.4 }}
+              onError={(e) => {
+                e.target.src = `${BASE_URL}/actors/${actor.PICTURE}`;
               }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              as {actor.ROLE_NAME}
-            </motion.p>
-          )}
-
-          {/* Role Description */}
-          {actor.ROLE_DESCRIPTION && (
-            <motion.p 
-              style={{ 
-                color: '#ccc', 
-                fontSize: '0.8rem',
-                lineHeight: '1.4',
-                textAlign: 'center',
-                marginBottom: '10px'
-              }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              {actor.ROLE_DESCRIPTION.length > 60 
-                ? `${actor.ROLE_DESCRIPTION.substring(0, 60)}...` 
-                : actor.ROLE_DESCRIPTION}
-            </motion.p>
-          )}
-
-          {/* Biography Preview */}
-          {actor.BIOGRAPHY && (
-            <motion.p 
-              style={{ 
-                color: '#ccc', 
-                fontSize: '0.7rem',
-                lineHeight: '1.3',
-                textAlign: 'center',
-                fontStyle: 'italic'
-              }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              {actor.BIOGRAPHY.length > 50 
-                ? `${actor.BIOGRAPHY.substring(0, 50)}...` 
-                : actor.BIOGRAPHY}
-            </motion.p>
-          )}
-        </motion.div>
+            />
+            {/* Glass overlay with actor info */}
+            <div className="actor-glass-overlay">
+              <motion.div
+                className="actor-glass-content"
+                initial={{ opacity: 1, y: 0 }}
+                whileHover={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h3 className="actor-glass-name">
+                  {actor.NAME || `${actor.ACTOR_FIRSTNAME} ${actor.ACTOR_LASTNAME}`}
+                </h3>
+                <p className="actor-glass-role">Actor</p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
       </motion.div>
+    );
+  };
+
+  // Director Card Component - Exact 1:1 copy from DirectorsPage
+  const DirectorCard = ({ director, index }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { 
+      once: true, 
+      amount: 0.3,
+      margin: "0px 0px -100px 0px"
+    });
+
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ scale: 0.7, opacity: 0, y: 50 }}
+        animate={isInView ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.7, opacity: 0, y: 50 }}
+        transition={{
+          duration: 0.6,
+          delay: (index % 4) * 0.1,
+          ease: [0.25, 0.46, 0.45, 0.94],
+        }}
+        whileHover={{
+          scale: 1.08,
+          rotateY: 5,
+          transition: { duration: 0.3 },
+        }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => navigate(`/director/${director.DIRECTOR_ID}`)}
+        className="actor-card"
+      >
+        <div className="actor-card-inner">
+          <div className="actor-image-container">
+            <motion.img
+              src={`${BASE_URL}/directors/${director.IMAGE}`}
+              alt={director.DIRECTOR_NAME}
+              className="actor-image"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.4 }}
+              onError={(e) => {
+                e.target.src = `${BASE_URL}/placeholder.jpg`;
+              }}
+            />
+            {/* Glass overlay with director info */}
+            <div className="actor-glass-overlay">
+              <motion.div
+                className="actor-glass-content"
+                initial={{ opacity: 1, y: 0 }}
+                whileHover={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h3 className="actor-glass-name">
+                  {director.DIRECTOR_NAME}
+                </h3>
+                <p className="actor-glass-role">Director</p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Similar Show Card Component - Exact 1:1 copy from ShowCard (frontpage)
+  const SimilarShowCard = ({ show, index }) => {
+    const [showVideo, setShowVideo] = useState(false);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(show?.IS_FAVORITE || false);
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [videoReady, setVideoReady] = useState(false);
+    
+    const timerRef = useRef(null);
+    const cardRef = useRef(null);
+    const videoRef = useRef(null);
+
+    const getImagePath = (thumbnail) => {
+      if (!thumbnail) return `${BASE_URL}/shows/placeholder.jpg`;
+      return `${BASE_URL}/shows/${thumbnail}`;
+    };
+
+    const getYouTubeEmbedUrl = (url) => {
+      if (!url) return null;
+      const videoId = url.split('v=')[1]?.split('&')[0];
+      if (!videoId) return null;
+      
+      return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&loop=1&playlist=${videoId}&enablejsapi=1&origin=${window.location.origin}`;
+    };
+
+    const handleImageError = (e, title, thumb) => {
+      console.error(`Image error for ${title}`, thumb);
+      e.target.src = `${BASE_URL}/placeholder.jpg`;
+    };
+
+    const handleMouseEnter = useCallback((e) => {
+      setIsHovered(true);
+      
+      if (e.currentTarget) {
+        e.currentTarget.style.willChange = 'transform, filter, backdrop-filter';
+      }
+      
+      // Preload video after a short delay
+      if (show.TEASER) {
+        timerRef.current = setTimeout(() => {
+          setShowVideo(true);
+          setTimeout(() => setVideoReady(true), 300);
+        }, 800);
+      }
+    }, [show.TEASER]);
+
+    const handleMouseLeave = useCallback((e) => {
+      setIsHovered(false);
+      
+      if (e.currentTarget) {
+        e.currentTarget.style.willChange = 'auto';
+      }
+      
+      clearTimeout(timerRef.current);
+      setShowVideo(false);
+      setVideoReady(false);
+    }, []);
+
+    const toggleMute = useCallback((e) => {
+      e.stopPropagation();
+      setIsMuted(!isMuted);
+    }, [isMuted]);
+
+    const toggleFavorite = useCallback(async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No auth token found');
+          return;
+        }
+
+        const url = `${BASE_URL}/favorite/${show.SHOW_ID}`;
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setIsFavorite(result.favorite);
+        } else {
+          const errorText = await response.text();
+          console.error('Failed to update favorite status:', response.status, errorText);
+        }
+      } catch (error) {
+        console.error('Error toggling favorite:', error);
+      }
+    }, [isFavorite, show.SHOW_ID]);
+
+    const handleCardClick = useCallback(() => {
+      navigate(`/show/${show.SHOW_ID}`);
+    }, [navigate, show.SHOW_ID]);
+
+    useEffect(() => {
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      };
+    }, []);
+
+    return (
+      <div
+        ref={cardRef}
+        className={`show-card ${isHovered ? 'hovered' : ''} ${imageLoaded ? 'loaded' : ''}`}
+        role="button"
+        tabIndex={0}
+        style={{ 
+          animationDelay: `${index * 0.1}s`,
+          '--hover-scale': isHovered ? '1.08' : '1',
+          '--hover-z': isHovered ? '10' : '1'
+        }}
+        onClick={handleCardClick}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleCardClick()}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className="card-image-container">
+          {/* Background Image */}
+          <img
+            src={getImagePath(show.THUMBNAIL)}
+            alt={show.TITLE}
+            className={`card-image ${imageLoaded ? 'loaded' : ''}`}
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => handleImageError(e, show.TITLE, show.THUMBNAIL)}
+          />
+
+          {/* Video Overlay */}
+          {showVideo && show.TEASER && (
+            <div className={`video-container ${videoReady ? 'ready' : ''}`}>
+              <iframe
+                ref={videoRef}
+                src={getYouTubeEmbedUrl(show.TEASER)}
+                frameBorder="0"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                title={show.TITLE}
+                className="video-iframe"
+                onLoad={() => setVideoReady(true)}
+              />
+              
+              {/* Video Controls Overlay */}
+              <div className="video-controls">
+                <button
+                  className="control-btn mute-btn"
+                  onClick={toggleMute}
+                  aria-label={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  {isMuted ? '🔇' : '🔊'}
+                </button>
+              </div>
+
+              {/* Gradient overlays to hide YouTube branding */}
+              <div className="video-overlay-top"></div>
+              <div className="video-overlay-bottom"></div>
+            </div>
+          )}
+
+          {/* Card Actions */}
+          <div className={`card-actions ${isHovered ? 'visible' : ''}`}>
+            <button
+              className="action-btn favorite-btn"
+              onClick={toggleFavorite}
+              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              ❤️
+            </button>
+            
+            <button
+              className="action-btn play-btn"
+              onClick={handleCardClick}
+              aria-label="Play show"
+            >
+              ▶️
+            </button>
+          </div>
+
+          {/* Rating Badge */}
+          <div className="rating-badge">
+            <span style={{ color: '#ffd700' }}>⭐</span>
+            <span>{show.RATING}</span>
+          </div>
+
+          {/* Progress Bar (if watch progress exists) */}
+          {show.WATCH_PROGRESS && (
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${show.WATCH_PROGRESS}%` }}
+              ></div>
+            </div>
+          )}
+        </div>
+
+        {/* Enhanced Card Content */}
+        <div className={`card-content ${isHovered ? 'expanded' : ''}`}>
+          <div className="content-main">
+            <h3 className="card-title">{show.TITLE}</h3>
+            
+            <div className="card-meta">
+              <div className="meta-item">
+                <span className="year">{show.YEAR || 'N/A'}</span>
+              </div>
+              {show.DURATION && (
+                <div className="meta-item">
+                  <span className="duration">{show.DURATION}</span>
+                </div>
+              )}
+              {show.MATURITY_RATING && (
+                <div className="meta-item maturity-rating">
+                  {show.MATURITY_RATING}
+                </div>
+              )}
+            </div>
+
+            <p className="card-description">
+              {show.DESCRIPTION && show.DESCRIPTION.length > 120
+                ? show.DESCRIPTION.substring(0, 120) + '...'
+                : show.DESCRIPTION || 'No description available'}
+            </p>
+          </div>
+
+          {/* Additional content shown on hover */}
+          <div className="content-expanded">
+            <div className="cast-info">
+              {show.CAST && (
+                <div className="cast-section">
+                  <span className="section-label">Cast:</span>
+                  <span className="cast-names">
+                    {show.CAST.split(',').slice(0, 2).join(', ')}
+                  </span>
+                </div>
+              )}
+              
+              {show.DIRECTOR && (
+                <div className="director-section">
+                  <span className="section-label">Director:</span>
+                  <span className="director-name">{show.DIRECTOR}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Ripple effect on click */}
+        <div className="ripple-container"></div>
+      </div>
     );
   };
 
@@ -1087,76 +1297,51 @@ function ShowDetails() {
               transition={{ duration: 0.8, delay: 1.1 }}
             >
               <motion.button
+                className="play-button"
                 onClick={() => isMovie ? playMovie() : (selectedEpisode && playEpisode(selectedEpisode))}
-                style={{
-                  background: 'linear-gradient(45deg, #533483 0%, #16213e 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '15px 35px',
-                  borderRadius: '8px',
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(22,33,62,0.3)'
-                }}
                 whileHover={{ 
-                  scale: 1.05,
-                  boxShadow: '0 6px 20px rgba(0,0,0,0.4)'
+                  scale: 1.02,
+                  y: -2
                 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 1.1 }}
               >
-                <span>▶️</span>
-                Play
+                <span>▶</span>
+                <span>Play</span>
               </motion.button>
 
-              <AnimatePresence>
-                {isFavorite !== null && (
-                  <motion.button
-                    onClick={toggleFavorite}
-                    style={{
-                      background: 'rgba(22, 33, 62, 0.85)',
-                      color: '#fff',
-                      border: '2px solid #533483',
-                      padding: '13px 30px',
-                      borderRadius: '8px',
-                      fontSize: '1.1rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      transition: 'all 0.3s ease',
-                      backdropFilter: 'blur(10px)'
-                    }}
-                    whileHover={{ 
-                      background: 'rgba(255,255,255,0.1)',
-                      scale: 1.05
-                    }}
-                    whileTap={{ scale: 0.95 }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <motion.span 
-                      style={{ fontSize: '1.2rem' }}
-                      animate={{ 
-                        scale: isFavorite ? [1, 1.2, 1] : 1,
-                        rotate: isFavorite ? [0, 10, -10, 0] : 0
+              <div className="secondary-actions">
+                <AnimatePresence>
+                  {isFavorite !== null && (
+                    <motion.button
+                      className="favorites-button"
+                      onClick={toggleFavorite}
+                      whileHover={{ 
+                        scale: 1.02,
+                        y: -2
                       }}
-                      transition={{ duration: 0.5 }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.4, delay: 1.2 }}
                     >
-                      {isFavorite ? '💙' : '🤍'}
-                    </motion.span>
-                    {isFavorite ? 'Remove from List' : 'Add to List'}
-                  </motion.button>
-                )}
-              </AnimatePresence>
+                      <motion.span
+                        style={{ fontSize: '18px' }}
+                        animate={{
+                          scale: isFavorite ? [1, 1.3, 1] : 1,
+                          rotate: isFavorite ? [0, 15, -15, 0] : 0,
+                        }}
+                        transition={{ duration: 0.6 }}
+                      >
+                        {isFavorite ? '💙' : '🤍'}
+                      </motion.span>
+                      {isFavorite ? 'Remove from List' : 'Add to List'}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           </motion.div>
         </motion.div>
@@ -1204,16 +1389,119 @@ function ShowDetails() {
                 <motion.div 
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                    gap: '25px',
-                    justifyItems: 'center'
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '80px 25px',
+                    padding: '0 0 20px 0',
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    marginTop: '10px'
                   }}
+                  className="actors-grid"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
                 >
                   {show.CAST.map((actor, index) => (
                     <CastCard key={actor.ACTOR_ID} actor={actor} index={index} />
+                  ))}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Directors Section */}
+          <AnimatePresence>
+            {true && (
+              <motion.div 
+                style={{
+                  marginBottom: '50px'
+                }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                <motion.h2 
+                  style={{
+                    fontSize: '2.2rem',
+                    fontWeight: 'bold',
+                    marginBottom: '30px',
+                    color: '#fff',
+                    textAlign: 'center',
+                    textShadow: '1px 1px 2px #533483'
+                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                >
+                  Directors ({show.DIRECTORS ? show.DIRECTORS.length : 'undefined'})
+                </motion.h2>
+                
+                <motion.div 
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '80px 25px',
+                    padding: '0 0 20px 0',
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    marginTop: '10px'
+                  }}
+                  className="actors-grid"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.7 }}
+                >
+                  {show.DIRECTORS && show.DIRECTORS.map((director, index) => (
+                    <DirectorCard key={director.DIRECTOR_ID} director={director} index={index} />
+                  ))}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* More Like This Section */}
+          <AnimatePresence>
+            {true && (
+              <motion.div 
+                style={{
+                  marginBottom: '50px'
+                }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <motion.h2 
+                  style={{
+                    fontSize: '2.2rem',
+                    fontWeight: 'bold',
+                    marginBottom: '30px',
+                    color: '#fff',
+                    textAlign: 'center',
+                    textShadow: '1px 1px 2px #533483'
+                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                >
+                  More Like This ({show.SIMILAR_SHOWS ? show.SIMILAR_SHOWS.length : 'undefined'})
+                </motion.h2>
+                
+                <motion.div 
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                    gap: '25px',
+                    padding: '0 0 20px 0',
+                    maxWidth: '1400px',
+                    margin: '0 auto',
+                    marginTop: '10px'
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.8 }}
+                >
+                  {show.SIMILAR_SHOWS && show.SIMILAR_SHOWS.map((similarShow, index) => (
+                    <SimilarShowCard key={similarShow.SHOW_ID} show={similarShow} index={index} />
                   ))}
                 </motion.div>
               </motion.div>
@@ -1609,6 +1897,119 @@ function ShowDetails() {
           </motion.div>
         </motion.div>
       )}
+
+      <style>{`
+        .actors-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 80px 25px;
+          padding: 0 0 20px 0;
+          max-width: 1200px;
+          margin: 0 auto;
+          margin-top: 10px;
+        }
+
+        .actor-card {
+          cursor: pointer;
+        }
+
+        .actor-card-inner {
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.08) 0%, 
+            rgba(255, 160, 122, 0.08) 100%);
+          border-radius: 20px;
+          overflow: hidden;
+          backdrop-filter: blur(15px) saturate(140%);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+          position: relative;
+        }
+
+        .actor-image-container {
+          position: relative;
+          height: 350px;
+          overflow: hidden;
+          border-radius: 20px;
+        }
+
+        .actor-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Glass overlay design similar to ShowCard */
+        .actor-glass-overlay {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: linear-gradient(135deg, 
+            rgba(255, 182, 193, 0.15) 0%, 
+            rgba(255, 160, 122, 0.15) 100%);
+          backdrop-filter: blur(15px) saturate(140%);
+          border-top: 1px solid rgba(255, 255, 255, 0.2);
+          padding: 20px;
+          transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          box-shadow: 
+            0 -4px 20px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .actor-glass-content {
+          text-align: center;
+        }
+
+        .actor-glass-name {
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 1.3rem;
+          font-weight: 700;
+          margin: 0 0 8px 0;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          letter-spacing: 0.5px;
+        }
+
+        .actor-glass-role {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.95rem;
+          font-weight: 500;
+          margin: 0;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+          opacity: 0.9;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+          .actors-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 60px 20px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .actors-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 50px 20px;
+          }
+
+          .actor-image-container {
+            height: 240px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .actors-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+            padding: 10px 10px 20px 10px;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

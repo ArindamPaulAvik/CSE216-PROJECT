@@ -420,9 +420,8 @@ function FrontPage() {
       hasTopRated={topRatedShows.length > 0}
     >
       <div style={{ marginTop: '70px' }}>
-      {/* Trending Now Section */}
+      {/* Trending Carousel Section - Without title */}
       <section id="trending" className="shows-section" ref={trendingRef}>
-        <h2 className="section-title trending-title">Trending Now</h2>
         <TrendingCarousel
           shows={trendingShows}
           onShowClick={(showId) => navigate(`/show/${showId}`)}

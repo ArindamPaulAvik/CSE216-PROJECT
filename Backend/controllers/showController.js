@@ -51,6 +51,45 @@ exports.getShowDetails = async (req, res) => {
       ORDER BY sc.ROLE_NAME
     `, [showId]);
 
+    // Get directors information for the show
+    const [directorsRows] = await pool.query(`
+      SELECT d.DIRECTOR_ID,
+             CONCAT(d.DIRECTOR_FIRSTNAME, ' ', d.DIRECTOR_LASTNAME) as DIRECTOR_NAME,
+             d.BIOGRAPHY,
+             d.PICTURE as IMAGE
+      FROM SHOW_DIRECTOR sd
+      JOIN DIRECTOR d ON sd.DIRECTOR_ID = d.DIRECTOR_ID
+      WHERE sd.SHOW_ID = ?
+      ORDER BY d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME
+    `, [showId]);
+
+    console.log('🎭 Directors query result for show', showId, ':', directorsRows);
+
+    // Get similar shows based on same genre(s)
+    const [similarShowsRows] = await pool.query(`
+      SELECT DISTINCT s2.SHOW_ID,
+             s2.TITLE,
+             s2.DESCRIPTION,
+             s2.THUMBNAIL,
+             s2.RATING,
+             YEAR(s2.RELEASE_DATE) as YEAR,
+             s2.DURATION,
+             s2.MATURITY_RATING,
+             s2.TEASER,
+             false as IS_FAVORITE
+      FROM SHOWS s2
+      LEFT JOIN SHOW_GENRE sg2 ON s2.SHOW_ID = sg2.SHOW_ID
+      WHERE sg2.GENRE_ID IN (
+        SELECT sg1.GENRE_ID 
+        FROM SHOW_GENRE sg1 
+        WHERE sg1.SHOW_ID = ?
+      )
+      AND s2.SHOW_ID != ?
+      AND s2.REMOVED = 0
+      ORDER BY s2.RATING DESC
+      LIMIT 8
+    `, [showId, showId]);
+
     // Get episodes grouped by season (if it's a series)
     const [episodeRows] = await pool.query(`
       SELECT se.SHOW_EPISODE_ID,
@@ -69,8 +108,17 @@ exports.getShowDetails = async (req, res) => {
     const showDetails = {
       ...showRows[0],
       CAST: castRows,
+      DIRECTORS: directorsRows,
+      SIMILAR_SHOWS: similarShowsRows,
       EPISODES: episodeRows
     };
+
+    // Debug logging
+    console.log('📺 Show Details Response:');
+    console.log('- Cast count:', castRows.length);
+    console.log('- Directors count:', directorsRows.length);
+    console.log('- Similar shows count:', similarShowsRows.length);
+    console.log('- Episodes count:', episodeRows.length);
 
     res.json(showDetails);
   } catch (err) {
