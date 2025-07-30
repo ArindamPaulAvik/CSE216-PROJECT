@@ -86,68 +86,32 @@ exports.getShowDetails = async (req, res) => {
       directorsRows = [];
     }
 
-    // Get similar shows based on genres (like search controller)
+    // Get similar shows based on genres (simplified test)
     let similarShowsRows = [];
     try {
-      // First, get the genres of the current show
-      const [currentShowGenres] = await pool.query(`
-        SELECT DISTINCT g.GENRE_NAME
-        FROM SHOW_GENRE sg
-        JOIN GENRE g ON sg.GENRE_ID = g.GENRE_ID
-        WHERE sg.SHOW_ID = ?
+      console.log('🎭 Debug - Starting similar shows query for show ID:', showId);
+      
+      // Simple test - just get all shows except current one (for debugging)
+      const [allOtherShows] = await pool.query(`
+        SELECT SHOW_ID, TITLE, DESCRIPTION, THUMBNAIL, RATING, RELEASE_DATE
+        FROM SHOWS 
+        WHERE SHOW_ID != ? AND REMOVED = 0 
+        ORDER BY RATING DESC 
+        LIMIT 5
       `, [showId]);
       
-      console.log('🎭 Debug - Current show ID:', showId);
-      console.log('🎭 Debug - Current show genres query result:', currentShowGenres);
+      console.log('🎭 Debug - Simple test query returned:', allOtherShows.length, 'shows');
       
-      if (currentShowGenres.length > 0) {
-        // Get genre names for the current show
-        const genreNames = currentShowGenres.map(row => row.GENRE_NAME);
-        console.log('🎭 Current show genres:', genreNames);
-        
-        // Create placeholders for genre names
-        const genrePlaceholders = genreNames.map(() => '?').join(',');
-        console.log('🎭 Debug - Genre placeholders:', genrePlaceholders);
-        console.log('🎭 Debug - Query params:', [...genreNames, showId]);
-        
-        // Simplified query without GROUP_CONCAT - let JavaScript handle genre aggregation
-        const similarShowsQuery = `
-          SELECT DISTINCT s2.SHOW_ID,
-                 s2.TITLE,
-                 s2.DESCRIPTION,
-                 s2.THUMBNAIL,
-                 COALESCE(s2.RATING, 0) as RATING,
-                 s2.RELEASE_DATE,
-                 s2.DURATION,
-                 s2.MATURITY_RATING,
-                 s2.TEASER
-          FROM SHOWS s2
-          INNER JOIN SHOW_GENRE sg2 ON s2.SHOW_ID = sg2.SHOW_ID
-          INNER JOIN GENRE g2 ON sg2.GENRE_ID = g2.GENRE_ID
-          WHERE g2.GENRE_NAME IN (${genrePlaceholders})
-          AND s2.SHOW_ID != ?
-          AND s2.REMOVED = 0
-          ORDER BY s2.RATING DESC
-          LIMIT 8
-        `;
-        
-        console.log('🎭 Debug - Similar shows query:', similarShowsQuery);
-        
-        const [similarShows] = await pool.query(similarShowsQuery, [...genreNames, showId]);
-        
-        console.log('🎭 Debug - Raw similar shows result:', similarShows);
-        
-        // Format similar shows data with year extracted in JavaScript
-        similarShowsRows = similarShows.map(show => ({
+      if (allOtherShows.length > 0) {
+        similarShowsRows = allOtherShows.map(show => ({
           ...show,
           YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null,
-          IS_FAVORITE: false
+          IS_FAVORITE: false,
+          TEASER: null,
+          DURATION: null,
+          MATURITY_RATING: null
         }));
-        
-        console.log('🎬 Similar shows query result for show', showId, ':', similarShowsRows.length, 'shows found');
-        console.log('🎬 Final similar shows data:', similarShowsRows);
-      } else {
-        console.log('🎬 No genres found for show', showId, ', no similar shows to fetch');
+        console.log('� Debug - Final similar shows:', similarShowsRows);
       }
     } catch (similarError) {
       console.error('Error fetching similar shows:', similarError);
