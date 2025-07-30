@@ -159,7 +159,8 @@ function Auth() {
     console.log('API URL being used:', PRODUCTION_API_URL); // Debug log
     console.log('Login attempt at:', new Date().toISOString()); // Force rebuild
     try {
-      const res = await axios.post(`${PRODUCTION_API_URL}/login`, loginData);
+      // EXPLICITLY HARDCODED - NO VARIABLES
+      const res = await axios.post('https://cse216-project.onrender.com/login', loginData);
       if (res.status === 200) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user_id', res.data.userId || res.data.adminId || res.data.publisherId);
@@ -185,7 +186,8 @@ function Auth() {
     setError(null);
     setIsLoading(true);
     try {
-      const response = await axios.post(`${PRODUCTION_API_URL}/register`, registerData);
+      // EXPLICITLY HARDCODED - NO VARIABLES
+      const response = await axios.post('https://cse216-project.onrender.com/register', registerData);
       if (response.status === 201) {
         setShowSuccessModal(true);
       }
