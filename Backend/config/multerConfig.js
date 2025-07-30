@@ -7,6 +7,8 @@ const uploadPath = path.join(__dirname, '../public/images/user');
 const actorUploadPath = path.join(__dirname, '../public/actors');
 const directorUploadPath = path.join(__dirname, '../public/directors');
 const awardUploadPath = path.join(__dirname, '../public/awards');
+const bannerUploadPath = path.join(__dirname, '../public/banners');
+const thumbnailUploadPath = path.join(__dirname, '../public/shows');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadPath),
@@ -41,6 +43,24 @@ const awardStorage = multer.diskStorage({
   filename: (req, file, cb) => {
     const baseName = path.basename(file.originalname, path.extname(file.originalname));
     const uniqueName = `${baseName.toLowerCase().replace(/\s+/g, '_')}-${Date.now()}.jpg`;
+    cb(null, uniqueName);
+  }
+});
+
+const bannerStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, bannerUploadPath),
+  filename: (req, file, cb) => {
+    const baseName = path.basename(file.originalname, path.extname(file.originalname));
+    const uniqueName = `${baseName.toLowerCase().replace(/\s+/g, '_')}-${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+const thumbnailStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, thumbnailUploadPath),
+  filename: (req, file, cb) => {
+    const baseName = path.basename(file.originalname, path.extname(file.originalname));
+    const uniqueName = `${baseName.toLowerCase().replace(/\s+/g, '_')}-${Date.now()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
   }
 });
@@ -89,4 +109,39 @@ const awardUpload = multer({
   }
 });
 
-module.exports = { upload, uploadPath, actorUpload, actorUploadPath, directorUpload, directorUploadPath, awardUpload, awardUploadPath };
+const bannerUpload = multer({
+  storage: bannerStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files allowed'));
+    }
+    cb(null, true);
+  }
+});
+
+const thumbnailUpload = multer({
+  storage: thumbnailStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files allowed'));
+    }
+    cb(null, true);
+  }
+});
+
+module.exports = { 
+  upload, 
+  uploadPath, 
+  actorUpload, 
+  actorUploadPath, 
+  directorUpload, 
+  directorUploadPath, 
+  awardUpload, 
+  awardUploadPath,
+  bannerUpload,
+  bannerUploadPath,
+  thumbnailUpload,
+  thumbnailUploadPath
+};

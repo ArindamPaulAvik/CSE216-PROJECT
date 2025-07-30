@@ -189,10 +189,22 @@ const createShowSubmission = async (req, res) => {
     // Handle file uploads
     const bannerImg = req.files?.banner ? req.files.banner[0].filename : null;
     const thumbImg = req.files?.thumbnail ? req.files.thumbnail[0].filename : null;
+    
+    console.log('File uploads:', {
+      banner: req.files?.banner ? req.files.banner[0] : null,
+      thumbnail: req.files?.thumbnail ? req.files.thumbnail[0] : null,
+      bannerImg,
+      thumbImg
+    });
 
     // Validate required fields
     if (!title || !description || !teaser || !categoryType) {
       return res.status(400).json({ message: 'Title, description, teaser, and category type are required' });
+    }
+    
+    // Validate required files
+    if (!req.files?.banner || !req.files?.thumbnail) {
+      return res.status(400).json({ message: 'Both banner and thumbnail images are required' });
     }
 
     // Set link_to_show based on category type

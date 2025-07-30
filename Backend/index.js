@@ -10,18 +10,11 @@ const pool = require('./db'); // Add this line
 const app = express();
 const port = process.env.PORT || 5000;
 const { searchShows } = require('./controllers/searchController');
-const { uploadPath, actorUploadPath, directorUploadPath } = require('./config/multerConfig');
+const { uploadPath, actorUploadPath, directorUploadPath, bannerUploadPath, thumbnailUploadPath } = require('./config/multerConfig');
+const { ensureDirectories } = require('./ensureDirectories');
 
-// Define show image paths
-const showThumbnailPath = path.join(__dirname, '../frontend/public/shows');
-const showBannerPath = path.join(__dirname, '../frontend/public/banners');
-
-// Ensure upload directories exist
-if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-if (!fs.existsSync(actorUploadPath)) fs.mkdirSync(actorUploadPath, { recursive: true });
-if (!fs.existsSync(directorUploadPath)) fs.mkdirSync(directorUploadPath, { recursive: true });
-if (!fs.existsSync(showThumbnailPath)) fs.mkdirSync(showThumbnailPath, { recursive: true });
-if (!fs.existsSync(showBannerPath)) fs.mkdirSync(showBannerPath, { recursive: true });
+// Ensure all upload directories exist
+ensureDirectories();
 
 // Middleware
 app.use(cors({

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const submissionsController = require('../controllers/submissionsController');
 const authenticateToken = require('../middleware/authenticateToken');
+const { bannerUpload, thumbnailUpload } = require('../config/multerConfig');
 const multer = require('multer');
 const path = require('path');
 const pool = require('../db'); // Add this for direct database access
@@ -26,25 +27,23 @@ router.get('/debug', (req, res) => {
   });
 });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (file.fieldname === 'banner') {
-      cb(null, 'public/banners/');
-    } else if (file.fieldname === 'thumbnail') {
-      cb(null, 'public/shows/');
-    } else {
-      cb(null, 'public/uploads/');
+// Configure multer for show submissions with multiple file fields
+const showUpload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      if (file.fieldname === 'banner') {
+        cb(null, 'public/banners/');
+      } else if (file.fieldname === 'thumbnail') {
+        cb(null, 'public/shows/');
+      } else {
+        cb(null, 'public/uploads/');
+      }
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
+  }),
   fileFilter: function (req, file, cb) {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -75,7 +74,7 @@ router.put('/:id/verdict', authenticateToken, submissionsController.updateSubmis
 router.post('/', authenticateToken, submissionsController.createSubmission);
 
 // Create new show submission (publisher only) - with file uploads
-router.post('/show', authenticateToken, upload.fields([
+router.post('/show', authenticateToken, showUpload.fields([
   { name: 'banner', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 }
 ]), submissionsController.createShowSubmission);
