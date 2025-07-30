@@ -4,115 +4,156 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import Layout from './Layout';
 
-// Award Card Component
-const AwardCard = ({ award }) => {
-  const [imageError, setImageError] = useState(false);
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
-
+// Award Card Component - Copied from ShowDetails/AwardsPage for better design
+const AwardCard = ({ award, index }) => {
   return (
     <motion.div
-      whileHover={{ 
-        scale: 1.05, 
-        rotateY: 5,
-        rotateX: 5,
-        transition: { duration: 0.3 }
+      initial={{ scale: 0.7, opacity: 0, y: 50 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.6,
+        delay: (index % 4) * 0.1,
+        ease: [0.25, 0.46, 0.45, 0.94],
       }}
+      whileHover={{
+        scale: 1.08,
+        rotateY: 5,
+        transition: { duration: 0.3 },
+      }}
+      whileTap={{ scale: 0.98 }}
+      className="award-card"
       style={{
-        background: 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
-        borderRadius: '15px',
-        padding: '20px',
-        boxShadow: '0 8px 32px rgba(212, 175, 55, 0.15)',
-        border: '1px solid rgba(212, 175, 55, 0.3)',
-        cursor: 'pointer',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden'
+        cursor: 'pointer'
       }}
     >
-      {/* Golden accent line */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, #d4af37, #f4d03f, #d4af37)',
-      }} />
-      
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', marginBottom: '15px' }}>
-        <div style={{ 
-          width: '60px', 
-          height: '60px', 
-          borderRadius: '8px', 
-          overflow: 'hidden',
-          border: '2px solid rgba(212, 175, 55, 0.5)',
-          flexShrink: 0
+      <div className="award-card-inner" style={{
+        background: 'linear-gradient(145deg, #2a2a1e, #3a3a2a)',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 215, 0, 0.1)',
+        transition: 'all 0.4s ease'
+      }}>
+        <div className="award-image-container" style={{
+          position: 'relative',
+          height: '280px',
+          overflow: 'hidden'
         }}>
-          {!imageError ? (
-            <img
-              src={`/awards/${award.IMG}`}
-              alt={award.NAME}
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'cover'
-              }}
-              onError={handleImageError}
-            />
-          ) : (
-            <div style={{
+          <motion.img
+            src={`${process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com'}/awards/${award.IMG}`}
+            alt={award.NAME}
+            className="award-image"
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.4 }}
+            onError={(e) => {
+              e.target.src = `${process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com'}/placeholder-award.jpg`;
+            }}
+            style={{
               width: '100%',
               height: '100%',
-              backgroundColor: 'rgba(212, 175, 55, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#d4af37'
-            }}>
-              🏆
-            </div>
-          )}
+              objectFit: 'cover',
+              transition: 'transform 0.4s ease'
+            }}
+          />
+          <div className="award-overlay" style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.8) 100%)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            padding: '20px',
+            opacity: 0,
+            transition: 'opacity 0.3s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+          >
+            <motion.div
+              className="award-info"
+              initial={{ opacity: 0, y: 20 }}
+              whileHover={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h3 style={{
+                color: '#ffffff',
+                fontSize: '1.3rem',
+                fontWeight: '600',
+                margin: '0 0 5px 0'
+              }}>
+                {award.NAME}
+              </h3>
+              <p style={{
+                color: '#ffd700',
+                fontSize: '0.9rem',
+                margin: '0 0 5px 0',
+                fontWeight: '500'
+              }}>
+                {award.AWARDING_BODY}
+              </p>
+              {award.YEAR && (
+                <p style={{
+                  color: '#b0b0b0',
+                  fontSize: '0.9rem',
+                  margin: '0'
+                }}>
+                  {award.YEAR}
+                </p>
+              )}
+            </motion.div>
+          </div>
         </div>
-        
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ 
-            color: '#d4af37', 
-            fontSize: '18px', 
-            margin: '0 0 8px 0',
+        <motion.div
+          className="award-details"
+          whileHover={{ backgroundColor: 'rgba(255, 215, 0, 0.1)' }}
+          transition={{ duration: 0.3 }}
+          style={{
+            padding: '20px',
+            textAlign: 'center',
+            background: 'rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(10px)',
+            borderTop: '1px solid rgba(255, 215, 0, 0.1)'
+          }}
+        >
+          <p style={{
+            fontSize: '1.1rem',
             fontWeight: '600',
-            textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            color: '#f5f5f5',
+            margin: '0 0 10px 0'
           }}>
             {award.NAME}
-          </h3>
-          {award.YEAR && (
-            <div style={{
-              color: '#b8860b',
-              fontSize: '14px',
-              fontWeight: '500',
-              marginBottom: '5px'
+          </p>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '15px'
+          }}>
+            <span style={{
+              fontSize: '0.85rem',
+              color: '#ffd700',
+              background: 'rgba(255, 215, 0, 0.1)',
+              padding: '4px 8px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 215, 0, 0.3)'
             }}>
-              {award.YEAR}
-            </div>
-          )}
-        </div>
+              🏆 {award.AWARDING_BODY}
+            </span>
+            {award.YEAR && (
+              <span style={{
+                fontSize: '0.85rem',
+                color: '#ffd700',
+                background: 'rgba(255, 215, 0, 0.1)',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 215, 0, 0.3)'
+              }}>
+                📅 {award.YEAR}
+              </span>
+            )}
+          </div>
+        </motion.div>
       </div>
-      
-      {award.DESCRIPTION && (
-        <p style={{ 
-          color: '#ccc', 
-          fontSize: '14px', 
-          lineHeight: '1.5',
-          margin: 0,
-          flex: 1
-        }}>
-          {award.DESCRIPTION}
-        </p>
-      )}
     </motion.div>
   );
 };
@@ -204,37 +245,6 @@ function ActorDetailPage() {
           />
           <div style={{ flex: 1, minWidth: 300 }}>
             <h2 style={{ color: '#fff', marginBottom: 10, fontSize: '2.2rem' }}>{actor.NAME}</h2>
-            
-            {/* Awards Section */}
-            {awards && awards.length > 0 && (
-              <div style={{ marginBottom: 25 }}>
-                <h3 style={{ 
-                  color: '#d4af37', 
-                  marginBottom: 15, 
-                  fontSize: '1.3rem',
-                  fontWeight: '600'
-                }}>
-                  Awards & Recognition
-                </h3>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '15px',
-                  marginBottom: '20px'
-                }}>
-                  {awards.slice(0, 4).map((award, index) => (
-                    <motion.div
-                      key={award.AWARD_ID}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <AwardCard award={award} />
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
             
             <h3 style={{ color: '#ddd', marginBottom: 15, fontSize: '1.3rem' }}>Biography</h3>
             <p style={{
@@ -329,6 +339,34 @@ function ActorDetailPage() {
           }}>
             No shows found for this actor.
           </p>
+        )}
+
+        {/* Awards Section - Moved below filmography */}
+        {awards && awards.length > 0 && (
+          <div style={{ marginTop: 50 }}>
+            <h3 style={{
+              color: '#d4af37',
+              marginBottom: 30,
+              fontSize: '1.8rem',
+              borderBottom: '2px solid #333',
+              paddingBottom: 10,
+              textAlign: 'center'
+            }}>
+              🏆 Awards & Recognition
+            </h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gap: '25px',
+              padding: '0 0 20px 0',
+              maxWidth: '1200px',
+              margin: '0 auto'
+            }}>
+              {awards.map((award, index) => (
+                <AwardCard key={award.AWARD_ID} award={award} index={index} />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </Layout>
