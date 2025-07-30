@@ -14,7 +14,7 @@ exports.getShowDetails = async (req, res) => {
              c.CATEGORY_NAME,
              p.PUBLISHER_NAME,
              a.AGE_RESTRICTION_NAME,
-             st.STATUS_NAME,ss
+             st.STATUS_NAME,
              GROUP_CONCAT(DISTINCT g.GENRE_NAME SEPARATOR ', ') as GENRES,
              COUNT(DISTINCT fls.USER_ID) as FAVORITES_COUNT,
              COUNT(DISTINCT se.SHOW_EPISODE_ID) as TOTAL_EPISODES,
