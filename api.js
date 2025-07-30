@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'https://cse216-project.onrender.com';
 
 // Fetch all shows
 export const fetchShows = () => axios.get(`${API_BASE}/shows`);
