@@ -156,6 +156,7 @@ function Auth() {
     setError(null);
     setIsLoading(true);
     console.log('BASE_URL being used:', BASE_URL); // Debug log
+    console.log('Login attempt at:', new Date().toISOString()); // Force rebuild
     try {
       const res = await axios.post('https://cse216-project.onrender.com/login', loginData);
       if (res.status === 200) {
