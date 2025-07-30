@@ -39,13 +39,13 @@ const AwardCard = ({ award, index }) => {
           overflow: 'hidden'
         }}>
           <motion.img
-            src={`${process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com'}/awards/${award.IMG}`}
+            src={`https://cse216-project.onrender.com/awards/${award.IMG}`}
             alt={award.NAME}
             className="award-image"
             whileHover={{ scale: 1.1 }}
             transition={{ duration: 0.4 }}
             onError={(e) => {
-              e.target.src = `${process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com'}/placeholder-award.jpg`;
+              e.target.src = `https://cse216-project.onrender.com/placeholder-award.jpg`;
             }}
             style={{
               width: '100%',
@@ -163,7 +163,7 @@ function DirectorDetailPage() {
   const [director, setDirector] = useState(null);
   const [awards, setAwards] = useState([]);
   const navigate = useNavigate();
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('token');

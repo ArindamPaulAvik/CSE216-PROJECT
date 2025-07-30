@@ -18,7 +18,7 @@ const Subscription = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [promoCode, setPromoCode] = useState('');
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   const [showPromoSuccess, setShowPromoSuccess] = useState(false);

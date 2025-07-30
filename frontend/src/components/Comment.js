@@ -86,7 +86,7 @@ function CommentSection({ episodeId }) {
   const [reportTarget, setReportTarget] = useState(null); // { commentId, isReply, parentId }
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showAlreadyReportedModal, setShowAlreadyReportedModal] = useState(false);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   // Add state for reply image and preview (per reply box)
   const [replyImage, setReplyImage] = useState(null);

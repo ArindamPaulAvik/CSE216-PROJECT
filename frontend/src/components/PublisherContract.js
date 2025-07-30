@@ -24,7 +24,7 @@ function PublisherContract() {
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [publisherRequests, setPublisherRequests] = useState([]);
   const [acceptingId, setAcceptingId] = useState(null);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
 
   // Fetch publisher-requested renewal requests
   const fetchPublisherRequests = async (publisherId) => {

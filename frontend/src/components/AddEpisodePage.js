@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 function AddEpisodePage() {
   const navigate = useNavigate();
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
   
   const [formData, setFormData] = useState({
     title: '',

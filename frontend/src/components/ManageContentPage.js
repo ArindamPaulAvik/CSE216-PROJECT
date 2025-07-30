@@ -7,7 +7,7 @@ function ManageContentPage() {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownContainerRef = useRef(null);
-  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
+  const BASE_URL = 'https://cse216-project.onrender.com';
   const [shows, setShows] = useState([]);
 
   React.useEffect(() => {
