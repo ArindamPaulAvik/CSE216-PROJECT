@@ -82,6 +82,7 @@ app.use('/user-join-stats', require('./routes/userJoinStats'));
 app.use('/income-stats', require('./routes/incomeStats'));
 app.use('/offers', require('./routes/offers'));
 app.use('/publishers', require('./routes/publishers'));
+app.use('/marketing', require('./routes/marketing'));
 
 // Add settings route for user preferences
 app.use(require('./routes/settings'));

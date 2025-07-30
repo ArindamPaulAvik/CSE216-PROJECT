@@ -8,12 +8,19 @@ function MarketingAdminFrontpage() {
   const navigate = useNavigate();
   const [adminData, setAdminData] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [marketingStats, setMarketingStats] = useState({
+    publisherCount: 0,
+    totalUsers: 0,
+    promotionCount: 0,
+    subscriptionTypeCount: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userType = localStorage.getItem('user_type');
     const adminType = localStorage.getItem('admin_type');
-    const BASE_URL = process.env.REACT_APP_API_BASE || 'https://cse216-project.onrender.com';
     
     if (!token || userType !== 'admin' || adminType !== 'Marketing') {
       alert('Access denied. Please login as a marketing admin.');
@@ -21,8 +28,9 @@ function MarketingAdminFrontpage() {
       return;
     }
 
-    // Fetch admin data
+    // Fetch admin data and marketing stats
     fetchAdminData();
+    fetchMarketingStats();
   }, [navigate]);
 
   const fetchAdminData = async () => {
@@ -39,6 +47,23 @@ function MarketingAdminFrontpage() {
     }
   };
 
+  const fetchMarketingStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BASE_URL}/marketing/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        setMarketingStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching marketing stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user_id');
@@ -51,7 +76,7 @@ function MarketingAdminFrontpage() {
     navigate('/admin-profile');
   };
 
-  if (!adminData) {
+  if (!adminData || loading) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -279,20 +304,20 @@ function MarketingAdminFrontpage() {
             gap: '20px'
           }}>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ff6b6b' }}>15</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Active Campaigns</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ff6b6b' }}>{marketingStats.publisherCount}</p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Publisher Count</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ffa726' }}>89.3%</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Engagement Rate</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ffa726' }}>{marketingStats.totalUsers}</p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Total Users</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#66bb6a' }}>234</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Promoted Shows</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#66bb6a' }}>{marketingStats.promotionCount}</p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Number of Promotions</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ab47bc' }}>1.2M</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Notifications Sent</p>
+              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ab47bc' }}>{marketingStats.subscriptionTypeCount}</p>
+              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Subscription Types</p>
             </div>
           </div>
         </motion.div>
