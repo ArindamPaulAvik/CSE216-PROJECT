@@ -64,7 +64,8 @@ exports.getShowDetails = async (req, res) => {
     try {
       const [directors] = await pool.query(`
         SELECT d.DIRECTOR_ID,
-               CONCAT(COALESCE(d.DIRECTOR_FIRSTNAME, ''), ' ', COALESCE(d.DIRECTOR_LASTNAME, '')) as DIRECTOR_NAME,
+               d.DIRECTOR_FIRSTNAME,
+               d.DIRECTOR_LASTNAME,
                d.BIOGRAPHY,
                d.PICTURE as IMAGE
         FROM SHOW_DIRECTOR sd
@@ -72,7 +73,13 @@ exports.getShowDetails = async (req, res) => {
         WHERE sd.SHOW_ID = ?
         ORDER BY d.DIRECTOR_FIRSTNAME, d.DIRECTOR_LASTNAME
       `, [showId]);
-      directorsRows = directors;
+      
+      // Format the directors data with concatenated names (like directorsController)
+      directorsRows = directors.map(director => ({
+        ...director,
+        DIRECTOR_NAME: director.DIRECTOR_FIRSTNAME + ' ' + director.DIRECTOR_LASTNAME
+      }));
+      
       console.log('🎭 Directors query result for show', showId, ':', directorsRows.length, 'directors found');
     } catch (directorError) {
       console.error('Error fetching directors:', directorError);
@@ -88,7 +95,7 @@ exports.getShowDetails = async (req, res) => {
                s2.DESCRIPTION,
                s2.THUMBNAIL,
                COALESCE(s2.RATING, 0) as RATING,
-               COALESCE(YEAR(s2.RELEASE_DATE), 0) as YEAR,
+               s2.RELEASE_DATE,
                s2.DURATION,
                s2.MATURITY_RATING,
                s2.TEASER,
@@ -105,7 +112,13 @@ exports.getShowDetails = async (req, res) => {
         ORDER BY s2.RATING DESC
         LIMIT 8
       `, [showId, showId]);
-      similarShowsRows = similarShows;
+      
+      // Format similar shows data with year extracted in JavaScript
+      similarShowsRows = similarShows.map(show => ({
+        ...show,
+        YEAR: show.RELEASE_DATE ? new Date(show.RELEASE_DATE).getFullYear() : null
+      }));
+      
       console.log('🎬 Similar shows query result for show', showId, ':', similarShowsRows.length, 'shows found');
     } catch (similarError) {
       console.error('Error fetching similar shows:', similarError);
