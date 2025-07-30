@@ -299,3 +299,44 @@ exports.deleteAward = async (req, res) => {
     connection.release();
   }
 };
+
+// Get awards for a specific show
+exports.getAwardsForShow = async (req, res) => {
+  try {
+    const { showId } = req.params;
+    
+    if (!showId) {
+      return res.status(400).json({ message: 'Show ID is required' });
+    }
+
+    const query = `
+      SELECT 
+        a.AWARD_ID,
+        a.AWARD_NAME,
+        a.AWARDING_BODY,
+        a.IMG,
+        a.DESCRIPTION,
+        sa.YEAR,
+        (
+          SELECT COUNT(*) FROM ACTOR_AWARD aa WHERE aa.AWARD_ID = a.AWARD_ID
+        ) as ACTOR_COUNT,
+        (
+          SELECT COUNT(*) FROM DIRECTOR_AWARD da WHERE da.AWARD_ID = a.AWARD_ID
+        ) as DIRECTOR_COUNT,
+        (
+          SELECT COUNT(*) FROM SHOW_AWARD sa2 WHERE sa2.AWARD_ID = a.AWARD_ID
+        ) as SHOW_COUNT
+      FROM AWARD a
+      INNER JOIN SHOW_AWARD sa ON a.AWARD_ID = sa.AWARD_ID
+      WHERE sa.SHOW_ID = ?
+      ORDER BY sa.YEAR DESC, a.AWARD_NAME ASC
+    `;
+    
+    const [results] = await pool.execute(query, [showId]);
+    
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching awards for show:', error);
+    res.status(500).json({ message: 'Failed to fetch awards for show' });
+  }
+};

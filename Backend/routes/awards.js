@@ -6,6 +6,7 @@ const { awardUpload } = require('../config/multerConfig');
 const {
   getAllAwards,
   getAwardById,
+  getAwardsForShow,
   createAward,
   updateAward,
   deleteAward
@@ -16,6 +17,9 @@ router.get('/', authenticateToken, getAllAwards);
 
 // GET award by ID with recipients
 router.get('/:id', authenticateToken, getAwardById);
+
+// GET awards for a specific show
+router.get('/show/:showId', authenticateToken, getAwardsForShow);
 
 // POST create new award with image upload
 router.post('/', authenticateToken, awardUpload.single('image'), createAward);
