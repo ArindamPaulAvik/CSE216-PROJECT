@@ -379,28 +379,6 @@ function AdminShowDetails() {
               }}>
                 {show.description}
               </p>
-
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  style={{
-                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                    border: 'none',
-                    color: 'white',
-                    padding: '12px 24px',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <FiPlay size={18} />
-                  Watch Trailer
-                </motion.button>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -692,31 +670,6 @@ function AdminShowDetails() {
                         <FiStar size={16} style={{ color: '#ffd700' }} />
                         <span style={{ fontWeight: '600' }}>{season.rating}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'awards' && (
-              <div>
-                <h3 style={{ marginBottom: '20px', fontSize: '1.5rem' }}>Awards & Recognition</h3>
-                <div style={{ display: 'grid', gap: '15px' }}>
-                  {show.awards.map((award, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        background: 'rgba(255, 215, 0, 0.1)',
-                        borderRadius: '12px',
-                        padding: '20px',
-                        border: '1px solid rgba(255, 215, 0, 0.2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '15px'
-                      }}
-                    >
-                      <FiAward size={24} style={{ color: '#ffd700' }} />
-                      <span style={{ fontSize: '16px' }}>{award}</span>
                     </div>
                   ))}
                 </div>

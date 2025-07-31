@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiUser, FiSettings, FiLogOut, FiUpload, FiBarChart, FiTrendingUp, FiDollarSign } from 'react-icons/fi';
+import { FiUser, FiSettings, FiLogOut, FiUpload, FiBarChart, FiTrendingUp } from 'react-icons/fi';
 import axios from 'axios';
 
 function PublisherFrontpage() {
@@ -196,39 +196,7 @@ function PublisherFrontpage() {
             </button>
           </motion.div>
 
-          {/* Billing and Payment Card */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '15px',
-              padding: '30px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-              <FiDollarSign size={24} style={{ marginRight: '15px', color: '#32cd32' }} />
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Billing and Payment</h3>
-            </div>
-            <p style={{ opacity: 0.8, marginBottom: '20px' }}>
-              Manage invoices and payment history
-            </p>
-            <button 
-              onClick={() => navigate('/billing-and-payments')}
-              style={{
-                background: 'linear-gradient(45deg, #32cd32, #228b22)',
-                border: 'none',
-                color: 'white',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                marginTop: '23px'
-              }}>
-              View Payments
-            </button>
-          </motion.div>
+
 
           {/* Contract Card */}
           <motion.div
@@ -266,43 +234,7 @@ function PublisherFrontpage() {
           </motion.div>
         </motion.div>
 
-        {/* Quick Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '15px',
-            padding: '30px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-          <h3 style={{ marginBottom: '20px', fontSize: '1.5rem' }}>Quick Overview</h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '20px'
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#00d4ff' }}>12</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Total Shows</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#7b68ee' }}>1.2M</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Total Views</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#32cd32' }}>$12,345</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Monthly Revenue</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#ff6b6b' }}>98%</p>
-              <p style={{ opacity: 0.7, margin: '5px 0 0 0' }}>Satisfaction Rate</p>
-            </div>
-          </div>
-        </motion.div>
+
       </main>
     </div>
   );
